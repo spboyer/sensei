@@ -1,6 +1,6 @@
 ---
 name: sensei
-description: "Iteratively improve skill frontmatter compliance using the Ralph loop pattern. USE FOR: run sensei, sensei help, improve skill, fix frontmatter, skill compliance, frontmatter audit, improve triggers, add anti-triggers, batch skill improvement, check skill tokens, score skill. DO NOT USE FOR: creating new skills from scratch (use skill-creator), writing skill content/body, general markdown editing, or non-SKILL.md files."
+description: "**WORKFLOW SKILL** - Iteratively improve skill frontmatter compliance using the Ralph loop pattern. USE FOR: run sensei, sensei help, improve skill, fix frontmatter, skill compliance, frontmatter audit, improve triggers, add anti-triggers, batch skill improvement, check skill tokens, score skill. DO NOT USE FOR: creating new skills from scratch (use skill-creator), writing skill content/body, general markdown editing, or non-SKILL.md files. INVOKES: token counting tools, test runners, git commands. FOR SINGLE OPERATIONS: use token CLI directly for counts/checks."
 ---
 
 # Sensei
@@ -40,6 +40,7 @@ When user says "sensei help" or asks how to use sensei:
 ║    ✓ Description > 150 chars                                     ║
 ║    ✓ Has "USE FOR:" trigger phrases                              ║
 ║    ✓ Has "DO NOT USE FOR:" anti-triggers                         ║
+║    ✓ Has "INVOKES:" for tool relationships (optional)            ║
 ║    ✓ SKILL.md < 500 tokens (soft limit)                          ║
 ║                                                                  ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -200,13 +201,24 @@ Ask how to proceed:
 | **Low** | Description < 150 chars OR no triggers |
 | **Medium** | Description >= 150 chars AND has trigger keywords |
 | **Medium-High** | Has "USE FOR:" AND "DO NOT USE FOR:" |
-| **High** | Medium-High + compatibility field |
+| **High** | Medium-High + routing clarity (INVOKES/FOR SINGLE OPERATIONS) |
 
 See [references/scoring.md](references/scoring.md) for full criteria.
 
-## Frontmatter Examples
+## Frontmatter Patterns
 
-See [references/examples.md](references/examples.md) for before/after transformations.
+### Skill Classification Prefix
+
+Add a prefix to clarify the skill type:
+- `**WORKFLOW SKILL**` - Multi-step orchestration
+- `**UTILITY SKILL**` - Single-purpose helper
+- `**ANALYSIS SKILL**` - Read-only analysis/reporting
+
+### Routing Clarity (for High score)
+
+When skills interact with MCP tools or other skills, add:
+- `INVOKES:` - What tools/skills this skill calls
+- `FOR SINGLE OPERATIONS:` - When to bypass this skill
 
 ### Quick Example
 
@@ -215,14 +227,18 @@ See [references/examples.md](references/examples.md) for before/after transforma
 description: 'Process PDF files'
 ```
 
-**After (Medium-High):**
+**After (High with routing):**
 ```yaml
 description: |
-  Process PDF files including text extraction, rotation, and merging.
+  **WORKFLOW SKILL** - Process PDF files including text extraction, rotation, and merging.
   USE FOR: "extract PDF text", "rotate PDF", "merge PDFs", "PDF to text".
   DO NOT USE FOR: creating PDFs from scratch (use document-creator),
   image extraction (use image-extractor).
+  INVOKES: pdf-tools MCP for extraction, file-system for I/O.
+  FOR SINGLE OPERATIONS: Use pdf-tools MCP directly for simple extractions.
 ```
+
+See [references/examples.md](references/examples.md) for more before/after transformations.
 
 ## Commit Messages
 

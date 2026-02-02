@@ -38,7 +38,7 @@ A skill is **Medium-High** if:
 - Has "DO NOT USE FOR:" anti-triggers
 
 ```yaml
-# Example: Complete
+# Example: Complete triggers and anti-triggers
 description: |
   Process PDF files including text extraction, rotation, and merging.
   USE FOR: "extract PDF text", "rotate PDF", "merge PDFs".
@@ -49,15 +49,53 @@ description: |
 
 A skill is **High** if:
 - All Medium-High criteria
-- Has `compatibility` field
+- Has skill type prefix (`**WORKFLOW SKILL**`, etc.)
+- Has routing clarity (`INVOKES:` and/or `FOR SINGLE OPERATIONS:`)
 
 ```yaml
+# Example: Full compliance with routing
 description: |
-  Process PDF files including text extraction, rotation, and merging.
+  **WORKFLOW SKILL** - Process PDF files including text extraction, rotation, and merging.
   USE FOR: "extract PDF text", "rotate PDF", "merge PDFs".
   DO NOT USE FOR: creating PDFs (use document-creator).
-compatibility: Requires Python 3.8+, pdfplumber library.
+  INVOKES: pdf-tools MCP for extraction, file-system for I/O.
+  FOR SINGLE OPERATIONS: Use pdf-tools MCP directly for simple extractions.
 ```
+
+## Skill Type Prefixes
+
+Add a prefix to clarify the skill's purpose:
+
+| Prefix | When to Use | Example |
+|--------|-------------|---------|
+| `**WORKFLOW SKILL**` | Multi-step orchestration, decisions | Deploy, setup, configure |
+| `**UTILITY SKILL**` | Single-purpose helper | Format, convert, validate |
+| `**ANALYSIS SKILL**` | Read-only analysis/reporting | Audit, review, diagnose |
+
+## Routing Clarity
+
+### INVOKES
+
+Lists tools, MCP servers, or other skills this skill calls during execution:
+
+```yaml
+INVOKES: azure-azd (up, deploy), azure-keyvault (secret_get), git commands.
+```
+
+### FOR SINGLE OPERATIONS
+
+Guides when to bypass this skill and use tools directly:
+
+```yaml
+FOR SINGLE OPERATIONS: Use azure-keyvault MCP directly for single secret lookups.
+```
+
+### Why Routing Matters
+
+When MCP tools and skills have overlapping names (e.g., `azure-deploy` skill vs `azure-deploy` MCP tool), routing clarity prevents:
+- **Duplicate invocation** - LLM calling both for the same request
+- **Wrong path selection** - Using workflow skill for a simple query
+- **Skill collision** - Multiple skills triggering for the same prompt
 
 ## Rule-Based Checks
 
@@ -103,7 +141,19 @@ compatibility: Requires Python 3.8+, pdfplumber library.
 - None → caps at Medium
 - Present → enables Medium-High/High
 
-### 5. Compatibility Field
+### 5. Routing Clarity (High score)
+
+**Positive indicators** (case-insensitive):
+- `INVOKES:`
+- `FOR SINGLE OPERATIONS:`
+- `**WORKFLOW SKILL**`
+- `**UTILITY SKILL**`
+- `**ANALYSIS SKILL**`
+
+**Scoring:**
+- Present → enables High (with Medium-High criteria met)
+
+### 6. Compatibility Field (Optional)
 
 Optional field documenting:
 - Required tools/libraries
@@ -119,15 +169,20 @@ def score_skill(skill):
     
     has_triggers = contains_trigger_phrases(skill.description)
     has_anti_triggers = contains_anti_triggers(skill.description)
-    has_compatibility = skill.compatibility is not None
+    has_routing_clarity = contains_routing_patterns(skill.description)
     
     if not has_triggers:
         return "Low"
     if not has_anti_triggers:
         return "Medium"
-    if not has_compatibility:
+    if not has_routing_clarity:
         return "Medium-High"
     return "High"
+
+def contains_routing_patterns(description):
+    patterns = ['INVOKES:', 'FOR SINGLE OPERATIONS:', 
+                '**WORKFLOW SKILL**', '**UTILITY SKILL**', '**ANALYSIS SKILL**']
+    return any(p.lower() in description.lower() for p in patterns)
 ```
 
 ## Token Budgets

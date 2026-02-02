@@ -123,25 +123,62 @@ description: |
 
 ---
 
-## Example 4: High Adherence
+## Example 4: High Adherence with Routing Clarity
 
 ```yaml
 ---
-name: image-editor
+name: azure-deploy
 description: |
-  Edit and transform images including resize, crop, rotate, filters,
-  and format conversion. USE FOR: "resize image", "crop photo",
-  "rotate image", "apply filter", "convert PNG to JPEG", "thumbnail".
-  DO NOT USE FOR: AI image generation (use image-generator), OCR text
-  extraction (use ocr-processor), or video editing (use video-editor).
-compatibility: |
-  Requires: Python 3.8+, Pillow library
-  Supports: PNG, JPEG, GIF, WebP, BMP formats
-  Optional: ImageMagick for advanced operations
+  **WORKFLOW SKILL** - Orchestrates deployment through preparation, validation,
+  and execution phases for Azure applications. USE FOR: "deploy to Azure",
+  "azd up", "push to Azure", "publish to Azure", "ship to production".
+  DO NOT USE FOR: preparing new apps (use azure-prepare), validating before
+  deploy (use azure-validate), Azure Functions specifically (use azure-functions).
+  INVOKES: azure-azd MCP (up, deploy, provision), azure-deploy MCP (plan_get).
+  FOR SINGLE OPERATIONS: Use azure-azd MCP directly for single azd commands.
 ---
 ```
 
-**Score: High** (has compatibility field)
+**Score: High** - Has:
+- Skill type prefix (`**WORKFLOW SKILL**`)
+- Explicit triggers (`USE FOR:`)
+- Anti-triggers with alternatives (`DO NOT USE FOR:`)
+- Tool invocation list (`INVOKES:`)
+- Direct operation guidance (`FOR SINGLE OPERATIONS:`)
+
+---
+
+## Example 5: Utility Skill (High)
+
+```yaml
+---
+name: token-counter
+description: |
+  **UTILITY SKILL** - Count tokens in markdown files and check against limits.
+  USE FOR: "count tokens", "check token limit", "token budget", "how many tokens".
+  DO NOT USE FOR: improving skills (use sensei), creating skills (use skill-creator).
+  INVOKES: tiktoken library, file system operations.
+  FOR SINGLE OPERATIONS: Run `npm run tokens count <file>` directly.
+---
+```
+
+---
+
+## Example 6: Analysis Skill (High)
+
+```yaml
+---
+name: azure-diagnostics
+description: |
+  **ANALYSIS SKILL** - Debug and troubleshoot production issues on Azure resources.
+  USE FOR: "debug Azure", "troubleshoot container app", "diagnose app service",
+  "analyze logs", "fix deployment issue", "why is my app failing".
+  DO NOT USE FOR: deploying apps (use azure-deploy), creating resources (use
+  azure-create-app), setting up monitoring (use azure-observability).
+  INVOKES: azure-applens MCP (diagnostics), azure-resourcehealth MCP, azure-monitor MCP.
+  FOR SINGLE OPERATIONS: Use azure-resourcehealth MCP for quick health checks.
+---
+```
 
 ---
 
