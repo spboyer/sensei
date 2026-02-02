@@ -1,3 +1,0 @@
-# Optional: tiktoken for accurate token counting
-# Install with: pip install tiktoken
-tiktoken>=0.5.0

@@ -1,0 +1,136 @@
+#!/usr/bin/env node
+
+/**
+ * Sensei Token Management CLI
+ * 
+ * Usage:
+ *   npm run tokens count [paths...]     Count tokens in markdown files
+ *   npm run tokens check [paths...]     Check files against token limits
+ *   npm run tokens suggest [paths...]   Get optimization suggestions
+ *   npm run tokens compare [refs...]    Compare tokens between git refs
+ */
+
+import { count, check, suggest, compare } from './commands/index.js';
+
+function printHelp(): void {
+  console.log(`
+Sensei Token Management CLI
+
+Usage:
+  npm run tokens <command> [options] [paths...]
+
+Commands:
+  count [paths...]     Count tokens in markdown files
+  check [paths...]     Check files against token limits
+  suggest [paths...]   Get optimization suggestions
+  compare [refs...]    Compare tokens between git refs
+
+Options:
+  --format=<type>      Output format: json | table (default: table)
+  --sort=<field>       Sort by: tokens | name | path (count only)
+  --min-tokens=<n>     Filter files with less than n tokens (count only)
+  --no-total           Hide total row (count only)
+  --strict             Exit with error if limits exceeded (check only)
+  --quiet              Suppress output except errors (check only)
+  --min-savings=<n>    Minimum savings to suggest (default: 10)
+  --verbose            Show detailed suggestions
+  --show-unchanged     Include unchanged files in comparison
+  --help, -h           Show this help message
+
+Examples:
+  npm run tokens count                    Count all markdown files
+  npm run tokens count SKILL.md           Count specific file
+  npm run tokens count --format=json      Output as JSON
+  npm run tokens check --strict           Fail if limits exceeded
+  npm run tokens suggest                  Get optimization tips
+  npm run tokens compare HEAD~3           Compare with 3 commits ago
+  npm run tokens compare main feature     Compare two branches
+
+Configuration:
+  Create .token-limits.json in project root to customize limits:
+  {
+    "defaults": {
+      "SKILL.md": 500,
+      "references/**/*.md": 1000,
+      "*.md": 2000
+    },
+    "overrides": {
+      "README.md": 3000
+    }
+  }
+`);
+}
+
+function parseArgs(args: string[]): { command: string; paths: string[]; options: Record<string, unknown> } {
+  const command = args[0] ?? 'help';
+  const paths: string[] = [];
+  const options: Record<string, unknown> = {};
+  
+  for (let i = 1; i < args.length; i++) {
+    const arg = args[i];
+    
+    if (arg === '--help' || arg === '-h') {
+      options.help = true;
+    } else if (arg === '--strict') {
+      options.strict = true;
+    } else if (arg === '--quiet') {
+      options.quiet = true;
+    } else if (arg === '--verbose') {
+      options.verbose = true;
+    } else if (arg === '--no-total') {
+      options.showTotal = false;
+    } else if (arg === '--show-unchanged') {
+      options.showUnchanged = true;
+    } else if (arg.startsWith('--format=')) {
+      options.format = arg.slice(9);
+    } else if (arg.startsWith('--sort=')) {
+      options.sort = arg.slice(7);
+    } else if (arg.startsWith('--min-tokens=')) {
+      options.minTokens = parseInt(arg.slice(13), 10);
+    } else if (arg.startsWith('--min-savings=')) {
+      options.minSavings = parseInt(arg.slice(14), 10);
+    } else if (!arg.startsWith('-')) {
+      paths.push(arg);
+    } else {
+      console.error(`Unknown option: ${arg}`);
+      process.exit(1);
+    }
+  }
+  
+  return { command, paths, options };
+}
+
+function main(): void {
+  const args = process.argv.slice(2);
+  const { command, paths, options } = parseArgs(args);
+  
+  if (options.help || command === 'help') {
+    printHelp();
+    return;
+  }
+  
+  switch (command) {
+    case 'count':
+      count(paths, options);
+      break;
+    
+    case 'check':
+      check(paths, options);
+      break;
+    
+    case 'suggest':
+      suggest(paths, options);
+      break;
+    
+    case 'compare':
+      compare(paths, options);
+      break;
+    
+    default:
+      console.error(`Unknown command: ${command}`);
+      console.error('Run "npm run tokens help" for usage information.');
+      process.exit(1);
+  }
+}
+
+main();

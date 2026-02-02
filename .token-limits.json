@@ -1,0 +1,13 @@
+{
+  "description": "Token limits for Sensei skill repository",
+  "defaults": {
+    "SKILL.md": 5000,
+    "references/**/*.md": 2000,
+    "references/test-templates/**/*.md": 1000,
+    "*.md": 4000
+  },
+  "overrides": {
+    "README.md": 4000,
+    "AGENTS.md": 2000
+  }
+}

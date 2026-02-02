@@ -125,9 +125,9 @@ python scripts/scaffold_tests.py my-skill --skills-dir skills/ --tests-dir tests
 # Clone the skill
 git clone https://github.com/spboyer/sensei.git
 
-# Install optional dependencies
+# Install dependencies
 cd sensei/scripts
-pip install -r requirements.txt
+npm install
 ```
 
 ---
@@ -190,7 +190,7 @@ pip install -r requirements.txt
                       ▼
 ┌─────────────────────────────────────────────────────────┐
 │  7. CHECK TOKENS:                                       │
-│     python scripts/count_tokens.py {skill}/SKILL.md     │
+│     npm run tokens count {skill}/SKILL.md               │
 │     Verify under 500 token soft limit                   │
 └─────────────────────┬───────────────────────────────────┘
                       ▼
@@ -420,20 +420,19 @@ git log --oneline -p skills/{skill-name}/SKILL.md
 
 1. Edit `SKILL.md` for instruction changes
 2. Edit `references/*.md` for documentation changes
-3. Test scripts: `python scripts/score_skill.py SKILL.md`
+3. Test tokens: `npm run tokens check`
 4. Test on a sample skill before committing
 
 ### Adding New Scoring Rules
 
 1. Document the rule in `references/scoring.md`
 2. Add examples in `references/examples.md`
-3. Update `scripts/score_skill.py` to implement the check
+3. Update scoring criteria in SKILL.md
 
 ### Adding Test Framework Support
 
 1. Create template in `references/test-templates/{framework}.md`
-2. Add generation function in `scripts/scaffold_tests.py`
-3. Add to `--framework` choices in argparse
+2. Document usage in references/configuration.md
 
 ### Reporting Issues
 

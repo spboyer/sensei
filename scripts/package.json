@@ -1,0 +1,23 @@
+{
+  "name": "sensei-scripts",
+  "version": "1.0.0",
+  "description": "Token management tools for Sensei skill",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "tokens": "node --import tsx src/tokens/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

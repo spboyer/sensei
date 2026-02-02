@@ -240,9 +240,23 @@ sensei: improve {skill-name} frontmatter
 
 ## Built-in Scripts
 
-Located in `scripts/`:
-- `count_tokens.py` - Count tokens in SKILL.md files
-- `score_skill.py` - Score frontmatter compliance
-- `scaffold_tests.py` - Generate test templates
+Run `npm run tokens help` for full usage.
 
-Run with: `python scripts/{script}.py --help`
+### Token Commands
+
+```bash
+npm run tokens count              # Count all markdown files
+npm run tokens check              # Check against token limits
+npm run tokens suggest            # Get optimization suggestions
+npm run tokens compare            # Compare with git history
+```
+
+### Configuration
+
+Create `.token-limits.json` to customize limits:
+```json
+{
+  "defaults": { "SKILL.md": 500, "references/**/*.md": 1000 },
+  "overrides": { "README.md": 3000 }
+}
+```
