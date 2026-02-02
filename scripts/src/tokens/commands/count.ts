@@ -2,7 +2,7 @@
  * Count tokens in markdown files
  */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { findMarkdownFiles } from './utils.js';
 import {
@@ -150,7 +150,7 @@ export function count(paths: string[], options: CountOptions = {}): void {
         continue;
       }
       
-      const stats = require('fs').statSync(fullPath);
+      const stats = statSync(fullPath);
       if (stats.isDirectory()) {
         filesToProcess.push(...findMarkdownFiles(fullPath));
       } else {

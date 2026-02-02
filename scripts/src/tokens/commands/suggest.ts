@@ -2,7 +2,7 @@
  * Suggest optimizations to reduce token count
  */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { loadConfig, getLimitForFile, findMarkdownFiles } from './utils.js';
 import {
@@ -237,7 +237,7 @@ export function suggest(paths: string[], options: SuggestOptions = {}): void {
         continue;
       }
       
-      const stats = require('fs').statSync(fullPath);
+      const stats = statSync(fullPath);
       if (stats.isDirectory()) {
         filesToProcess.push(...findMarkdownFiles(fullPath));
       } else {

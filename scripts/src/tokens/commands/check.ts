@@ -2,7 +2,7 @@
  * Check markdown files against token limits
  */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { loadConfig, getLimitForFile, findMarkdownFiles } from './utils.js';
 import {
@@ -126,7 +126,7 @@ export function check(paths: string[], options: CheckOptions = {}): void {
         continue;
       }
       
-      const stats = require('fs').statSync(fullPath);
+      const stats = statSync(fullPath);
       if (stats.isDirectory()) {
         filesToProcess.push(...findMarkdownFiles(fullPath));
       } else {
