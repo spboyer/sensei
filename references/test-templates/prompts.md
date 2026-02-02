@@ -14,6 +14,8 @@ tests/{skill-name}/
 ```markdown
 # {skill-name} Trigger Prompts
 
+**Skill Type:** {WORKFLOW|UTILITY|ANALYSIS}
+
 ## Should Trigger
 
 These prompts should activate the {skill-name} skill:
@@ -37,14 +39,31 @@ These prompts should NOT activate the {skill-name} skill:
 1. "Prompt for other-skill-name" → use other-skill instead
 2. "Prompt for another-skill" → use another-skill instead
 
+### Single Operations (Route to MCP)
+1. "Quick status check" → use {mcp-tool} directly
+2. "Simple data query" → use {mcp-tool} directly
+3. "Single command execution" → use {mcp-tool} directly
+
 ### Other Platforms/Tools
 1. "Help me with competing-tool"
 2. "Use alternative-service for this"
+
+## MCP Tool Routing
+
+### This Skill Invokes
+- `{mcp-tool-1}` - for {purpose}
+- `{mcp-tool-2}` - for {purpose}
+
+### Bypass to MCP When
+- User requests single command execution
+- User wants quick status/query without workflow
+- User explicitly names the MCP tool
 
 ## Notes
 
 - Trigger phrases based on: USE FOR section of SKILL.md
 - Anti-triggers based on: DO NOT USE FOR section of SKILL.md
+- Routing based on: INVOKES and FOR SINGLE OPERATIONS sections
 - Last updated: {date}
 ```
 
@@ -55,6 +74,7 @@ These prompts should NOT activate the {skill-name} skill:
 Review each prompt and verify:
 1. ✅ "Should Trigger" prompts activate the skill
 2. ❌ "Should NOT Trigger" prompts do not activate
+3. 🔀 "Single Operations" route to MCP tools directly
 
 ### Custom Test Framework
 
@@ -64,8 +84,8 @@ Parse prompts.md and integrate with your testing:
 import re
 from pathlib import Path
 
-def parse_prompts(skill_name: str) -> tuple[list[str], list[str]]:
-    """Parse prompts.md into trigger/anti-trigger lists."""
+def parse_prompts(skill_name: str) -> dict:
+    """Parse prompts.md into structured test data."""
     content = Path(f"tests/{skill_name}/prompts.md").read_text()
     
     # Extract "Should Trigger" section
@@ -78,13 +98,25 @@ def parse_prompts(skill_name: str) -> tuple[list[str], list[str]]:
     
     # Extract "Should NOT Trigger" section
     anti_match = re.search(
-        r"## Should NOT Trigger\n\n(.*?)(?=\n## Notes|\Z)", 
+        r"## Should NOT Trigger\n\n(.*?)(?=\n## MCP Tool|\n## Notes|\Z)", 
         content, 
         re.DOTALL
     )
     anti_triggers = re.findall(r'\d+\. "([^"]+)"', anti_match.group(1))
     
-    return triggers, anti_triggers
+    # Extract MCP routing info
+    invokes_match = re.search(
+        r"### This Skill Invokes\n(.*?)(?=\n### |\n## |\Z)",
+        content,
+        re.DOTALL
+    )
+    invoked_tools = re.findall(r'`([^`]+)`', invokes_match.group(1)) if invokes_match else []
+    
+    return {
+        "triggers": triggers,
+        "anti_triggers": anti_triggers,
+        "invoked_tools": invoked_tools,
+    }
 ```
 
 ### CI Validation
@@ -107,5 +139,9 @@ When scaffolding, replace:
 | Variable | Description |
 |----------|-------------|
 | `{skill-name}` | Name of the skill |
+| `{skill-type}` | WORKFLOW, UTILITY, or ANALYSIS |
+| `{mcp-tool}` | MCP tool name for routing |
+| `{mcp-tool-1}`, `{mcp-tool-2}` | Tools from INVOKES field |
+| `{purpose}` | What the tool is used for |
 | `{date}` | Current date |
 | Prompt examples | Based on SKILL.md frontmatter |

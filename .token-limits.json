@@ -4,7 +4,7 @@
     "SKILL.md": 5000,
     "references/*.md": 2000,
     "references/**/*.md": 2000,
-    "references/test-templates/*.md": 1000,
+    "references/test-templates/*.md": 1500,
     "*.md": 4000
   },
   "overrides": {
