@@ -75,14 +75,23 @@ Run sensei on all skills
 ### Using Scripts Directly
 
 ```bash
-# Score a skill
-python scripts/score_skill.py skills/my-skill/SKILL.md
+# Count tokens in all markdown files
+npm run tokens -- count
 
-# Count tokens
-python scripts/count_tokens.py skills/my-skill/SKILL.md
+# Count tokens in specific files
+npm run tokens -- count SKILL.md references/*.md
 
-# Scaffold tests
-python scripts/scaffold_tests.py my-skill --skills-dir skills/ --tests-dir tests/
+# Check files against token limits
+npm run tokens -- check
+
+# Check with strict mode (exits 1 if limits exceeded)
+npm run tokens -- check --strict
+
+# Get optimization suggestions
+npm run tokens -- suggest
+
+# Compare with previous commit
+npm run tokens -- compare HEAD~1
 ```
 
 ### Flags
@@ -100,24 +109,19 @@ python scripts/scaffold_tests.py my-skill --skills-dir skills/ --tests-dir tests
 
 ### Required
 
-1. **Python 3.8+** - For running scripts
+1. **Node.js 18+** - For running token management scripts
    ```bash
-   python3 --version
+   node --version
    ```
 
-2. **Git** - For commits
+2. **Git** - For commits and comparisons
    ```bash
    git --version
    ```
 
 ### Optional
 
-3. **tiktoken** - For accurate token counting
-   ```bash
-   pip install tiktoken
-   ```
-
-4. **Test Framework** - Jest, pytest, or similar for trigger tests
+3. **Test Framework** - Jest, pytest, or similar for trigger tests
 
 ### Installation
 
@@ -163,7 +167,7 @@ npm install
                       ▼
 ┌─────────────────────────────────────────────────────────┐
 │  3. SCAFFOLD: If tests/{skill-name}/ missing:           │
-│     python scripts/scaffold_tests.py {skill-name}       │
+│     Create tests from references/test-templates/        │
 │     Creates prompts.md and framework-specific tests     │
 └─────────────────────┬───────────────────────────────────┘
                       ▼
@@ -293,8 +297,9 @@ To reach Medium-High, a skill must have:
 ### Token Budget
 
 - **SKILL.md:** < 500 tokens (soft), < 5000 (hard)
-- **references/*.md:** < 1000 tokens each
-- Check with: `python scripts/count_tokens.py skills/{skill}/SKILL.md`
+- **references/*.md:** < 2000 tokens each
+- Check with: `npm run tokens -- check`
+- Get suggestions: `npm run tokens -- suggest`
 
 ---
 
@@ -420,7 +425,7 @@ git log --oneline -p skills/{skill-name}/SKILL.md
 
 1. Edit `SKILL.md` for instruction changes
 2. Edit `references/*.md` for documentation changes
-3. Test tokens: `npm run tokens check`
+3. Test tokens: `npm run tokens -- check`
 4. Test on a sample skill before committing
 
 ### Adding New Scoring Rules

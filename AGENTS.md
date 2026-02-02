@@ -14,17 +14,27 @@ sensei/
 ├── README.md             # Human documentation
 ├── AGENTS.md             # This file - agent instructions
 ├── LICENSE.txt           # MIT license
+├── package.json          # Root package for npm run tokens
+├── .token-limits.json    # Custom token limits configuration
 ├── references/           # Progressive disclosure docs (loaded on-demand)
 │   ├── scoring.md        # Scoring algorithm details
 │   ├── loop.md           # Ralph loop workflow
 │   ├── examples.md       # Before/after transformations
 │   ├── configuration.md  # Project config patterns
 │   └── test-templates/   # Framework-specific test templates
-└── scripts/              # Standalone Python tools
-    ├── count_tokens.py   # Token counting
-    ├── score_skill.py    # Compliance scoring
-    ├── scaffold_tests.py # Test generation
-    └── requirements.txt  # Python dependencies
+└── scripts/              # TypeScript token management tools
+    ├── package.json      # Dependencies (tsx, vitest, typescript)
+    ├── tsconfig.json
+    ├── vitest.config.ts
+    └── src/tokens/
+        ├── cli.ts        # CLI entry point
+        └── commands/
+            ├── types.ts  # Interfaces, constants, utilities
+            ├── utils.ts  # Config loading, file discovery
+            ├── count.ts  # Token counting
+            ├── check.ts  # Limit validation
+            ├── suggest.ts # Optimization suggestions
+            └── compare.ts # Git-based comparison
 ```
 
 ## Key Conventions
@@ -66,7 +76,7 @@ Instructions loaded only after skill triggers.
 
 - Keep SKILL.md focused on instructions, not documentation
 - Use references/ for detailed explanations
-- Test scripts after changes: `python scripts/score_skill.py SKILL.md`
+- Run `npm run tokens -- check` after changes to verify limits
 - Maintain the frontmatter format with USE FOR / DO NOT USE FOR
 
 ### DON'T
@@ -74,19 +84,42 @@ Instructions loaded only after skill triggers.
 - Add README-style content to SKILL.md (use README.md instead)
 - Exceed 1024 characters in the description field
 - Remove trigger or anti-trigger phrases without replacement
-- Add dependencies to scripts without updating requirements.txt
 
 ## Testing Changes
 
 ```bash
-# Validate SKILL.md compliance
-python scripts/score_skill.py SKILL.md
+# Install dependencies (first time only)
+cd scripts && npm install && cd ..
 
-# Check token counts
-python scripts/count_tokens.py SKILL.md references/*.md
+# Check all files against token limits
+npm run tokens -- check
 
-# Test scaffolding (creates files in /tmp)
-python scripts/scaffold_tests.py test-skill --tests-dir /tmp/test-output
+# Count tokens in specific files
+npm run tokens -- count SKILL.md references/*.md
+
+# Get optimization suggestions
+npm run tokens -- suggest
+
+# Compare with previous commit
+npm run tokens -- compare HEAD~1
+
+# Run unit tests
+cd scripts && npm test
+```
+
+## Token CLI Reference
+
+```bash
+npm run tokens -- count [paths...]     # Count tokens in markdown files
+npm run tokens -- check [paths...]     # Check files against token limits
+npm run tokens -- suggest [paths...]   # Get optimization suggestions
+npm run tokens -- compare [refs...]    # Compare tokens between git refs
+
+# Options
+--format=json       # Output as JSON instead of table
+--strict            # Exit with error if limits exceeded (check only)
+--sort=tokens       # Sort by token count (count only)
+--min-tokens=100    # Filter files below threshold (count only)
 ```
 
 ## Common Tasks
@@ -94,20 +127,29 @@ python scripts/scaffold_tests.py test-skill --tests-dir /tmp/test-output
 ### Adding a New Reference File
 
 1. Create `references/new-topic.md`
-2. Keep under 1000 tokens
+2. Run `npm run tokens -- check references/new-topic.md` to verify limits
 3. Add link in SKILL.md under "Reference Documentation" section
 
-### Updating Scoring Criteria
+### Updating Token Limits
 
-1. Edit `references/scoring.md`
-2. Update `scripts/score_skill.py` to match
-3. Test: `python scripts/score_skill.py SKILL.md`
+Edit `.token-limits.json`:
+```json
+{
+  "defaults": {
+    "SKILL.md": 5000,
+    "references/*.md": 2000,
+    "*.md": 4000
+  },
+  "overrides": {
+    "README.md": 4000
+  }
+}
+```
 
 ### Adding Test Framework Support
 
 1. Create template in `references/test-templates/{framework}.md`
-2. Add generation function in `scripts/scaffold_tests.py`
-3. Add to `--framework` choices in argparse
+2. Document usage in `references/configuration.md`
 
 ## Commit Message Format
 
@@ -122,6 +164,6 @@ Examples:
 
 ## Dependencies
 
-- Python 3.8+ (for scripts)
-- Optional: `tiktoken` for accurate token counting
+- Node.js 18+ (for token management scripts)
+- npm (for running scripts)
 - No runtime dependencies for the skill itself
