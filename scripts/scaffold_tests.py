@@ -41,16 +41,26 @@ def extract_triggers(description: str) -> tuple[list[str], list[str]]:
     # Extract USE FOR phrases
     use_for_match = re.search(r'USE FOR:\s*(.+?)(?:DO NOT USE FOR:|$)', description, re.IGNORECASE | re.DOTALL)
     if use_for_match:
-        phrases = re.findall(r'"([^"]+)"', use_for_match.group(1))
-        triggers.extend(phrases)
+        content = use_for_match.group(1)
+        # Try quoted phrases first
+        phrases = re.findall(r'"([^"]+)"', content)
+        if phrases:
+            triggers.extend(phrases)
+        else:
+            # Fall back to comma-separated phrases
+            phrases = [p.strip().strip('.,') for p in content.split(',')]
+            triggers.extend([p for p in phrases if p and len(p) > 2])
     
     # Extract DO NOT USE FOR phrases
     not_for_match = re.search(r'DO NOT USE FOR:\s*(.+?)(?:\n[A-Z]|\Z)', description, re.IGNORECASE | re.DOTALL)
     if not_for_match:
-        phrases = re.findall(r'"([^"]+)"', not_for_match.group(1))
-        anti_triggers.extend(phrases)
-        # Also extract parenthetical suggestions
-        suggestions = re.findall(r'([^,.(]+)\s*\(use\s+[^)]+\)', not_for_match.group(1))
+        content = not_for_match.group(1)
+        # Try quoted phrases first
+        phrases = re.findall(r'"([^"]+)"', content)
+        if phrases:
+            anti_triggers.extend(phrases)
+        # Also extract parenthetical suggestions (e.g., "creating PDFs (use doc-creator)")
+        suggestions = re.findall(r'([^,.(]+)\s*\(use\s+[^)]+\)', content)
         anti_triggers.extend([s.strip() for s in suggestions if s.strip()])
     
     return triggers, anti_triggers
@@ -210,8 +220,11 @@ def main():
     
     args = parser.parse_args()
     
-    # Find SKILL.md
+    # Find SKILL.md - check multiple locations
     skill_md = args.skills_dir / args.skill_name / "SKILL.md"
+    if not skill_md.exists():
+        # Try skills directory root (for single-skill repos)
+        skill_md = args.skills_dir / "SKILL.md"
     if not skill_md.exists():
         # Try .github/skills/
         skill_md = Path(".github/skills") / args.skill_name / "SKILL.md"
