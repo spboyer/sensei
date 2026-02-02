@@ -47,28 +47,38 @@ The `SKILL.md` file follows Anthropic's skill specification:
 ---
 name: skill-name          # lowercase, hyphens only
 description: |            # Max 1024 chars
-  What the skill does.
+  **WORKFLOW SKILL** - What the skill does.
   USE FOR: trigger phrases.
   DO NOT USE FOR: anti-triggers.
+  INVOKES: tools/MCP servers used.
+  FOR SINGLE OPERATIONS: when to bypass.
 ---
 
 # Skill Body (Markdown)
 Instructions loaded only after skill triggers.
 ```
 
+### Skill Type Prefixes
+
+| Prefix | When to Use |
+|--------|-------------|
+| `**WORKFLOW SKILL**` | Multi-step orchestration, decisions |
+| `**UTILITY SKILL**` | Single-purpose helper |
+| `**ANALYSIS SKILL**` | Read-only analysis/reporting |
+
 ### Token Budgets
 
 | File | Soft Limit | Hard Limit |
 |------|------------|------------|
 | SKILL.md | 500 tokens | 5000 tokens |
-| references/*.md | 1000 tokens | — |
+| references/*.md | 2000 tokens | — |
 
 ### Scoring Levels
 
 - **Low**: No triggers, short description
 - **Medium**: Has triggers, missing anti-triggers
 - **Medium-High**: Has both triggers AND anti-triggers ← TARGET
-- **High**: Medium-High + compatibility field
+- **High**: Medium-High + routing clarity (INVOKES/FOR SINGLE OPERATIONS)
 
 ## When Modifying This Skill
 
@@ -78,12 +88,15 @@ Instructions loaded only after skill triggers.
 - Use references/ for detailed explanations
 - Run `npm run tokens -- check` after changes to verify limits
 - Maintain the frontmatter format with USE FOR / DO NOT USE FOR
+- Add routing clarity (INVOKES/FOR SINGLE OPERATIONS) for High score
+- Use skill type prefixes when appropriate
 
 ### DON'T
 
 - Add README-style content to SKILL.md (use README.md instead)
 - Exceed 1024 characters in the description field
 - Remove trigger or anti-trigger phrases without replacement
+- Omit INVOKES when skill calls MCP tools or other skills
 
 ## Testing Changes
 

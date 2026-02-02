@@ -261,7 +261,7 @@ Run sensei on my-skill with skills in src/ai/skills/ and tests in spec/
 | **Low** | Basic description | No explicit triggers, no anti-triggers, often < 150 chars |
 | **Medium** | Has trigger keywords | Description > 150 chars, implicit or explicit trigger phrases |
 | **Medium-High** | Has triggers + anti-triggers | "USE FOR:" present AND "DO NOT USE FOR:" present |
-| **High** | Full compliance | Triggers + anti-triggers + compatibility field |
+| **High** | Full compliance | Medium-High + routing clarity (INVOKES/FOR SINGLE OPERATIONS) |
 
 ### Rule-Based Checks
 
@@ -282,9 +282,10 @@ Run sensei on my-skill with skills in src/ai/skills/ and tests in spec/
    - Contains "DO NOT USE FOR:" or "NOT FOR:"
    - Lists scenarios that should use other skills
 
-5. **Compatibility** (optional for Medium-High)
-   - Lists required tools/frameworks
-   - Documents prerequisites
+5. **Routing clarity** (for High score)
+   - Skill type prefix: `**WORKFLOW SKILL**`, `**UTILITY SKILL**`, or `**ANALYSIS SKILL**`
+   - `INVOKES:` lists tools/MCP servers the skill calls
+   - `FOR SINGLE OPERATIONS:` guidance for when to bypass skill
 
 ### Target: Medium-High
 
@@ -293,6 +294,14 @@ To reach Medium-High, a skill must have:
 - ✅ Explicit trigger phrases ("USE FOR:" or equivalent)
 - ✅ Anti-triggers ("DO NOT USE FOR:" or clear scope limitation)
 - ✅ SKILL.md < 500 tokens (soft limit, monitored)
+
+### Target: High (with routing)
+
+To reach High, add routing clarity:
+- ✅ All Medium-High criteria
+- ✅ Skill type prefix (`**WORKFLOW SKILL**`, etc.)
+- ✅ `INVOKES:` listing tools/MCP servers used
+- ✅ `FOR SINGLE OPERATIONS:` bypass guidance
 
 ### Token Budget
 
@@ -339,6 +348,27 @@ description: |
 - Clear description of purpose
 - Explicit trigger phrases
 - Anti-triggers prevent collision with related skills
+
+### After: High Adherence (with routing)
+
+```yaml
+---
+name: azure-deploy
+description: |
+  **WORKFLOW SKILL** - Orchestrates deployment through preparation, validation,
+  and execution phases for Azure applications.
+  USE FOR: "deploy to Azure", "azd up", "push to Azure", "publish to Azure".
+  DO NOT USE FOR: preparing new apps (use azure-prepare), validating before
+  deploy (use azure-validate), Azure Functions specifically (use azure-functions).
+  INVOKES: azure-azd MCP (up, deploy, provision), azure-deploy MCP (plan_get).
+  FOR SINGLE OPERATIONS: Use azure-azd MCP directly for single azd commands.
+---
+```
+
+**High score achieved with:**
+- Skill type prefix (`**WORKFLOW SKILL**`)
+- `INVOKES:` lists MCP tools used
+- `FOR SINGLE OPERATIONS:` guides when to bypass skill
 
 ### Test Updates
 
