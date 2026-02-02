@@ -1,0 +1,248 @@
+---
+name: sensei
+description: "Iteratively improve skill frontmatter compliance using the Ralph loop pattern. USE FOR: run sensei, sensei help, improve skill, fix frontmatter, skill compliance, frontmatter audit, improve triggers, add anti-triggers, batch skill improvement, check skill tokens, score skill. DO NOT USE FOR: creating new skills from scratch (use skill-creator), writing skill content/body, general markdown editing, or non-SKILL.md files."
+---
+
+# Sensei
+
+> "A true master teaches not by telling, but by refining."
+
+Automates skill frontmatter improvement using the [Ralph loop pattern](https://github.com/soderlund/ralph) - iteratively improving skills until they reach Medium-High compliance with passing tests.
+
+## Help
+
+When user says "sensei help" or asks how to use sensei:
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  SENSEI - Skill Frontmatter Compliance Improver                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║                                                                  ║
+║  USAGE:                                                          ║
+║    Run sensei on <skill-name>              # Single skill        ║
+║    Run sensei on <skill-name> --fast       # Skip tests          ║
+║    Run sensei on <skill1>, <skill2>        # Multiple skills     ║
+║    Run sensei on all Low-adherence skills  # Batch by score      ║
+║    Run sensei on all skills                # All skills          ║
+║                                                                  ║
+║  WHAT IT DOES:                                                   ║
+║    1. READ    - Load skill's SKILL.md and count tokens           ║
+║    2. SCORE   - Check compliance (Low/Medium/Medium-High/High)   ║
+║    3. SCAFFOLD- Create tests from template if missing            ║
+║    4. IMPROVE - Add USE FOR triggers + DO NOT USE FOR            ║
+║    5. TEST    - Run tests, fix if needed                         ║
+║    6. TOKENS  - Check token budget                               ║
+║    7. SUMMARY - Show before/after comparison                     ║
+║    8. PROMPT  - Ask: Commit, Create Issue, or Skip?              ║
+║    9. REPEAT  - Until Medium-High score achieved                 ║
+║                                                                  ║
+║  TARGET SCORE: Medium-High                                       ║
+║    ✓ Description > 150 chars                                     ║
+║    ✓ Has "USE FOR:" trigger phrases                              ║
+║    ✓ Has "DO NOT USE FOR:" anti-triggers                         ║
+║    ✓ SKILL.md < 500 tokens (soft limit)                          ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+## Configuration
+
+Sensei uses these defaults (override by specifying in your prompt):
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Skills directory | `skills/` or `.github/skills/` | Where SKILL.md files live |
+| Tests directory | `tests/` | Where test files live |
+| Token soft limit | 500 | Target for SKILL.md |
+| Token hard limit | 5000 | Maximum for SKILL.md |
+| Target score | Medium-High | Minimum compliance level |
+| Max iterations | 5 | Per-skill loop limit |
+
+Auto-detect skills directory by checking (in order):
+1. `skills/` in project root
+2. `.github/skills/` 
+3. User-specified path
+
+## Invocation Modes
+
+### Single Skill
+```
+Run sensei on my-skill-name
+```
+
+### Multiple Skills
+```
+Run sensei on skill-a, skill-b, skill-c
+```
+
+### By Adherence Level
+```
+Run sensei on all Low-adherence skills
+Run sensei on all Medium-adherence skills
+```
+
+### All Skills
+```
+Run sensei on all skills
+```
+
+### Fast Mode (Skip Tests)
+```
+Run sensei on my-skill --fast
+```
+
+## The Ralph Loop
+
+For each skill, execute this loop until score >= Medium-High:
+
+### Step 1: READ
+Load the skill's current state:
+```
+{skills-dir}/{skill-name}/SKILL.md
+{tests-dir}/{skill-name}/ (if exists)
+```
+
+Run token count:
+```bash
+python scripts/count_tokens.py {skills-dir}/{skill-name}/SKILL.md
+```
+
+### Step 2: SCORE
+Run compliance check:
+```bash
+python scripts/score_skill.py {skills-dir}/{skill-name}/SKILL.md
+```
+
+See [references/scoring.md](references/scoring.md) for detailed criteria.
+
+### Step 3: CHECK
+If score >= Medium-High AND tests pass → go to SUMMARY step.
+
+### Step 4: SCAFFOLD (if needed)
+If `{tests-dir}/{skill-name}/` doesn't exist, create test scaffolding:
+```bash
+python scripts/scaffold_tests.py {skill-name} --tests-dir {tests-dir}
+```
+
+See [references/test-templates/](references/test-templates/) for framework options.
+
+### Step 5: IMPROVE FRONTMATTER
+Enhance the SKILL.md description to include:
+
+1. **Trigger phrases** - "USE FOR:" followed by specific keywords
+2. **Anti-triggers** - "DO NOT USE FOR:" with scenarios that should use other skills
+3. Keep description under 1024 characters
+
+Template:
+```yaml
+---
+name: skill-name
+description: |
+  [1-2 sentence description of what the skill does]
+  USE FOR: [phrase1], [phrase2], [phrase3], [phrase4], [phrase5].
+  DO NOT USE FOR: [scenario1] (use other-skill), [scenario2].
+---
+```
+
+### Step 6: IMPROVE TESTS
+Update test prompts to match new frontmatter:
+- `shouldTriggerPrompts` - 5+ prompts matching "USE FOR:" phrases
+- `shouldNotTriggerPrompts` - 5+ prompts matching "DO NOT USE FOR:"
+
+### Step 7: VERIFY
+Run tests (skip if `--fast` flag):
+```bash
+# Framework-specific command based on project
+npm test -- --testPathPattern={skill-name}  # Jest
+pytest tests/{skill-name}/                   # pytest
+```
+
+### Step 8: TOKENS
+Check token budget:
+```bash
+python scripts/count_tokens.py {skills-dir}/{skill-name}/SKILL.md
+```
+
+Budget guidelines:
+- SKILL.md: < 500 tokens (soft), < 5000 (hard)
+- references/*.md: < 1000 tokens each
+
+### Step 9: SUMMARY
+Display before/after comparison:
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  SENSEI SUMMARY: {skill-name}                                    ║
+╠══════════════════════════════════════════════════════════════════╣
+║  BEFORE                          AFTER                           ║
+║  ──────                          ─────                           ║
+║  Score: Low                      Score: Medium-High              ║
+║  Tokens: 142                     Tokens: 385                     ║
+║  Triggers: 0                     Triggers: 5                     ║
+║  Anti-triggers: 0                Anti-triggers: 3                ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+### Step 10: PROMPT USER
+Ask how to proceed:
+- **[C] Commit** - Save with message `sensei: improve {skill-name} frontmatter`
+- **[I] Create Issue** - Open issue with summary and suggestions
+- **[S] Skip** - Discard changes, move to next skill
+
+### Step 11: REPEAT or EXIT
+- If score < Medium-High AND iterations < 5 → go to Step 2
+- If iterations >= 5 → timeout, show summary, move to next skill
+
+## Scoring Quick Reference
+
+| Score | Requirements |
+|-------|--------------|
+| **Low** | Description < 150 chars OR no triggers |
+| **Medium** | Description >= 150 chars AND has trigger keywords |
+| **Medium-High** | Has "USE FOR:" AND "DO NOT USE FOR:" |
+| **High** | Medium-High + compatibility field |
+
+See [references/scoring.md](references/scoring.md) for full criteria.
+
+## Frontmatter Examples
+
+See [references/examples.md](references/examples.md) for before/after transformations.
+
+### Quick Example
+
+**Before (Low):**
+```yaml
+description: 'Process PDF files'
+```
+
+**After (Medium-High):**
+```yaml
+description: |
+  Process PDF files including text extraction, rotation, and merging.
+  USE FOR: "extract PDF text", "rotate PDF", "merge PDFs", "PDF to text".
+  DO NOT USE FOR: creating PDFs from scratch (use document-creator),
+  image extraction (use image-extractor).
+```
+
+## Commit Messages
+
+```
+sensei: improve {skill-name} frontmatter
+```
+
+## Reference Documentation
+
+- [scoring.md](references/scoring.md) - Detailed scoring criteria and algorithm
+- [loop.md](references/loop.md) - Ralph loop workflow details
+- [examples.md](references/examples.md) - Before/after transformation examples
+- [configuration.md](references/configuration.md) - Project setup patterns
+- [test-templates/](references/test-templates/) - Test scaffolding templates
+
+## Built-in Scripts
+
+Located in `scripts/`:
+- `count_tokens.py` - Count tokens in SKILL.md files
+- `score_skill.py` - Score frontmatter compliance
+- `scaffold_tests.py` - Generate test templates
+
+Run with: `python scripts/{script}.py --help`
