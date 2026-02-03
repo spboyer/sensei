@@ -18,10 +18,15 @@ sensei/
 ├── .token-limits.json    # Custom token limits configuration
 ├── references/           # Progressive disclosure docs (loaded on-demand)
 │   ├── scoring.md        # Scoring algorithm details
+│   ├── mcp-integration.md # MCP tool integration patterns
 │   ├── loop.md           # Ralph loop workflow
 │   ├── examples.md       # Before/after transformations
 │   ├── configuration.md  # Project config patterns
 │   └── test-templates/   # Framework-specific test templates
+│       ├── jest.md       # Jest test template
+│       ├── pytest.md     # pytest test template
+│       ├── waza.md       # Waza trigger test format
+│       └── ...
 └── scripts/              # TypeScript token management tools
     ├── package.json      # Dependencies (tsx, vitest, typescript)
     ├── tsconfig.json
@@ -80,6 +85,16 @@ Instructions loaded only after skill triggers.
 - **Medium-High**: Has both triggers AND anti-triggers ← TARGET
 - **High**: Medium-High + routing clarity (INVOKES/FOR SINGLE OPERATIONS)
 
+### MCP Integration (when INVOKES present)
+
+Skills that invoke MCP tools get additional checks:
+- **MCP Tools Used table** - Documents tool dependencies
+- **Prerequisites section** - Lists required tools
+- **CLI fallback pattern** - Fallback when MCP unavailable
+- **Name collision detection** - Warns when skill name matches MCP tool
+
+See `references/mcp-integration.md` for patterns.
+
 ## When Modifying This Skill
 
 ### DO
@@ -97,6 +112,7 @@ Instructions loaded only after skill triggers.
 - Exceed 1024 characters in the description field
 - Remove trigger or anti-trigger phrases without replacement
 - Omit INVOKES when skill calls MCP tools or other skills
+- Embed CLI commands without MCP option when MCP tools exist
 
 ## Testing Changes
 

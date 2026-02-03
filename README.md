@@ -303,6 +303,25 @@ To reach High, add routing clarity:
 - ✅ `INVOKES:` listing tools/MCP servers used
 - ✅ `FOR SINGLE OPERATIONS:` bypass guidance
 
+### MCP Integration Checks
+
+When a skill's description contains `INVOKES:`, Sensei performs additional checks based on the [Skills, Tools & MCP Development Guide](https://github.com/spboyer/azure-mcp-v-skills/blob/main/skills-mcp-development-guide.md):
+
+| Check | Purpose |
+|-------|---------|
+| **MCP Tools Used table** | Documents tool dependencies in skill body |
+| **Prerequisites section** | Lists required tools and permissions |
+| **CLI fallback pattern** | Provides fallback when MCP unavailable |
+| **Name collision detection** | Warns when skill name matches MCP tool |
+
+**MCP Integration Score (0-4 points):**
+- 4/4 = Excellent MCP integration
+- 3/4 = Good (minor gaps)
+- 2/4 = Fair (needs improvement)
+- 0-1/4 = Poor (missing key patterns)
+
+See [references/mcp-integration.md](references/mcp-integration.md) for detailed patterns.
+
 ### Token Budget
 
 - **SKILL.md:** < 500 tokens (soft), < 5000 (hard)
@@ -437,16 +456,6 @@ git log --oneline | grep "sensei: improve {skill-name}" | head -5
 git reset --hard {commit-before-sensei}
 ```
 
-### Viewing Progress
-
-```bash
-# See all sensei improvements
-git log --oneline --grep="sensei:"
-
-# See changes to a specific skill
-git log --oneline -p skills/{skill-name}/SKILL.md
-```
-
 ---
 
 ## Contributing
@@ -469,6 +478,20 @@ git log --oneline -p skills/{skill-name}/SKILL.md
 1. Create template in `references/test-templates/{framework}.md`
 2. Document usage in references/configuration.md
 
+### Waza Trigger Tests
+
+Sensei supports [Waza](https://github.com/spboyer/waza) for trigger accuracy testing:
+
+```bash
+# Install waza
+pip install waza
+
+# Run trigger tests
+waza run tests/{skill-name}/trigger_tests.yaml
+```
+
+See `references/test-templates/waza.md` for the test format.
+
 ### Reporting Issues
 
 If Sensei produces unexpected results:
@@ -482,6 +505,8 @@ If Sensei produces unexpected results:
 
 - [Ralph Loop Pattern](https://github.com/soderlund/ralph) - Original Ralph loop implementation
 - [Anthropic Skills Documentation](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) - Writing guidance
+- [Skills, Tools & MCP Development Guide](https://github.com/spboyer/azure-mcp-v-skills/blob/main/skills-mcp-development-guide.md) - MCP integration best practices
+- [Waza Testing Framework](https://github.com/spboyer/waza) - Skill trigger accuracy testing
 - [skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator) - For creating new skills from scratch
 
 ---
