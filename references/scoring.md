@@ -192,3 +192,74 @@ def contains_routing_patterns(description):
 | SKILL.md | 500 | 5000 |
 | references/*.md | 1000 | - |
 | Description field | - | 1024 chars |
+
+## MCP Integration Checks
+
+When a skill's description contains `INVOKES:`, additional checks apply.
+
+### 7. MCP Tools Used Table
+
+Skills invoking MCP tools should document them:
+
+```markdown
+## MCP Tools Used
+
+| Step | Tool | Command | Purpose |
+|------|------|---------|---------|
+```
+
+**Detection:** Look for markdown table with "Tool" and "Command" headers in skill body.
+
+### 8. Prerequisites Section
+
+Skills should list requirements:
+
+```markdown
+## Prerequisites
+
+- **Required MCP tools:** `tool-name`
+```
+
+**Detection:** Look for "## Prerequisites" or "Required MCP" in skill body.
+
+### 9. CLI Fallback Pattern
+
+MCP-integrated skills should document fallbacks:
+
+```markdown
+**CLI Fallback (if MCP unavailable):**
+```
+
+**Detection:** Look for "CLI Fallback" or "if MCP unavailable" in skill body.
+
+### 10. Skill-Tool Name Collision
+
+**Warning triggered when:**
+- Skill name matches known MCP tool name
+- No `FOR SINGLE OPERATIONS:` in description
+
+**Known MCP tool names:**
+```
+azure-deploy, azure-prepare, azure-validate, azure-functions,
+azure-storage, azure-keyvault, azure-monitor, azure-cosmos,
+azure-diagnostics, azure-security, azure-observability
+```
+
+### MCP Integration Score
+
+When `INVOKES:` present, calculate sub-score:
+
+| Check | Points |
+|-------|--------|
+| Has MCP Tools Used table | +1 |
+| Has Prerequisites section | +1 |
+| Has CLI fallback | +1 |
+| No unresolved name collision | +1 |
+
+**Score interpretation:**
+- 4/4 → Excellent MCP integration
+- 3/4 → Good (minor gaps)
+- 2/4 → Fair (needs improvement)
+- 0-1/4 → Poor (missing key patterns)
+
+See [mcp-integration.md](mcp-integration.md) for detailed patterns.

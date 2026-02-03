@@ -43,6 +43,12 @@ When user says "sensei help" or asks how to use sensei:
 ║    ✓ Has "INVOKES:" for tool relationships (optional)            ║
 ║    ✓ SKILL.md < 500 tokens (soft limit)                          ║
 ║                                                                  ║
+║  MCP INTEGRATION (when INVOKES present):                         ║
+║    ✓ Has "MCP Tools Used" table                                  ║
+║    ✓ Has Prerequisites section                                   ║
+║    ✓ Has CLI fallback pattern                                    ║
+║    ✓ No skill-tool name collision                                ║
+║                                                                  ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -156,6 +162,7 @@ Run tests (skip if `--fast` flag):
 # Framework-specific command based on project
 npm test -- --testPathPattern={skill-name}  # Jest
 pytest tests/{skill-name}/                   # pytest
+waza run tests/{skill-name}/trigger_tests.yaml  # Waza
 ```
 
 ### Step 8: TOKENS
@@ -167,6 +174,16 @@ python scripts/count_tokens.py {skills-dir}/{skill-name}/SKILL.md
 Budget guidelines:
 - SKILL.md: < 500 tokens (soft), < 5000 (hard)
 - references/*.md: < 1000 tokens each
+
+### Step 8b: MCP INTEGRATION (if INVOKES present)
+When description contains `INVOKES:`, check:
+
+1. **MCP Tools Used table** - Does skill body have the table?
+2. **Prerequisites section** - Are requirements documented?
+3. **CLI fallback** - Is there a fallback when MCP unavailable?
+4. **Name collision** - Does skill name match an MCP tool?
+
+If checks fail, add missing sections using patterns from [mcp-integration.md](references/mcp-integration.md).
 
 ### Step 9: SUMMARY
 Display before/after comparison:
@@ -203,7 +220,17 @@ Ask how to proceed:
 | **Medium-High** | Has "USE FOR:" AND "DO NOT USE FOR:" |
 | **High** | Medium-High + routing clarity (INVOKES/FOR SINGLE OPERATIONS) |
 
+### MCP Integration Score (when INVOKES present)
+
+| Check | Status |
+|-------|--------|
+| MCP Tools Used table | ✓/✗ |
+| Prerequisites section | ✓/✗ |
+| CLI fallback pattern | ✓/✗ |
+| No name collision | ✓/✗ |
+
 See [references/scoring.md](references/scoring.md) for full criteria.
+See [references/mcp-integration.md](references/mcp-integration.md) for MCP patterns.
 
 ## Frontmatter Patterns
 
@@ -249,10 +276,12 @@ sensei: improve {skill-name} frontmatter
 ## Reference Documentation
 
 - [scoring.md](references/scoring.md) - Detailed scoring criteria and algorithm
+- [mcp-integration.md](references/mcp-integration.md) - MCP tool integration patterns
 - [loop.md](references/loop.md) - Ralph loop workflow details
 - [examples.md](references/examples.md) - Before/after transformation examples
 - [configuration.md](references/configuration.md) - Project setup patterns
 - [test-templates/](references/test-templates/) - Test scaffolding templates
+- [test-templates/waza.md](references/test-templates/waza.md) - Waza trigger test format
 
 ## Built-in Scripts
 
