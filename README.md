@@ -125,13 +125,42 @@ npm run tokens -- compare HEAD~1
 
 ### Installation
 
+#### Option 1: Install as Copilot CLI Skill (Recommended)
+
 ```bash
-# Clone the skill
-git clone https://github.com/spboyer/sensei.git
+# Clone to your skills directory
+git clone https://github.com/spboyer/sensei.git ~/.copilot/skills/sensei
+
+# Install token CLI dependencies
+cd ~/.copilot/skills/sensei/scripts && npm install
+```
+
+The skill is now available in Copilot CLI. Invoke with:
+```
+Run sensei on my-skill-name
+```
+
+#### Option 2: Install in Project Skills Folder
+
+For project-specific installation:
+
+```bash
+# From your project root
+mkdir -p .github/skills
+git clone https://github.com/spboyer/sensei.git .github/skills/sensei
 
 # Install dependencies
-cd sensei/scripts
-npm install
+cd .github/skills/sensei/scripts && npm install
+```
+
+#### Verify Installation
+
+```bash
+# Test the token CLI
+cd ~/.copilot/skills/sensei  # or your install path
+npm run tokens -- check
+
+# Should output token counts for all markdown files
 ```
 
 ---
@@ -421,39 +450,14 @@ const shouldNotTriggerPrompts = [
 ## Troubleshooting
 
 ### Tests Failing After Improvement
-
-**Symptom:** Tests fail after frontmatter changes
-
-**Solution:**
-1. Check that `shouldTriggerPrompts` match the new trigger phrases
-2. Check that `shouldNotTriggerPrompts` match the new anti-triggers
-3. Run tests manually to see specific failures:
-   ```bash
-   # Jest
-   npm test -- --testPathPattern={skill-name} --verbose
-   
-   # pytest
-   pytest tests/{skill-name}/ -v
-   ```
+Ensure `shouldTriggerPrompts` match "USE FOR:" phrases and `shouldNotTriggerPrompts` match "DO NOT USE FOR:" scenarios.
 
 ### Skill Not Reaching Target Score
-
-**Symptom:** Ralph loops 5 times without reaching Medium-High
-
-**Possible causes:**
-1. Description too long (> 1024 chars) - trim content
-2. Anti-triggers not in recognized format - use "DO NOT USE FOR:"
-3. Conflicting triggers with other skills - make more specific
+Common causes: description > 1024 chars, anti-triggers not using "DO NOT USE FOR:" format, or conflicting triggers with other skills.
 
 ### Rolling Back Changes
-
 ```bash
-# Undo last commit
-git reset --soft HEAD~1
-
-# Undo all sensei commits for a skill
-git log --oneline | grep "sensei: improve {skill-name}" | head -5
-git reset --hard {commit-before-sensei}
+git reset --soft HEAD~1  # Undo last commit
 ```
 
 ---
@@ -480,24 +484,11 @@ git reset --hard {commit-before-sensei}
 
 ### Waza Trigger Tests
 
-Sensei supports [Waza](https://github.com/spboyer/waza) for trigger accuracy testing:
-
-```bash
-# Install waza
-pip install waza
-
-# Run trigger tests
-waza run tests/{skill-name}/trigger_tests.yaml
-```
-
-See `references/test-templates/waza.md` for the test format.
+Sensei supports [Waza](https://github.com/spboyer/waza) for trigger accuracy testing. See `references/test-templates/waza.md`.
 
 ### Reporting Issues
 
-If Sensei produces unexpected results:
-1. Note the skill name and starting state
-2. Capture the commit history: `git log --oneline -10`
-3. Open an issue with reproduction steps
+Open an issue with skill name, starting state, and `git log --oneline -10`.
 
 ---
 
