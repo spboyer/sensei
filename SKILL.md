@@ -111,14 +111,15 @@ Load the skill's current state:
 
 Run token count:
 ```bash
-python scripts/count_tokens.py {skills-dir}/{skill-name}/SKILL.md
+npm run tokens -- count {skills-dir}/{skill-name}/SKILL.md
 ```
 
 ### Step 2: SCORE
-Run compliance check:
-```bash
-python scripts/score_skill.py {skills-dir}/{skill-name}/SKILL.md
-```
+Assess compliance by checking the frontmatter for:
+- Description length (>= 150 chars)
+- "USE FOR:" trigger phrases
+- "DO NOT USE FOR:" anti-triggers
+- "INVOKES:" routing clarity (optional)
 
 See [references/scoring.md](references/scoring.md) for detailed criteria.
 
@@ -126,12 +127,7 @@ See [references/scoring.md](references/scoring.md) for detailed criteria.
 If score >= Medium-High AND tests pass → go to SUMMARY step.
 
 ### Step 4: SCAFFOLD (if needed)
-If `{tests-dir}/{skill-name}/` doesn't exist, create test scaffolding:
-```bash
-python scripts/scaffold_tests.py {skill-name} --tests-dir {tests-dir}
-```
-
-See [references/test-templates/](references/test-templates/) for framework options.
+If `{tests-dir}/{skill-name}/` doesn't exist, create test scaffolding using templates from [references/test-templates/](references/test-templates/).
 
 ### Step 5: IMPROVE FRONTMATTER
 Enhance the SKILL.md description to include:
@@ -168,7 +164,7 @@ waza run tests/{skill-name}/trigger_tests.yaml  # Waza
 ### Step 8: TOKENS
 Check token budget:
 ```bash
-python scripts/count_tokens.py {skills-dir}/{skill-name}/SKILL.md
+npm run tokens -- check {skills-dir}/{skill-name}/SKILL.md
 ```
 
 Budget guidelines:
