@@ -1,9 +1,12 @@
 ---
 interface Props {
   title?: string;
+  description?: string;
 }
 
-const { title = 'Sensei' } = Astro.props;
+const { title = 'Sensei', description = 'Stop skill collisions. Iteratively improve skill frontmatter compliance using the Ralph loop pattern.' } = Astro.props;
+const canonicalURL = 'https://spboyer.github.io/sensei';
+const ogImage = 'https://spboyer.github.io/sensei/og-image.png';
 ---
 
 <!doctype html>
@@ -13,7 +16,18 @@ const { title = 'Sensei' } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/sensei/favicon.svg" />
     <link rel="icon" href="/sensei/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
+    <!-- Open Graph -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={ogImage} />
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
