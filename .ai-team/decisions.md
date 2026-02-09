@@ -41,3 +41,18 @@
 **By:** Linus
 **What:** All sections use `py-24 md:py-32 px-6` with content constrained to `max-w-5xl mx-auto` (hero uses `max-w-4xl` for tighter reading width). Dividers are near-invisible `<hr>` elements at `border-mid-gray/10`.
 **Why:** Consistent vertical rhythm is the backbone of Danish minimalist design. The generous padding creates breathing room without decorative elements. The narrower hero container keeps the tagline from stretching too wide on desktop — every line should feel intentional, not accidental.
+
+### 2026-02-09: External links require target and rel attributes
+**By:** Livingston (Tester)
+**What:** All external links on the site must include `target="_blank"` and `rel="noopener noreferrer"`. QA pass found QuickStart.astro was missing both; now consistent across all components.
+**Why:** Security (noopener prevents reverse tabnapping) and consistency. Any future components with external links must follow this pattern.
+
+### 2026-02-09: SEO meta tags added to BaseLayout
+**By:** Livingston (Tester)
+**What:** BaseLayout.astro now includes Open Graph tags (og:title, og:description, og:type, og:url, og:image), Twitter card tags (twitter:card, twitter:title, twitter:description), and a meta description tag.
+**Why:** Required for link previews on social media and search engine indexing. Were completely missing from the initial build.
+
+### 2026-02-09: Enable GitHub Pages before deploy workflow can succeed
+**By:** Rusty
+**What:** The `deploy-pages.yml` workflow build job passes, but the deploy job fails with `404 Not Found` because GitHub Pages is not enabled on the `spboyer/sensei` repository. Owner must go to **Settings → Pages → Build and deployment → Source** and select **"GitHub Actions"**. After enabling, either re-run the failed workflow or push any change to `docs/` to trigger a new deploy. The site URL will be `https://spboyer.github.io/sensei/`.
+**Why:** The `actions/deploy-pages@v4` action requires the Pages API to be enabled on the repo. This is a one-time manual step that can't be done via git — it's a repo settings change. Once enabled, all future pushes to `main` touching `docs/**` will auto-deploy.

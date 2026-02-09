@@ -37,3 +37,5 @@
 - **Action needed:** Enable GitHub Pages in repo settings → Pages → Source: "GitHub Actions". Then re-run the workflow or push a change to `docs/`. URL will be `https://spboyer.github.io/sensei/`.
 - **Untracked files committed:** `.gitattributes` (merge=union strategies for team state), `.github/agents/squad.agent.md`, and `.ai-team-templates/` were staged and committed before push.
 - **Git auth note:** On this machine, `credential.helper=manager` hangs without output (likely needs GUI). Use `credential.helper=wincred` as fallback — triggers browser auth flow that works in non-interactive terminals.
+📌 Team update (2026-02-09): External links must include target="_blank" and rel="noopener noreferrer" — QA finding by Livingston
+📌 Team update (2026-02-09): SEO meta tags (OG, Twitter card, meta description) added to BaseLayout.astro — QA fix by Livingston
