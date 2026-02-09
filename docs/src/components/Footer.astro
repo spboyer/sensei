@@ -1,0 +1,28 @@
+---
+const links = [
+  { label: 'GitHub', href: 'https://github.com/spboyer/sensei' },
+  { label: 'License (MIT)', href: 'https://github.com/spboyer/sensei/blob/main/LICENSE.txt' },
+  { label: 'Ralph Loop', href: 'https://github.com/soderlund/ralph' },
+  { label: 'Anthropic Skills', href: 'https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills' },
+];
+---
+
+<footer class="border-t border-mid-gray/20 py-12 px-6">
+  <div class="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+    <nav class="flex flex-wrap gap-x-6 gap-y-2">
+      {links.map((link) => (
+        <a
+          href={link.href}
+          class="text-sm text-mid-gray hover:text-light-gray transition-colors"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {link.label}
+        </a>
+      ))}
+    </nav>
+    <p class="text-xs text-mid-gray/60">
+      Sensei 🥋
+    </p>
+  </div>
+</footer>

@@ -1,0 +1,64 @@
+---
+const levels = [
+  {
+    name: 'Low',
+    criteria: 'No triggers, short description',
+    active: false,
+  },
+  {
+    name: 'Medium',
+    criteria: 'Has triggers, missing anti-triggers',
+    active: false,
+  },
+  {
+    name: 'Medium-High',
+    criteria: 'Triggers + anti-triggers present',
+    active: true,
+  },
+  {
+    name: 'High',
+    criteria: 'Full routing clarity with INVOKES',
+    active: false,
+  },
+];
+---
+
+<section class="py-24 md:py-32 px-6">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-light-gray">
+      Scoring Levels
+    </h2>
+    <p class="mt-4 text-mid-gray text-lg max-w-2xl">
+      Sensei targets Medium-High — the sweet spot between completeness and token efficiency.
+    </p>
+    <div class="mt-16 grid grid-cols-1 md:grid-cols-4 gap-px bg-mid-gray/10">
+      {levels.map((level, i) => (
+        <div class:list={[
+          'p-6',
+          level.active ? 'bg-dark-gray border-t-2 border-orange-accent' : 'bg-dark-gray border-t-2 border-mid-gray/20',
+        ]}>
+          <div class="flex items-baseline gap-2 mb-3">
+            <span class:list={[
+              'text-xs font-mono',
+              level.active ? 'text-orange-accent' : 'text-mid-gray/60',
+            ]}>
+              {String(i + 1).padStart(2, '0')}
+            </span>
+          </div>
+          <h3 class:list={[
+            'text-lg font-semibold',
+            level.active ? 'text-orange-accent' : 'text-light-gray',
+          ]}>
+            {level.name}
+          </h3>
+          <p class="mt-2 text-sm text-mid-gray leading-relaxed">{level.criteria}</p>
+          {level.active && (
+            <span class="inline-block mt-4 text-xs font-mono text-orange-accent uppercase tracking-wider">
+              ← Target
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
