@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import Problem from '../components/Problem.astro';
+import HowItWorks from '../components/HowItWorks.astro';
+import BeforeAfter from '../components/BeforeAfter.astro';
+import ScoringLevels from '../components/ScoringLevels.astro';
+import QuickStart from '../components/QuickStart.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout title="Sensei — Skill Compliance">
+  <main>
+    <Hero />
+    <hr class="border-mid-gray/10 max-w-5xl mx-auto" />
+    <Problem />
+    <hr class="border-mid-gray/10 max-w-5xl mx-auto" />
+    <HowItWorks />
+    <hr class="border-mid-gray/10 max-w-5xl mx-auto" />
+    <BeforeAfter />
+    <hr class="border-mid-gray/10 max-w-5xl mx-auto" />
+    <ScoringLevels />
+    <hr class="border-mid-gray/10 max-w-5xl mx-auto" />
+    <QuickStart />
+  </main>
+  <Footer />
+</BaseLayout>

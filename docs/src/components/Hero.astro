@@ -1,0 +1,50 @@
+---
+const installCommand = 'npx skills add spboyer/sensei';
+---
+
+<section class="py-32 md:py-40 px-6">
+  <div class="max-w-4xl mx-auto">
+    <p class="text-orange-accent text-2xl mb-6">🥋</p>
+    <h1 class="text-6xl md:text-7xl font-bold tracking-tight text-light-gray leading-none">
+      Sensei
+    </h1>
+    <p class="mt-8 text-2xl md:text-3xl font-medium text-light-gray leading-snug max-w-2xl">
+      Stop skill collisions.<br />Ship better agents.
+    </p>
+    <p class="mt-6 text-lg text-mid-gray max-w-xl leading-relaxed">
+      Iteratively improve skill frontmatter compliance using the Ralph loop pattern.
+    </p>
+    <div class="mt-12 inline-flex items-center bg-dark-gray border border-mid-gray/20 font-mono text-sm">
+      <code id="install-cmd" class="px-5 py-3 text-light-gray select-all">{installCommand}</code>
+      <button
+        id="copy-btn"
+        class="px-4 py-3 border-l border-mid-gray/20 text-mid-gray hover:text-orange-accent transition-colors cursor-pointer"
+        aria-label="Copy install command"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="0" ry="0"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+  const btn = document.getElementById('copy-btn');
+  const cmd = document.getElementById('install-cmd');
+  if (btn && cmd) {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(cmd.textContent?.trim() ?? '');
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        setTimeout(() => {
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="0" ry="0"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+        }, 2000);
+      } catch {
+        // Fallback: select text
+        const range = document.createRange();
+        range.selectNodeContents(cmd);
+        window.getSelection()?.removeAllRanges();
+        window.getSelection()?.addRange(range);
+      }
+    });
+  }
+</script>

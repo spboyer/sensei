@@ -1,0 +1,81 @@
+---
+const installCommand = 'npx skills add spboyer/sensei';
+const examples = [
+  {
+    command: 'Run sensei on my-skill-name',
+    description: 'Improve a single skill',
+  },
+  {
+    command: 'Run sensei on my-skill-name --fast',
+    description: 'Skip tests for faster iteration',
+  },
+  {
+    command: 'Run sensei on all skills',
+    description: 'Batch-improve every skill in your project',
+  },
+];
+---
+
+<section class="py-24 md:py-32 px-6">
+  <div class="max-w-4xl mx-auto">
+    <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-light-gray">
+      Quick Start
+    </h2>
+    <p class="mt-4 text-mid-gray text-lg max-w-2xl">
+      One command to install. Three ways to run.
+    </p>
+    <div class="mt-12">
+      <div class="inline-flex items-center bg-dark-gray border border-mid-gray/20 font-mono text-base">
+        <code id="qs-install-cmd" class="px-6 py-4 text-light-gray select-all">{installCommand}</code>
+        <button
+          id="qs-copy-btn"
+          class="px-5 py-4 border-l border-mid-gray/20 text-mid-gray hover:text-orange-accent transition-colors cursor-pointer"
+          aria-label="Copy install command"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="0" ry="0"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        </button>
+      </div>
+    </div>
+    <div class="mt-16 space-y-4">
+      {examples.map((ex) => (
+        <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
+          <code class="bg-dark-gray px-5 py-3 font-mono text-sm text-light-gray flex-shrink-0">
+            {ex.command}
+          </code>
+          <span class="text-sm text-mid-gray">{ex.description}</span>
+        </div>
+      ))}
+    </div>
+    <div class="mt-12">
+      <a
+        href="https://github.com/spboyer/sensei"
+        class="text-sm text-mid-gray hover:text-orange-accent transition-colors"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Full documentation on GitHub →
+      </a>
+    </div>
+  </div>
+</section>
+
+<script>
+  const qsBtn = document.getElementById('qs-copy-btn');
+  const qsCmd = document.getElementById('qs-install-cmd');
+  if (qsBtn && qsCmd) {
+    qsBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(qsCmd.textContent?.trim() ?? '');
+        qsBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        setTimeout(() => {
+          qsBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="0" ry="0"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+        }, 2000);
+      } catch {
+        const range = document.createRange();
+        range.selectNodeContents(qsCmd);
+        window.getSelection()?.removeAllRanges();
+        window.getSelection()?.addRange(range);
+      }
+    });
+  }
+</script>

@@ -1,0 +1,40 @@
+---
+const steps = [
+  { number: '01', name: 'Read', description: 'Load skill state and count tokens' },
+  { number: '02', name: 'Score', description: 'Evaluate frontmatter compliance' },
+  { number: '03', name: 'Improve', description: 'Add triggers and anti-triggers' },
+  { number: '04', name: 'Verify', description: 'Run tests to confirm changes' },
+  { number: '05', name: 'Check', description: 'Analyze token usage and budget' },
+  { number: '06', name: 'Summary', description: 'Display before/after results' },
+];
+---
+
+<section class="py-24 md:py-32 px-6">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-light-gray">
+      The Ralph Loop
+    </h2>
+    <p class="mt-4 text-mid-gray text-lg max-w-2xl">
+      Six steps, repeated until your skill reaches Medium-High compliance.
+    </p>
+    <div class="mt-16 relative">
+      <!-- Connecting line (desktop) -->
+      <div class="hidden md:block absolute top-5 left-0 right-0 h-px bg-mid-gray/30" aria-hidden="true"></div>
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-8 md:gap-4">
+        {steps.map((step) => (
+          <div class="relative">
+            <div class="flex items-center md:flex-col md:items-start gap-4 md:gap-0">
+              <span class="relative z-10 text-xs font-mono text-orange-accent bg-black pr-2 md:mb-3">
+                {step.number}
+              </span>
+              <div>
+                <h3 class="text-base font-semibold text-light-gray">{step.name}</h3>
+                <p class="mt-1 text-sm text-mid-gray leading-relaxed">{step.description}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

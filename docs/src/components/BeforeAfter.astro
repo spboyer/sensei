@@ -1,0 +1,62 @@
+---
+const beforeCode = `---
+name: pdf-processor
+description: 'Process PDF files for various tasks'
+---`;
+
+const afterCode = `---
+name: pdf-processor
+description: |
+  Process PDF files including text extraction,
+  rotation, and merging.
+  USE FOR: "extract PDF text", "rotate PDF",
+  "merge PDFs", "split PDF", "PDF to text",
+  "combine PDF files".
+  DO NOT USE FOR: creating new PDFs
+  (use document-creator), extracting images
+  (use image-extractor), or OCR on scanned
+  documents (use ocr-processor).
+---`;
+---
+
+<section class="py-24 md:py-32 px-6">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-light-gray">
+      Before &amp; After
+    </h2>
+    <p class="mt-4 text-mid-gray text-lg max-w-2xl">
+      From vague to precise — a single pass through the Ralph loop.
+    </p>
+    <div class="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-xs font-mono uppercase tracking-wider text-mid-gray">Before</span>
+          <span class="text-xs font-mono text-mid-gray/60">Low</span>
+        </div>
+        <pre class="bg-dark-gray p-6 font-mono text-sm leading-relaxed overflow-x-auto"><code class="block text-mid-gray"><span class="text-orange-accent/60">---</span>
+<span class="text-orange-accent">name:</span> <span class="text-light-gray">pdf-processor</span>
+<span class="text-orange-accent">description:</span> <span class="text-light-gray">'Process PDF files for various tasks'</span>
+<span class="text-orange-accent/60">---</span></code></pre>
+      </div>
+      <div>
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-xs font-mono uppercase tracking-wider text-light-gray">After</span>
+          <span class="text-xs font-mono text-orange-accent">Medium-High</span>
+        </div>
+        <pre class="bg-dark-gray p-6 font-mono text-sm leading-relaxed overflow-x-auto"><code class="block text-mid-gray"><span class="text-orange-accent/60">---</span>
+<span class="text-orange-accent">name:</span> <span class="text-light-gray">pdf-processor</span>
+<span class="text-orange-accent">description:</span> <span class="text-light-gray">|</span>
+  <span class="text-light-gray">Process PDF files including text extraction,</span>
+  <span class="text-light-gray">rotation, and merging.</span>
+  <span class="text-light-gray font-medium">USE FOR:</span> <span class="text-light-gray">"extract PDF text", "rotate PDF",</span>
+  <span class="text-light-gray">"merge PDFs", "split PDF", "PDF to text",</span>
+  <span class="text-light-gray">"combine PDF files".</span>
+  <span class="text-light-gray font-medium">DO NOT USE FOR:</span> <span class="text-light-gray">creating new PDFs</span>
+  <span class="text-mid-gray">(use document-creator)</span><span class="text-light-gray">, extracting images</span>
+  <span class="text-mid-gray">(use image-extractor)</span><span class="text-light-gray">, or OCR on scanned</span>
+  <span class="text-light-gray">documents</span> <span class="text-mid-gray">(use ocr-processor)</span><span class="text-light-gray">.</span>
+<span class="text-orange-accent/60">---</span></code></pre>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,39 @@
+---
+const problems = [
+  {
+    title: 'No triggers',
+    description: 'Agent doesn\'t know when to activate the skill.',
+  },
+  {
+    title: 'No anti-triggers',
+    description: 'Agent doesn\'t know when NOT to use the skill.',
+  },
+  {
+    title: 'Brief descriptions',
+    description: 'Not enough context for accurate matching.',
+  },
+  {
+    title: 'Token bloat',
+    description: 'Oversized skills waste context window.',
+  },
+];
+---
+
+<section class="py-24 md:py-32 px-6">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-light-gray">
+      Skills Without Frontmatter Break Things
+    </h2>
+    <p class="mt-4 text-mid-gray text-lg max-w-2xl">
+      Poor frontmatter leads to skill collision — agents invoking the wrong skill for a given prompt.
+    </p>
+    <div class="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6">
+      {problems.map((p) => (
+        <div class="bg-dark-gray border-l-2 border-orange-accent p-6">
+          <h3 class="text-lg font-semibold text-light-gray">{p.title}</h3>
+          <p class="mt-2 text-mid-gray text-sm leading-relaxed">{p.description}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
