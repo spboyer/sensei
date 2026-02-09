@@ -27,3 +27,13 @@
 📌 Team update (2026-02-09): GitHub Pages deploy workflow uses two-job pattern (build + deploy) at .github/workflows/deploy-pages.yml — decided by Rusty
 📌 Team update (2026-02-09): Astro site lives in docs/ subdirectory; worktree on feat/gh-pages-site branch — decided by Rusty
 📌 Team update (2026-02-09): Landing page complete — 7 components (Hero, Problem, HowItWorks, BeforeAfter, ScoringLevels, QuickStart, Footer), all self-contained, no external JS — built by Linus
+
+### 2026-02-09: Site publish — merge and push
+
+- **Merge completed:** `feat/gh-pages-site` merged into `main` locally via `git merge feat/gh-pages-site --no-edit`. Clean merge, no conflicts. 21 files added (workflow, Astro project, all components).
+- **Push succeeded:** Used `git -c credential.helper=wincred push origin main` after `credential.helper=manager` hung (no cached credentials, GUI prompt not visible). Browser-based auth flow resolved it.
+- **Worktree cleaned up:** Worktree at `C:\Users\shboyer\GitHub\sensei-site` removed, local `feat/gh-pages-site` branch deleted. Remote branch preserved as reference.
+- **Workflow triggered:** GitHub Actions run #1 (`deploy-pages.yml`) triggered automatically on push. Build job succeeded (checkout → setup-node → npm ci → astro build → upload artifact). Deploy job **failed** with `404 Not Found` — GitHub Pages is not yet enabled on the repo.
+- **Action needed:** Enable GitHub Pages in repo settings → Pages → Source: "GitHub Actions". Then re-run the workflow or push a change to `docs/`. URL will be `https://spboyer.github.io/sensei/`.
+- **Untracked files committed:** `.gitattributes` (merge=union strategies for team state), `.github/agents/squad.agent.md`, and `.ai-team-templates/` were staged and committed before push.
+- **Git auth note:** On this machine, `credential.helper=manager` hangs without output (likely needs GUI). Use `credential.helper=wincred` as fallback — triggers browser auth flow that works in non-interactive terminals.
