@@ -1,0 +1,21 @@
+{
+  "universe_usage_history": [
+    {
+      "assignment_id": "2026-02-09T21-22-sensei-gh-pages",
+      "universe": "Ocean's Eleven",
+      "timestamp": "2026-02-09T21:22:55Z"
+    }
+  ],
+  "assignment_cast_snapshots": {
+    "2026-02-09T21-22-sensei-gh-pages": {
+      "universe": "Ocean's Eleven",
+      "agent_map": {
+        "rusty": "Rusty",
+        "linus": "Linus",
+        "basher": "Basher",
+        "livingston": "Livingston"
+      },
+      "created_at": "2026-02-09T21:22:55Z"
+    }
+  }
+}
