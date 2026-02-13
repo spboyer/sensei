@@ -169,85 +169,15 @@ npm run tokens -- check
 
 ### The Ralph Loop
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  START: User invokes "Run sensei on {skill-name}"       │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  1. READ: Load skills/{skill-name}/SKILL.md             │
-│           Load tests/{skill-name}/ (if exists)          │
-│           Count tokens (baseline for comparison)        │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  2. SCORE: Run rule-based compliance check              │
-│     • Check description length (> 150 chars?)           │
-│     • Check for trigger phrases ("USE FOR:")            │
-│     • Check for anti-triggers ("DO NOT USE FOR:")       │
-│     • Check for compatibility field                     │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-              ┌───────────────┐
-              │ Score >= M-H  │──YES──▶ COMPLETE ✓
-              │ AND tests pass│        (next skill)
-              └───────┬───────┘
-                      │ NO
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  3. SCAFFOLD: If tests/{skill-name}/ missing:           │
-│     Create tests from references/test-templates/        │
-│     Creates prompts.md and framework-specific tests     │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  4. IMPROVE FRONTMATTER:                                │
-│     • Add "USE FOR:" with trigger phrases               │
-│     • Add "DO NOT USE FOR:" with anti-triggers          │
-│     • Add compatibility if applicable                   │
-│     • Keep description under 1024 chars                 │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  5. IMPROVE TESTS:                                      │
-│     • Update shouldTriggerPrompts (5+ prompts)          │
-│     • Update shouldNotTriggerPrompts (5+ prompts)       │
-│     • Match prompts to new frontmatter triggers         │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  6. VERIFY: Run tests for the skill                     │
-│     • If tests fail → fix and retry                     │
-│     • If tests pass → continue                          │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  7. CHECK TOKENS:                                       │
-│     npm run tokens count {skill}/SKILL.md               │
-│     Verify under 500 token soft limit                   │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  8. SUMMARY: Display before/after comparison            │
-│     • Score change (Low → Medium-High)                  │
-│     • Token delta (+/- tokens)                          │
-│     • Unimplemented suggestions                         │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  9. PROMPT USER: Choose action                          │
-│     [C] Commit changes                                  │
-│     [I] Create GitHub issue with suggestions            │
-│     [S] Skip (discard changes)                          │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-              ┌───────────────┐
-              │ Iteration < 5 │──YES──▶ Go to step 2
-              └───────┬───────┘
-                      │ NO
-                      ▼
-               TIMEOUT (move to next skill)
-```
+1. **READ** — Load SKILL.md + tests, count tokens (baseline)
+2. **SCORE** — Check description length, triggers, anti-triggers, compatibility
+3. **SCAFFOLD** — Create tests from templates if missing
+4. **IMPROVE** — Add USE FOR/DO NOT USE FOR, update test prompts
+5. **VERIFY** — Run tests; fix and retry if failing
+6. **CHECK TOKENS** — Verify under 500 token soft limit
+7. **SUMMARY** — Before/after score + token delta
+8. **PROMPT** — Commit, Create Issue, or Skip
+9. **REPEAT** — Loop until Medium-High reached (max 5 iterations)
 
 ### Batch Processing
 
@@ -499,6 +429,12 @@ Open an issue with skill name, starting state, and `git log --oneline -10`.
 - [Skills, Tools & MCP Development Guide](https://github.com/spboyer/azure-mcp-v-skills/blob/main/skills-mcp-development-guide.md) - MCP integration best practices
 - [Waza Testing Framework](https://github.com/spboyer/waza) - Skill trigger accuracy testing
 - [skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator) - For creating new skills from scratch
+
+---
+
+## Sensei-MCP
+
+Companion skill that audits **MCP server projects** for quality and best practices across TypeScript, Python, and C#. Checks tool naming, descriptions, annotations, error handling, pagination, security, and documentation. See [MCP-SKILL.md](MCP-SKILL.md) for details.
 
 ---
 

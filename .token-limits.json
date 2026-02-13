@@ -2,6 +2,7 @@
   "description": "Token limits for Sensei skill repository",
   "defaults": {
     "SKILL.md": 5000,
+    "MCP-SKILL.md": 5000,
     "references/*.md": 2000,
     "references/**/*.md": 2000,
     "references/test-templates/*.md": 1500,
@@ -9,6 +10,7 @@
   },
   "overrides": {
     "README.md": 4000,
-    "AGENTS.md": 2000
+    "AGENTS.md": 2000,
+    "anthropic-pr/csharp_mcp_server.md": 10000
   }
 }
