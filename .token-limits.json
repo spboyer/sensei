@@ -2,10 +2,10 @@
   "description": "Token limits for Sensei skill repository",
   "defaults": {
     "SKILL.md": 5000,
-    "MCP-SKILL.md": 5000,
-    "references/*.md": 2000,
-    "references/**/*.md": 2000,
-    "references/test-templates/*.md": 1500,
+    "skills/*/SKILL.md": 5000,
+    "skills/*/references/*.md": 2000,
+    "skills/*/references/**/*.md": 2000,
+    "skills/sensei/references/test-templates/*.md": 1500,
     "*.md": 4000
   },
   "overrides": {

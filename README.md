@@ -79,7 +79,7 @@ Run sensei on all skills
 npm run tokens -- count
 
 # Count tokens in specific files
-npm run tokens -- count SKILL.md references/*.md
+npm run tokens -- count skills/sensei/SKILL.md skills/*/references/*.md
 
 # Check files against token limits
 npm run tokens -- check
@@ -279,12 +279,12 @@ When a skill's description contains `INVOKES:`, Sensei performs additional check
 - 2/4 = Fair (needs improvement)
 - 0-1/4 = Poor (missing key patterns)
 
-See [references/mcp-integration.md](references/mcp-integration.md) for detailed patterns.
+See [references/mcp-integration.md](skills/sensei/references/mcp-integration.md) for detailed patterns.
 
 ### Token Budget
 
 - **SKILL.md:** < 500 tokens (soft), < 5000 (hard)
-- **references/*.md:** < 2000 tokens each
+- **references/*.md:** < 2000 tokens each (per skill)
 - Check with: `npm run tokens -- check`
 - Get suggestions: `npm run tokens -- suggest`
 
@@ -396,25 +396,25 @@ git reset --soft HEAD~1  # Undo last commit
 
 ### Improving the Sensei Skill
 
-1. Edit `SKILL.md` for instruction changes
-2. Edit `references/*.md` for documentation changes
+1. Edit the relevant `skills/{skill-name}/SKILL.md` for instruction changes
+2. Edit `skills/{skill-name}/references/*.md` for documentation changes
 3. Test tokens: `npm run tokens -- check`
 4. Test on a sample skill before committing
 
 ### Adding New Scoring Rules
 
-1. Document the rule in `references/scoring.md`
-2. Add examples in `references/examples.md`
+1. Document the rule in `skills/sensei/references/scoring.md`
+2. Add examples in `skills/sensei/references/examples.md`
 3. Update scoring criteria in SKILL.md
 
 ### Adding Test Framework Support
 
-1. Create template in `references/test-templates/{framework}.md`
-2. Document usage in references/configuration.md
+1. Create template in `skills/sensei/references/test-templates/{framework}.md`
+2. Document usage in `skills/sensei/references/configuration.md`
 
 ### Waza Trigger Tests
 
-Sensei supports [Waza](https://github.com/spboyer/waza) for trigger accuracy testing. See `references/test-templates/waza.md`.
+Sensei supports [Waza](https://github.com/spboyer/waza) for trigger accuracy testing. See `skills/sensei/references/test-templates/waza.md`.
 
 ### Reporting Issues
 
@@ -434,7 +434,7 @@ Open an issue with skill name, starting state, and `git log --oneline -10`.
 
 ## Sensei-MCP
 
-Companion skill that audits **MCP server projects** for quality and best practices across TypeScript, Python, and C#. Checks tool naming, descriptions, annotations, error handling, pagination, security, and documentation. See [MCP-SKILL.md](MCP-SKILL.md) for details.
+Companion skill that audits **MCP server projects** for quality and best practices across TypeScript, Python, and C#. Checks tool naming, descriptions, annotations, error handling, pagination, security, and documentation. See [skills/sensei-mcp/SKILL.md](skills/sensei-mcp/SKILL.md) for details.
 
 ---
 

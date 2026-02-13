@@ -4,42 +4,52 @@ Instructions for AI coding agents working with this repository.
 
 ## Overview
 
-This is **Sensei**, a skill for improving SKILL.md frontmatter compliance. It follows the [Anthropic skill specification](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills).
+This is **Sensei**, a multi-skill repository for auditing skill frontmatter compliance and MCP server quality. Each skill lives in its own folder under `skills/`, following the [Anthropic skill specification](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills).
 
 ## Repository Structure
 
 ```
 sensei/
-├── SKILL.md              # Core skill (DO NOT add README-style content here)
-├── README.md             # Human documentation
-├── AGENTS.md             # This file - agent instructions
-├── LICENSE.txt           # MIT license
-├── package.json          # Root package for npm run tokens
-├── .token-limits.json    # Custom token limits configuration
-├── references/           # Progressive disclosure docs (loaded on-demand)
-│   ├── scoring.md        # Scoring algorithm details
-│   ├── mcp-integration.md # MCP tool integration patterns
-│   ├── loop.md           # Ralph loop workflow
-│   ├── examples.md       # Before/after transformations
-│   ├── configuration.md  # Project config patterns
-│   └── test-templates/   # Framework-specific test templates
-│       ├── jest.md       # Jest test template
-│       ├── pytest.md     # pytest test template
-│       ├── waza.md       # Waza trigger test format
-│       └── ...
-└── scripts/              # TypeScript token management tools
-    ├── package.json      # Dependencies (tsx, vitest, typescript)
+├── skills/
+│   ├── sensei/               # Skill frontmatter auditor
+│   │   ├── SKILL.md
+│   │   └── references/
+│   │       ├── scoring.md
+│   │       ├── mcp-integration.md
+│   │       ├── loop.md
+│   │       ├── examples.md
+│   │       ├── configuration.md
+│   │       └── test-templates/
+│   └── sensei-mcp/           # MCP server quality auditor
+│       ├── SKILL.md
+│       └── references/
+│           ├── mcp-scoring.md
+│           ├── mcp-checks-ts.md
+│           ├── mcp-checks-python.md
+│           ├── mcp-checks-csharp.md
+│           ├── mcp-project-structure.md
+│           ├── mcp-evaluation-guide.md
+│           └── mcp-examples.md
+├── anthropic-pr/             # C# guide for Anthropic PR
+│   └── csharp_mcp_server.md
+├── README.md
+├── AGENTS.md
+├── LICENSE.txt
+├── package.json              # Root package for npm run tokens
+├── .token-limits.json
+└── scripts/                  # TypeScript token management tools
+    ├── package.json
     ├── tsconfig.json
     ├── vitest.config.ts
     └── src/tokens/
-        ├── cli.ts        # CLI entry point
+        ├── cli.ts
         └── commands/
-            ├── types.ts  # Interfaces, constants, utilities
-            ├── utils.ts  # Config loading, file discovery
-            ├── count.ts  # Token counting
-            ├── check.ts  # Limit validation
-            ├── suggest.ts # Optimization suggestions
-            └── compare.ts # Git-based comparison
+            ├── types.ts
+            ├── utils.ts
+            ├── count.ts
+            ├── check.ts
+            ├── suggest.ts
+            └── compare.ts
 ```
 
 ## Key Conventions
@@ -93,14 +103,14 @@ Skills that invoke MCP tools get additional checks:
 - **CLI fallback pattern** - Fallback when MCP unavailable
 - **Name collision detection** - Warns when skill name matches MCP tool
 
-See `references/mcp-integration.md` for patterns.
+See `skills/sensei/references/mcp-integration.md` for patterns.
 
 ## When Modifying This Skill
 
 ### DO
 
 - Keep SKILL.md focused on instructions, not documentation
-- Use references/ for detailed explanations
+- Use each skill's references/ for detailed explanations
 - Run `npm run tokens -- check` after changes to verify limits
 - Maintain the frontmatter format with USE FOR / DO NOT USE FOR
 - Add routing clarity (INVOKES/FOR SINGLE OPERATIONS) for High score
@@ -124,7 +134,7 @@ cd scripts && npm install && cd ..
 npm run tokens -- check
 
 # Count tokens in specific files
-npm run tokens -- count SKILL.md references/*.md
+npm run tokens -- count skills/sensei/SKILL.md skills/sensei/references/*.md
 
 # Get optimization suggestions
 npm run tokens -- suggest
@@ -155,8 +165,8 @@ npm run tokens -- compare [refs...]    # Compare tokens between git refs
 
 ### Adding a New Reference File
 
-1. Create `references/new-topic.md`
-2. Run `npm run tokens -- check references/new-topic.md` to verify limits
+1. Create file in the appropriate `skills/{skill-name}/references/` folder
+2. Run `npm run tokens -- check` to verify limits
 3. Add link in SKILL.md under "Reference Documentation" section
 
 ### Updating Token Limits
@@ -167,6 +177,7 @@ Edit `.token-limits.json`:
   "defaults": {
     "SKILL.md": 5000,
     "references/*.md": 2000,
+    "skills/*/references/*.md": 2000,
     "*.md": 4000
   },
   "overrides": {
@@ -177,8 +188,8 @@ Edit `.token-limits.json`:
 
 ### Adding Test Framework Support
 
-1. Create template in `references/test-templates/{framework}.md`
-2. Document usage in `references/configuration.md`
+1. Create template in `skills/sensei/references/test-templates/{framework}.md`
+2. Document usage in `skills/sensei/references/configuration.md`
 
 ## Commit Message Format
 
