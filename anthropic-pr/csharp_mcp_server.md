@@ -2,24 +2,23 @@
 
 ## Overview
 
-This document provides C#/.NET-specific best practices and examples for implementing MCP servers using the MCP C# SDK. It covers project structure, server setup, tool registration patterns, input validation, error handling, and complete working examples.
-
----
+This guide provides C#/.NET-specific patterns and conventions for building MCP servers using the official MCP C# SDK. It covers project structure, attribute-based tool registration, dependency injection, transport configuration, error handling, and complete working examples.
 
 ## Quick Reference
 
 ### Key Imports
+
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
-using ModelContextProtocol.Protocol;
 using System.ComponentModel;
 using System.Text.Json;
 ```
 
 ### Server Initialization
+
 ```csharp
 var builder = Host.CreateApplicationBuilder(args);
 builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
@@ -28,6 +27,7 @@ await builder.Build().RunAsync();
 ```
 
 ### Tool Registration Pattern
+
 ```csharp
 [McpServerToolType]
 public static class ServiceTools
@@ -42,55 +42,45 @@ public static class ServiceTools
 }
 ```
 
----
-
 ## MCP C# SDK
 
-The official MCP C# SDK provides attribute-based tool registration with full .NET integration:
-- NuGet packages: `ModelContextProtocol` (main), `ModelContextProtocol.AspNetCore` (HTTP/SSE), `ModelContextProtocol.Core` (minimal)
+The official MCP C# SDK provides attribute-based tool registration with full .NET host integration:
+
+- **NuGet packages**: `ModelContextProtocol` (main), `ModelContextProtocol.AspNetCore` (HTTP/SSE), `ModelContextProtocol.Core` (minimal)
 - Uses `[McpServerTool]` and `[McpServerToolType]` attributes for tool registration
 - Integrates with `Microsoft.Extensions.Hosting` for lifecycle management
 - Supports dependency injection natively via method parameter injection
-- Target .NET 9+ (10+ recommended for `dnx` tool support)
+- Target .NET 9+
 
-**IMPORTANT - Use Modern APIs Only:**
-- **DO use**: `[McpServerTool]` attribute, `[McpServerToolType]` attribute, `WithToolsFromAssembly()`
-- **DO use**: `AddMcpServer()` with fluent configuration
+**Use Modern APIs Only:**
+- Use `[McpServerTool]` attribute, `[McpServerToolType]` attribute, `WithToolsFromAssembly()`
+- Use `AddMcpServer()` with fluent configuration
 - The attribute-based approach provides automatic schema generation and assembly scanning
 
 ## Server Naming Convention
 
-C#/.NET MCP servers must follow this naming pattern:
+All MCP servers follow a consistent naming pattern:
 - **Format**: `{service}-mcp-server` (lowercase with hyphens)
 - **Examples**: `github-mcp-server`, `jira-mcp-server`, `stripe-mcp-server`
 
-The name should be:
-- General (not tied to specific features)
-- Descriptive of the service/API being integrated
-- Easy to infer from the task description
-- Without version numbers or dates
-
-The NuGet package name should match the server name.
+The name should be general (not tied to specific features), descriptive of the service being integrated, easy to infer from the task description, and without version numbers or dates. The NuGet package name should match the server name.
 
 ## Project Structure
 
-Create the following structure for C#/.NET MCP servers:
-
 ```
 {Service}McpServer/
-├── {Service}McpServer.csproj
-├── Program.cs           # Entry point with Host builder
-├── README.md
-├── Tools/               # Tool classes (one file per domain)
-│   ├── UserTools.cs
-│   └── ProjectTools.cs
-├── Services/            # DI-registered API clients
-│   └── ApiClient.cs
-├── Models/              # Data models and DTOs
-│   └── User.cs
-├── Constants.cs         # API_BASE_URL, CHARACTER_LIMIT
-└── .mcp/
-    └── server.json      # MCP server metadata (for NuGet distribution)
++-- {Service}McpServer.csproj
++-- Program.cs
++-- Tools/
+|   +-- UserTools.cs
+|   +-- ProjectTools.cs
++-- Services/
+|   +-- ApiClient.cs
++-- Models/
+|   +-- User.cs
++-- Constants.cs
++-- .mcp/
+    +-- server.json
 ```
 
 ## Tool Implementation
@@ -99,10 +89,10 @@ Create the following structure for C#/.NET MCP servers:
 
 Use snake_case for tool names via the `Name` property (e.g., `Name = "search_users"`, `Name = "create_project"`) with clear, action-oriented names. C# method names remain PascalCase per .NET convention.
 
-**Avoid Naming Conflicts**: Include the service context to prevent overlaps:
-- Use `Name = "slack_send_message"` instead of just `"send_message"`
-- Use `Name = "github_create_issue"` instead of just `"create_issue"`
-- Use `Name = "asana_list_tasks"` instead of just `"list_tasks"`
+**Avoid naming conflicts** by including the service context:
+- `Name = "slack_send_message"` instead of `"send_message"`
+- `Name = "github_create_issue"` instead of `"create_issue"`
+- `Name = "asana_list_tasks"` instead of `"list_tasks"`
 
 ### Tool Structure
 
@@ -110,41 +100,40 @@ Tools are defined using `[McpServerToolType]` on the class and `[McpServerTool]`
 
 ```csharp
 using System.ComponentModel;
+using System.Net.Http.Json;
 using System.Text.Json;
 using ModelContextProtocol.Server;
 
 [McpServerToolType]
 public static class UserTools
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
     [McpServerTool(Name = "example_search_users"), Description(
         """
         Search for users in the Example system by name, email, or team.
-        
+
         This tool searches across all user profiles. It does NOT create or
         modify users, only searches existing ones.
-        
+
         Args:
           - query (string): Search string to match against names/emails (min 2 chars)
           - limit (int): Maximum results to return, 1-100 (default: 20)
           - offset (int): Number of results to skip for pagination (default: 0)
-        
+
         Returns:
           JSON with total, count, offset, users array, has_more, next_offset
-        
+
         Examples:
           - "Find marketing team members" -> query="team:marketing"
           - "Search for John" -> query="john"
-        
-        Error Handling:
-          - Returns error message if API request fails
-          - Returns "No users found" if search is empty
         """)]
     public static async Task<string> SearchUsers(
         IHttpClientFactory httpClientFactory,
         [Description("Search string to match against names/emails (min 2 chars)")] string query,
         [Description("Maximum results to return (1-100, default: 20)")] int limit = 20,
         [Description("Number of results to skip for pagination (default: 0)")] int offset = 0,
-        CancellationToken cancellationToken = default)
+        CancellationToken ct = default)
     {
         if (query.Length < 2)
             return "Error: Query must be at least 2 characters.";
@@ -155,13 +144,8 @@ public static class UserTools
         try
         {
             var client = httpClientFactory.CreateClient("ExampleApi");
-            var response = await client.GetAsync(
-                $"users/search?q={Uri.EscapeDataString(query)}&limit={limit}&offset={offset}",
-                cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            var data = await response.Content.ReadFromJsonAsync<UserSearchResult>(
-                cancellationToken: cancellationToken);
+            var data = await client.GetFromJsonAsync<SearchResult>(
+                $"users/search?q={Uri.EscapeDataString(query)}&limit={limit}&offset={offset}", ct);
 
             if (data?.Users is not { Count: > 0 })
                 return $"No users found matching '{query}'";
@@ -178,7 +162,7 @@ public static class UserTools
                     : (int?)null
             };
 
-            return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+            return JsonSerializer.Serialize(result, JsonOptions);
         }
         catch (HttpRequestException ex)
         {
@@ -201,9 +185,9 @@ public static class UserTools
 
 ## Descriptions
 
-Two approaches for providing descriptions (both valid):
+Two approaches for providing tool and parameter descriptions:
 
-### Approach 1: [Description] Attribute (Recommended)
+### [Description] Attribute (Recommended)
 
 ```csharp
 [McpServerTool(Name = "service_get_user"), Description("Get user details by ID")]
@@ -211,11 +195,11 @@ public static async Task<string> GetUser(
     [Description("The user ID (e.g., 'U123456')")] string userId,
     CancellationToken ct = default)
 {
-    // Implementation
+    // ...
 }
 ```
 
-### Approach 2: XML Comments on Partial Methods
+### XML Comments on Partial Methods
 
 ```csharp
 /// <summary>Get user details by ID</summary>
@@ -228,10 +212,10 @@ XML comments auto-generate `[Description]` attributes when methods are `partial`
 
 ## Dependency Injection
 
-C# has native DI support — a unique advantage over TypeScript and Python. Services registered in `Program.cs` are automatically injected as method parameters:
+C# has native DI support through `Microsoft.Extensions.DependencyInjection`, a significant advantage over TypeScript and Python MCP servers. Services registered in `Program.cs` are automatically injected as tool method parameters without any manual wiring.
 
 ```csharp
-// Program.cs — Register services
+// Program.cs
 builder.Services.AddHttpClient("ExampleApi", client =>
 {
     client.BaseAddress = new Uri(
@@ -239,19 +223,17 @@ builder.Services.AddHttpClient("ExampleApi", client =>
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.Timeout = TimeSpan.FromSeconds(30);
 });
-
 builder.Services.AddSingleton<ICacheService, RedisCacheService>();
 
-// Tools — Services injected automatically via method parameters
+// Tools/DataTools.cs
 [McpServerTool(Name = "service_get_data"), Description("Get cached data")]
 public static async Task<string> GetData(
-    IHttpClientFactory httpClientFactory,  // Injected by DI
-    ICacheService cache,                   // Injected by DI
-    McpServer server,                      // Injected — for sampling/elicitation
+    IHttpClientFactory httpClientFactory,
+    ICacheService cache,
+    McpServer server,
     [Description("Resource ID")] string id,
     CancellationToken ct = default)
 {
-    // httpClientFactory, cache, and server are resolved automatically
     var cached = await cache.GetAsync(id, ct);
     if (cached is not null) return cached;
 
@@ -301,21 +283,11 @@ private static string FormatAsMarkdown(List<User> users)
 }
 ```
 
-**Markdown format**:
-- Use headers, lists, and formatting for clarity
-- Convert timestamps to human-readable format
-- Show display names with IDs in parentheses
-- Omit verbose metadata
-- Group related information logically
+**Markdown**: Use headers, lists, and formatting for clarity. Convert timestamps to human-readable format. Show display names with IDs in parentheses. Group related information logically.
 
-**JSON format**:
-- Return complete, structured data suitable for programmatic processing
-- Include all available fields and metadata
-- Use consistent field names and types
+**JSON**: Return complete, structured data suitable for programmatic processing. Include all available fields and metadata. Use consistent field names and types.
 
 ## Pagination Implementation
-
-For tools that list resources:
 
 ```csharp
 [McpServerTool(Name = "service_list_items"), Description("List items with pagination")]
@@ -325,7 +297,6 @@ public static async Task<string> ListItems(
     [Description("Results to skip (default: 0)")] int offset = 0,
     CancellationToken ct = default)
 {
-    // Clamp values to valid ranges
     limit = Math.Clamp(limit, 1, 100);
     offset = Math.Max(0, offset);
 
@@ -349,16 +320,18 @@ public static async Task<string> ListItems(
 
 ## Character Limits and Truncation
 
-Add a CHARACTER_LIMIT constant to prevent overwhelming responses:
+Define a constant to prevent overwhelming responses:
 
 ```csharp
-// Constants.cs
 public static class Constants
 {
     public const int CharacterLimit = 25000;
 }
+```
 
-// In tool implementation:
+Apply truncation in tool implementations:
+
+```csharp
 var options = new JsonSerializerOptions { WriteIndented = true };
 var result = JsonSerializer.Serialize(data, options);
 
@@ -379,13 +352,13 @@ if (result.Length > Constants.CharacterLimit)
 
 ## Error Handling
 
-Provide clear, actionable error messages. Use two levels of error handling:
+Use two levels of error handling to distinguish protocol errors from tool errors:
 
 ```csharp
-// Protocol-level errors (invalid params, unknown tool) — throw exceptions
+// Protocol-level errors (invalid params, unknown tool) -- throw exceptions
 throw new McpException("Missing required argument 'id'");
 
-// Tool-level errors (API failures) — return as content, don't throw
+// Tool-level errors (API failures, validation) -- return as content
 private static string HandleApiError(Exception error) => error switch
 {
     HttpRequestException { StatusCode: System.Net.HttpStatusCode.NotFound } =>
@@ -402,25 +375,11 @@ private static string HandleApiError(Exception error) => error switch
 };
 ```
 
-**Key principle**: Tool-level errors (API failures, validation errors) should be returned as string content so the LLM can reason about them. Protocol-level errors (malformed requests) should throw exceptions.
+Tool-level errors should be returned as string content so the LLM can reason about them. Protocol-level errors (malformed requests) should throw exceptions.
 
 ## Shared Utilities
 
-Extract common functionality into reusable services:
-
-```csharp
-// Program.cs — Register shared HTTP client
-builder.Services.AddHttpClient("ServiceApi", client =>
-{
-    client.BaseAddress = new Uri(
-        Environment.GetEnvironmentVariable("API_BASE_URL")
-        ?? throw new InvalidOperationException("API_BASE_URL environment variable is not set"));
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(30);
-});
-```
-
-For complex shared logic, create a service class:
+Extract common functionality into DI-registered services:
 
 ```csharp
 // Services/ApiClient.cs
@@ -443,16 +402,23 @@ public class ApiClient(IHttpClientFactory httpClientFactory)
     }
 }
 
-// Program.cs — Register the service
+// Program.cs
 builder.Services.AddSingleton<ApiClient>();
+builder.Services.AddHttpClient("ServiceApi", client =>
+{
+    client.BaseAddress = new Uri(
+        Environment.GetEnvironmentVariable("API_BASE_URL")
+        ?? throw new InvalidOperationException("API_BASE_URL environment variable is not set"));
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 ```
 
 ## Async/Await Best Practices
 
-Always use async/await for network requests and I/O operations:
+All tool methods performing I/O must use async/await with `CancellationToken`:
 
 ```csharp
-// Good: Async with CancellationToken
 [McpServerTool(Name = "service_fetch"), Description("Fetch resource by ID")]
 public static async Task<string> FetchResource(
     IHttpClientFactory factory,
@@ -464,33 +430,28 @@ public static async Task<string> FetchResource(
     response.EnsureSuccessStatusCode();
     return await response.Content.ReadAsStringAsync(ct);
 }
-
-// Bad: Blocking with .Result
-public static string FetchResource(string id) =>
-    new HttpClient().GetStringAsync($"resource/{id}").Result; // BLOCKS thread!
 ```
 
-**Rules:**
+Rules:
 - Always pass `CancellationToken` through to async operations
-- Never use `.Result` or `.Wait()` — they cause deadlocks
-- Never `new HttpClient()` directly — use `IHttpClientFactory` to avoid socket exhaustion
+- Never use `.Result` or `.Wait()` -- these cause deadlocks in hosted environments
+- Never instantiate `HttpClient` directly -- use `IHttpClientFactory` to avoid socket exhaustion
 - Use `ConfigureAwait(false)` in library code but not in tool methods
 
 ## C# Best Practices
 
-1. **No `dynamic`** — Use strongly typed models or `JsonElement` for unknown shapes
-2. **Nullable reference types** — Enable `<Nullable>enable</Nullable>` in .csproj
-3. **Pattern matching** — Use `switch` expressions for clean error handling and branching
-4. **Raw string literals** — Use `"""..."""` for multi-line descriptions
-5. **`IHttpClientFactory`** — Never `new HttpClient()` directly (socket exhaustion)
-6. **`CancellationToken`** — Accept on all async tool methods as the last parameter
-7. **Source-generated JSON** — Use `JsonSerializerContext` for AOT compatibility
-8. **Record types** — Use for immutable DTOs: `public record User(string Id, string Name);`
-9. **Primary constructors** — Use for DI in service classes: `public class ApiClient(IHttpClientFactory factory)`
-10. **File-scoped namespaces** — Use `namespace Foo;` instead of `namespace Foo { ... }`
+1. **No `dynamic`** -- Use strongly typed models or `JsonElement` for unknown shapes
+2. **Nullable reference types** -- Enable `<Nullable>enable</Nullable>` in .csproj
+3. **Pattern matching** -- Use `switch` expressions for error handling and branching
+4. **Raw string literals** -- Use `"""..."""` for multi-line descriptions
+5. **`IHttpClientFactory`** -- Never `new HttpClient()` directly (socket exhaustion)
+6. **`CancellationToken`** -- Accept on all async tool methods as the last parameter
+7. **Source-generated JSON** -- Use `JsonSerializerContext` for AOT compatibility
+8. **Record types** -- Use for immutable DTOs: `public record User(string Id, string Name);`
+9. **Primary constructors** -- Use for DI in service classes: `public class ApiClient(IHttpClientFactory factory)`
+10. **File-scoped namespaces** -- Use `namespace Foo;` instead of `namespace Foo { ... }`
 
 ```csharp
-// Good: Strongly typed with modern C# features
 public record User(string Id, string Name, string Email, string? Team = null);
 public record SearchResult(int Total, List<User> Users);
 
@@ -501,18 +462,11 @@ async Task<string> GetUser(string id, CancellationToken ct)
         ? JsonSerializer.Serialize(user, options)
         : "Error: User not found.";
 }
-
-// Bad: Using dynamic
-async Task<string> GetUser(string id)
-{
-    dynamic user = await client.GetAsync($"users/{id}");  // No type safety!
-    return user.name;
-}
 ```
 
 ## Logging
 
-**CRITICAL**: For stdio transport, ALL logs must go to stderr. stdout is reserved for MCP protocol messages — logging to stdout breaks the protocol.
+**CRITICAL**: For stdio transport, all logs must go to stderr. stdout is reserved for MCP protocol messages -- logging to stdout breaks the protocol.
 
 ```csharp
 builder.Logging.AddConsole(options =>
@@ -521,23 +475,23 @@ builder.Logging.AddConsole(options =>
 });
 ```
 
-For tools that need to log:
+Inject `ILogger` into tool methods via DI for structured logging:
 
 ```csharp
 [McpServerTool(Name = "service_process"), Description("Process data")]
 public static async Task<string> ProcessData(
-    ILogger<ServiceTools> logger,  // Injected via DI
+    ILogger<ServiceTools> logger,
     [Description("Data ID")] string id,
     CancellationToken ct = default)
 {
     logger.LogInformation("Processing data {Id}", id);
-    // ... implementation
+    // ...
 }
 ```
 
 ## McpServer Injection (Sampling)
 
-Tools can request the `McpServer` instance to make sampling requests back to the client:
+Tools can request the `McpServer` instance via DI to make sampling requests back to the client. This enables server-initiated LLM calls for tasks like summarization:
 
 ```csharp
 [McpServerTool(Name = "service_summarize"), Description("Summarize content from URL")]
@@ -608,6 +562,7 @@ dotnet publish -c Release -r linux-x64 --self-contained /p:PublishAot=true
 ### NuGet MCP Server Metadata
 
 Create `.mcp/server.json` for discoverability:
+
 ```json
 {
   "name": "service-mcp-server",
@@ -619,7 +574,7 @@ Create `.mcp/server.json` for discoverability:
 
 ## HTTP/SSE Transport
 
-For servers that need HTTP transport instead of stdio:
+For servers that require HTTP transport instead of stdio:
 
 ```csharp
 using ModelContextProtocol.AspNetCore;
@@ -631,11 +586,69 @@ app.MapMcp();
 app.Run();
 ```
 
-Requires the `ModelContextProtocol.AspNetCore` NuGet package. The `MapMcp()` extension method adds the Streamable HTTP endpoint.
+Requires the `ModelContextProtocol.AspNetCore` NuGet package. The `MapMcp()` extension method registers the Streamable HTTP endpoint.
+
+## Code Best Practices
+
+### Composability
+
+Structure tool classes by domain so they can be composed independently:
+
+```csharp
+// Tools/UserTools.cs
+[McpServerToolType]
+public static class UserTools { /* user-related tools */ }
+
+// Tools/ProjectTools.cs
+[McpServerToolType]
+public static class ProjectTools { /* project-related tools */ }
+```
+
+`WithToolsFromAssembly()` discovers all `[McpServerToolType]` classes automatically. For selective registration, use `WithTools<UserTools>()` to include specific tool classes.
+
+### Code Reuse
+
+Extract shared logic into DI services rather than duplicating across tool classes:
+
+```csharp
+public class PaginationHelper
+{
+    public static (int limit, int offset) Clamp(int limit, int offset)
+        => (Math.Clamp(limit, 1, 100), Math.Max(0, offset));
+
+    public static object BuildResponse<T>(List<T> items, int total, int offset) => new
+    {
+        total,
+        count = items.Count,
+        offset,
+        items,
+        has_more = total > offset + items.Count,
+        next_offset = total > offset + items.Count ? offset + items.Count : (int?)null
+    };
+}
+```
+
+## Advanced MCP Features
+
+### Resource Registration
+
+The MCP C# SDK supports resource registration through attributes, following the same pattern as tools. Consult the SDK documentation for the latest resource registration APIs as this area is under active development.
+
+### Transport Options
+
+| Transport | Use Case | Entry Point |
+|-----------|----------|-------------|
+| **stdio** | CLI tools, local processes | `WithStdioServerTransport()` |
+| **HTTP/SSE** | Web services, remote access | `MapMcp()` via ASP.NET Core |
+
+stdio is the default for most MCP servers. Use HTTP/SSE when the server must be accessible over the network or integrated into an existing web application.
 
 ## Complete Example
 
+A fully working MCP server with search, get, and create operations:
+
 ```csharp
+// Program.cs
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -645,10 +658,6 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
-// Constants
-const int CHARACTER_LIMIT = 25000;
-
-// Configure host
 var builder = Host.CreateApplicationBuilder(args);
 builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
 
@@ -667,31 +676,32 @@ builder.Services
 
 await builder.Build().RunAsync();
 
-// Tool definitions
+// Models/User.cs
+public record User(string Id, string Name, string Email, string? Team = null);
+public record SearchResult(int Total, List<User> Users);
+
+// Tools/ExampleTools.cs
 [McpServerToolType]
 public static class ExampleTools
 {
+    private const int CharacterLimit = 25000;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     [McpServerTool(Name = "example_search_users"), Description(
         """
         Search for users in the Example system by name, email, or team.
-        
+
         This tool searches across all user profiles. It does NOT create or
         modify users, only searches existing ones.
-        
+
         Args:
-          - query (string): Search string (min 2 chars, max 200)
+          - query (string): Search string (min 2 chars)
           - limit (int): Max results 1-100 (default: 20)
           - offset (int): Skip results for pagination (default: 0)
           - responseFormat (string): 'markdown' or 'json' (default: markdown)
-        
+
         Returns:
-          Search results with total, count, users array, and pagination info.
-        
-        Examples:
-          - "Find marketing team" -> query="team:marketing"
-          - "Search for John" -> query="john"
+          Search results with total count, user details, and pagination info.
         """)]
     public static async Task<string> SearchUsers(
         IHttpClientFactory httpClientFactory,
@@ -701,7 +711,9 @@ public static class ExampleTools
         [Description("Output format: 'markdown' or 'json' (default: markdown)")] string responseFormat = "markdown",
         CancellationToken ct = default)
     {
-        if (query.Length < 2) return "Error: Query must be at least 2 characters.";
+        if (query.Length < 2)
+            return "Error: Query must be at least 2 characters.";
+
         limit = Math.Clamp(limit, 1, 100);
         offset = Math.Max(0, offset);
 
@@ -727,9 +739,8 @@ public static class ExampleTools
             };
 
             if (responseFormat.Equals("json", StringComparison.OrdinalIgnoreCase))
-                return JsonSerializer.Serialize(output, JsonOptions);
+                return Truncate(JsonSerializer.Serialize(output, JsonOptions));
 
-            // Markdown format
             var sb = new StringBuilder();
             sb.AppendLine($"# User Search Results: '{query}'");
             sb.AppendLine();
@@ -739,10 +750,13 @@ public static class ExampleTools
             {
                 sb.AppendLine($"## {user.Name} ({user.Id})");
                 sb.AppendLine($"- **Email**: {user.Email}");
-                if (user.Team is not null) sb.AppendLine($"- **Team**: {user.Team}");
+                if (user.Team is not null)
+                    sb.AppendLine($"- **Team**: {user.Team}");
                 sb.AppendLine();
             }
-            if (output.has_more) sb.AppendLine($"_More results available. Use offset={output.next_offset} to see next page._");
+            if (output.has_more)
+                sb.AppendLine($"_More results available. Use offset={output.next_offset} to see next page._");
+
             return sb.ToString();
         }
         catch (HttpRequestException ex)
@@ -754,16 +768,12 @@ public static class ExampleTools
     [McpServerTool(Name = "example_get_user"), Description(
         """
         Get detailed information about a specific user by their ID.
-        
+
         Args:
           - userId (string): The user ID (e.g., 'U123456')
-        
+
         Returns:
           JSON with user details including id, name, email, and team.
-        
-        Error Handling:
-          - Returns "User not found" for invalid IDs
-          - Returns permission error if access is denied
         """)]
     public static async Task<string> GetUser(
         IHttpClientFactory httpClientFactory,
@@ -786,12 +796,12 @@ public static class ExampleTools
     [McpServerTool(Name = "example_create_user"), Description(
         """
         Create a new user in the Example system.
-        
+
         Args:
           - name (string): User's full name (required)
           - email (string): User's email address (required)
           - team (string): Team assignment (optional)
-        
+
         Returns:
           JSON with the created user including their generated ID.
         """)]
@@ -829,38 +839,77 @@ public static class ExampleTools
             "Error: Resource not found. Please check the ID is correct.",
         System.Net.HttpStatusCode.Forbidden =>
             "Error: Permission denied. You don't have access to this resource.",
-        (System.Net.HttpStatusCode)429 =>
-            "Error: Rate limit exceeded. Please wait before making more requests.",
         System.Net.HttpStatusCode.Unauthorized =>
             "Error: Invalid API authentication. Check your API key.",
+        (System.Net.HttpStatusCode)429 =>
+            "Error: Rate limit exceeded. Please wait before making more requests.",
         _ => $"Error: API request failed with status {ex.StatusCode}"
     };
+
+    private static string Truncate(string result)
+    {
+        if (result.Length <= CharacterLimit) return result;
+
+        var response = new
+        {
+            truncated = true,
+            truncation_message = "Response exceeded character limit and was truncated. " +
+                "Use 'offset' parameter or add filters to see more results."
+        };
+        return JsonSerializer.Serialize(response, JsonOptions);
+    }
 }
-
-// Models
-public record User(string Id, string Name, string Email, string? Team = null);
-public record SearchResult(int Total, List<User> Users);
 ```
-
----
 
 ## Quality Checklist
 
-Before shipping a C#/.NET MCP server, verify:
+### Strategic Design
+
+- [ ] Server name follows `{service}-mcp-server` format
+- [ ] Tool names are `snake_case` with service prefix via `Name = "..."`
+- [ ] Tool descriptions document args, return values, and examples
+- [ ] Response format options (JSON + Markdown) where applicable
+- [ ] Pagination on list/search tools (`limit`, `offset`, `has_more`)
+- [ ] `CharacterLimit` constant with truncation handling
+
+### Implementation Quality
 
 - [ ] Uses `[McpServerToolType]` on tool classes and `[McpServerTool]` on methods
 - [ ] All tools have `[Description]` on both method and parameters
-- [ ] Tool names are `snake_case` with service prefix via `Name = "..."`
-- [ ] `AddMcpServer()` with appropriate transport (stdio or HTTP)
-- [ ] Logging to stderr (`LogToStandardErrorThreshold = LogLevel.Trace`)
+- [ ] Input validation with clear error messages
+- [ ] Centralized error handling (no leaked internals or stack traces)
+- [ ] Tool-level errors returned as content, protocol errors thrown as exceptions
+
+### C# Quality
+
 - [ ] DI for services (`IHttpClientFactory`, not `new HttpClient()`)
 - [ ] `CancellationToken` on all async tool methods
-- [ ] `Microsoft.Extensions.Hosting` for lifecycle management
-- [ ] Centralized error handling (no leaked internals or stack traces)
-- [ ] Pagination on list/search tools (`limit`, `offset`, `has_more`)
-- [ ] `CHARACTER_LIMIT` constant with truncation handling
-- [ ] Response format options (JSON + Markdown) where applicable
-- [ ] No `dynamic` types — use strongly typed models or records
+- [ ] No `dynamic` types -- use strongly typed models or records
 - [ ] Nullable reference types enabled (`<Nullable>enable</Nullable>`)
-- [ ] API keys from environment variables, never hardcoded
+- [ ] Record types for DTOs, primary constructors for services
+- [ ] No `.Result` or `.Wait()` calls on tasks
+
+### Advanced Features
+
+- [ ] `McpServer` injection for sampling where applicable
+- [ ] Appropriate transport selected (stdio vs HTTP/SSE)
+- [ ] `Microsoft.Extensions.Hosting` for lifecycle management
+
+### Project Configuration
+
+- [ ] .csproj targets .NET 9+
 - [ ] Container or NuGet publishing configured
+- [ ] `.mcp/server.json` metadata for discoverability
+- [ ] API keys from environment variables, never hardcoded
+
+### Code Quality
+
+- [ ] Shared utilities extracted into DI services
+- [ ] Tool classes organized by domain
+- [ ] Consistent `JsonSerializerOptions` usage
+
+### Testing and Build
+
+- [ ] Logging to stderr (`LogToStandardErrorThreshold = LogLevel.Trace`)
+- [ ] `AddMcpServer()` with appropriate transport configured
+- [ ] Server builds and runs without errors

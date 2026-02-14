@@ -2,33 +2,23 @@
 
 Best practices for skills that integrate with MCP tools, based on the [Skills, Tools & MCP Development Guide](https://github.com/spboyer/azure-mcp-v-skills/blob/main/skills-mcp-development-guide.md).
 
-## The Hybrid Pattern
+## Core Principle: Teach Domain Knowledge, Not Tool Usage
 
-Skills orchestrate the **how**. MCP Tools execute the **what**.
+Skills should provide what the agent *can't* infer from MCP tool descriptions alone:
+**gotchas, priority orderings, anti-patterns, and domain context.**
+
+The agent can reason about tool parameters from MCP schemas — step-by-step
+tool call recipes duplicate those schemas and break when APIs change.
 
 ```
-SKILL orchestrates → MCP executes → SKILL interprets → User output
+SKILL provides domain knowledge → Agent reasons about tools → MCP executes
 ```
 
-## Required Sections for MCP-Integrated Skills
+## Sections for MCP-Integrated Skills
 
 When a skill's description includes `INVOKES:` referencing MCP tools, add these sections:
 
-### 1. MCP Tools Used Table
-
-Document every MCP tool invocation:
-
-```markdown
-## MCP Tools Used
-
-| Step | Tool | Command | Purpose |
-|------|------|---------|---------|
-| 1 | `azure-get_azure_bestpractices` | `get_bestpractices` | Load guidance |
-| 3 | `azure-deploy` | `plan_get` | Analyze workspace |
-| 5 | `azure-azd` | `up` | Execute deployment |
-```
-
-### 2. Prerequisites Section
+### 1. Prerequisites Section (Required)
 
 List required tools and permissions:
 
@@ -40,14 +30,32 @@ List required tools and permissions:
 - **Enable MCP:** Run `/mcp add azure` if not enabled
 ```
 
-### 3. CLI Fallback Pattern
+### 2. MCP Tools Used Table (Optional)
+
+A tools table is **optional**. When included, document dependencies at the
+**category level**, not per-parameter recipes. Detailed step-by-step tool call
+sequences are fragile — they duplicate what's already in the MCP tool schema
+and break when APIs change.
+
+```markdown
+## MCP Tools Used
+
+| Tool Category | Purpose |
+|---------------|---------|
+| `azure-get_azure_bestpractices` | Load Azure guidance before generating code |
+| `azure-deploy` | Analyze workspace and plan deployment |
+| `azure-azd` | Execute azd deployment commands |
+```
+
+> **Avoid:** `Call tool X with command Y, param Z = value` recipes.
+> **Prefer:** Domain knowledge the agent can't get from tool descriptions
+> (e.g., "Always call best-practices *before* generating IaC").
+
+### 3. CLI Fallback Pattern (Optional)
 
 Document what to do when MCP is unavailable:
 
 ```markdown
-**MCP Server (Preferred):**
-Use `azure-keyvault` MCP with command `keyvault_secret_get`.
-
 **CLI Fallback (if MCP unavailable):**
 ```bash
 az keyvault secret show --vault-name $VAULT --name $SECRET
@@ -86,47 +94,46 @@ Skills with `INVOKES:` in description get additional checks:
 
 | Check | Impact |
 |-------|--------|
-| Has MCP Tools Used table | Required for High score |
-| Has Prerequisites section | Recommended |
-| Has CLI fallback | Recommended |
+| Has `INVOKES:` in frontmatter | Required for High score |
+| Has Prerequisites section | Required for High score |
 | No name collision (or resolved) | Required for High score |
+| Has MCP Tools Used table | Recommended (category-level) |
+| Has CLI fallback | Optional |
 
 ## Anti-Patterns
 
-### ❌ Embedding CLI Commands Without MCP Option
+### ❌ Step-by-Step Tool Call Recipes
 
 ```markdown
-## Bad: CLI only
-Run: az storage account list --subscription $SUB
+## Bad: Duplicates MCP schema, breaks when API changes
+Step 1: Call `azure-deploy` with command `plan_get`, param `appType=web`.
+Step 2: Call `azure-azd` with command `up`, param `env=prod`.
 ```
 
-### ✅ MCP First with CLI Fallback
+### ✅ Domain Knowledge the Agent Can't Infer
 
 ```markdown
-## Good: MCP preferred
-**Using MCP:**
-Invoke `azure-storage` with command `storage_account_list`.
-
-**CLI Fallback:**
-az storage account list --subscription $SUB
+## Good: Teaches ordering/gotchas, lets agent reason about tool params
+Always fetch best-practices BEFORE generating IaC — the guidance
+affects which Azure services to select.
+Deploy staging before production. Validate with `azd env list` first.
 ```
 
-### ❌ Duplicating Patterns in Skill
+### ❌ Embedding Patterns Available via MCP
 
 ```markdown
-## Bad: Embedding azure.yaml patterns
+## Bad: Hardcoded patterns that MCP tools already provide
 services:
   web:
     host: staticwebapp
 ```
 
-### ✅ Invoking MCP for Patterns
+### ✅ Pointing to the Source of Truth
 
 ```markdown
-## Good: Single source of truth
-Call `azure-get_azure_bestpractices` with:
-- resource: "static-web-app"
-- action: "azure-yaml"
+## Good: References tool category, not specific parameters
+Use `azure-get_azure_bestpractices` MCP to load current
+Azure patterns — don't hardcode them in the skill.
 ```
 
 ## Reference

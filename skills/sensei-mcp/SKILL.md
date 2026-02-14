@@ -146,6 +146,7 @@ Ask how to proceed:
 - [mcp-project-structure.md](references/mcp-project-structure.md) - Expected project layouts
 - [mcp-evaluation-guide.md](references/mcp-evaluation-guide.md) - Writing MCP evaluations
 - [mcp-examples.md](references/mcp-examples.md) - Before/after audit examples
+- [mcp-testing.md](references/mcp-testing.md) - Testing strategy (unit, schema, evaluations)
 
 ## Commit Messages
 
