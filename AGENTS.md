@@ -4,32 +4,30 @@ Instructions for AI coding agents working with this repository.
 
 ## Overview
 
-This is **Sensei**, a multi-skill repository for auditing skill frontmatter compliance and MCP server quality. Each skill lives in its own folder under `skills/`, following the [Anthropic skill specification](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills).
+This is **Sensei**, a unified quality auditor for Anthropic skills and MCP servers. It auto-detects whether the target is a skill (SKILL.md) or MCP server project and runs the appropriate improvement loop. Follows the [Anthropic skill specification](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills).
 
 ## Repository Structure
 
 ```
 sensei/
 ├── skills/
-│   ├── sensei/               # Skill frontmatter auditor
-│   │   ├── SKILL.md
-│   │   └── references/
-│   │       ├── scoring.md
-│   │       ├── mcp-integration.md
-│   │       ├── loop.md
-│   │       ├── examples.md
-│   │       ├── configuration.md
-│   │       └── test-templates/
-│   └── sensei-mcp/           # MCP server quality auditor
+│   └── sensei/               # Unified skill + MCP auditor
 │       ├── SKILL.md
 │       └── references/
-│           ├── mcp-scoring.md
-│           ├── mcp-checks-ts.md
-│           ├── mcp-checks-python.md
-│           ├── mcp-checks-csharp.md
+│           ├── scoring.md            # Skill scoring criteria
+│           ├── mcp-scoring.md        # MCP scoring criteria
+│           ├── mcp-integration.md    # MCP integration for skills
+│           ├── mcp-checks-ts.md      # TypeScript MCP checks
+│           ├── mcp-checks-python.md  # Python MCP checks
+│           ├── mcp-checks-csharp.md  # C# MCP checks
 │           ├── mcp-project-structure.md
 │           ├── mcp-evaluation-guide.md
-│           └── mcp-examples.md
+│           ├── mcp-examples.md
+│           ├── mcp-testing.md
+│           ├── loop.md
+│           ├── examples.md
+│           ├── configuration.md
+│           └── test-templates/
 ├── anthropic-pr/             # C# guide for Anthropic PR
 │   └── csharp_mcp_server.md
 ├── README.md
@@ -165,7 +163,7 @@ npm run tokens -- compare [refs...]    # Compare tokens between git refs
 
 ### Adding a New Reference File
 
-1. Create file in the appropriate `skills/{skill-name}/references/` folder
+1. Create file in `skills/sensei/references/` (prefix with `mcp-` for MCP-related docs)
 2. Run `npm run tokens -- check` to verify limits
 3. Add link in SKILL.md under "Reference Documentation" section
 

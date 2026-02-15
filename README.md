@@ -2,7 +2,7 @@
 
 > "A true master teaches not by telling, but by refining." - The Skill Sensei
 
-Sensei automates the improvement of [Agent Skills](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) frontmatter compliance using the [Ralph loop pattern](https://github.com/soderlund/ralph) - iteratively improving skills until they reach Medium-High compliance with all tests passing.
+Sensei automates the improvement of [Agent Skills](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) frontmatter compliance and [MCP server](https://modelcontextprotocol.io/) code quality using the [Ralph loop pattern](https://github.com/soderlund/ralph) — auto-detecting whether the target is a skill or MCP project and running the right improvement loop.
 
 ## Table of Contents
 
@@ -79,7 +79,7 @@ Run sensei on all skills
 npm run tokens -- count
 
 # Count tokens in specific files
-npm run tokens -- count skills/sensei/SKILL.md skills/*/references/*.md
+npm run tokens -- count skills/sensei/SKILL.md skills/sensei/references/*.md
 
 # Check files against token limits
 npm run tokens -- check
@@ -279,7 +279,7 @@ When a skill's description contains `INVOKES:`, Sensei performs additional check
 - 2/4 = Fair (needs improvement)
 - 0-1/4 = Poor (missing key patterns)
 
-See [references/mcp-integration.md](skills/sensei/references/mcp-integration.md) for detailed patterns.
+See [mcp-integration.md](skills/sensei/references/mcp-integration.md) for detailed patterns.
 
 ### Token Budget
 
@@ -432,9 +432,9 @@ Open an issue with skill name, starting state, and `git log --oneline -10`.
 
 ---
 
-## Sensei-MCP
+## MCP Server Auditing
 
-Companion skill that audits **MCP server projects** for quality and best practices across TypeScript, Python, and C#. Checks tool naming, descriptions, annotations, error handling, pagination, security, and documentation. See [skills/sensei-mcp/SKILL.md](skills/sensei-mcp/SKILL.md) for details.
+Sensei also audits **MCP server projects** for quality and best practices across TypeScript, Python, and C#. It auto-detects the target type — say "sensei check my mcp" or just "run sensei" in an MCP project directory. Checks tool naming, descriptions, annotations, error handling, pagination, security, and documentation. See [skills/sensei/SKILL.md](skills/sensei/SKILL.md) for details.
 
 ---
 
