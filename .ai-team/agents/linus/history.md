@@ -39,3 +39,4 @@
   - Section rhythm: `py-24 md:py-32 px-6` with `max-w-5xl mx-auto` (hero uses `max-w-4xl`)
 
 📌 Team update (2026-02-17): Blog post examples must use generic/themed references (pdf-processor), not Azure-specific MCP tools; Anthropic uses "informed by" framing — decided by Basher
+📌 Team update (2026-02-17): docs/README.md now documents actual project (structure, design system, component inventory) — not Astro boilerplate — decided by Basher

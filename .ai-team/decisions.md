@@ -71,3 +71,8 @@
 **By:** Basher
 **What:** INVOKES and FOR SINGLE OPERATIONS examples in sensei-launch.md must use the pdf-processor theme (pdf-tools MCP, file-system) — not Azure-specific MCP tools (azure-azd, azure-deploy). The Anthropic reference uses "informed by" framing, not "builds on."
 **Why:** The blog post is public-facing. Azure-internal MCP tool names mean nothing to external readers and create a false impression that Sensei is Azure-specific. All examples in a post should use a consistent theme — the pdf-processor skill is the running example throughout, so INVOKES/FOR SINGLE OPERATIONS must match. The Anthropic framing matters because Sensei draws from multiple specification influences; over-crediting one source misrepresents the project's origins. These fixes were approved once and lost to a rewrite — this decision prevents a third occurrence.
+
+### 2026-02-17: docs/README.md documents actual project, not Astro boilerplate
+**By:** Basher
+**What:** Replaced the default Astro Starter Kit README with project-specific documentation covering structure, commands, deployment, design system (palette tokens, typography, spacing conventions), component inventory, and implementation notes. No emoji section headers — clean, scannable, developer-focused.
+**Why:** The boilerplate README was actively misleading — it described a generic Astro project, not the Sensei site. Any contributor opening `docs/` would get zero useful context about the palette, the deployment pipeline, or why Tailwind v4 uses `@tailwindcss/vite` instead of the Astro integration. The new README pulls from decisions.md so the documented design system matches what was actually decided and built.

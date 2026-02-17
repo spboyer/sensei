@@ -39,3 +39,4 @@
 - **Git auth note:** On this machine, `credential.helper=manager` hangs without output (likely needs GUI). Use `credential.helper=wincred` as fallback — triggers browser auth flow that works in non-interactive terminals.
 📌 Team update (2026-02-09): External links must include target="_blank" and rel="noopener noreferrer" — QA finding by Livingston
 📌 Team update (2026-02-09): SEO meta tags (OG, Twitter card, meta description) added to BaseLayout.astro — QA fix by Livingston
+📌 Team update (2026-02-17): docs/README.md now documents actual project (structure, design system, component inventory) — not Astro boilerplate — decided by Basher

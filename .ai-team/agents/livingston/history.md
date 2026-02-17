@@ -18,3 +18,4 @@
   - favicon.svg: Replaced Astro default logo with orange (#f97316) torii gate icon matching the sensei/dojo theme.
 📌 QA verified (2026-02-09): All Tailwind custom colors (black, dark-gray, mid-gray, light-gray, orange-accent) are defined in @theme in global.css. No broken class references. All components use mobile-first responsive design with md: breakpoints. Semantic HTML hierarchy (h1→h2→h3) is clean. Both copy buttons have aria-labels. Footer nav links all have target="_blank" rel="noopener noreferrer".
 📌 Team update (2026-02-09): GitHub Pages not yet enabled — deploy job fails with 404. Owner must enable Pages with "GitHub Actions" source in repo settings — decided by Rusty
+📌 Team update (2026-02-17): docs/README.md now documents actual project (structure, design system, component inventory) — not Astro boilerplate — decided by Basher
