@@ -56,3 +56,13 @@
 **By:** Rusty
 **What:** The `deploy-pages.yml` workflow build job passes, but the deploy job fails with `404 Not Found` because GitHub Pages is not enabled on the `spboyer/sensei` repository. Owner must go to **Settings → Pages → Build and deployment → Source** and select **"GitHub Actions"**. After enabling, either re-run the failed workflow or push any change to `docs/` to trigger a new deploy. The site URL will be `https://spboyer.github.io/sensei/`.
 **Why:** The `actions/deploy-pages@v4` action requires the Pages API to be enabled on the repo. This is a one-time manual step that can't be done via git — it's a repo settings change. Once enabled, all future pushes to `main` touching `docs/**` will auto-deploy.
+
+### 2026-02-09: Social post platform formatting rules
+**By:** Basher
+**What:** LinkedIn posts must use plain text only (no markdown — backticks, code blocks, and headers don't render). Links go in first comment, not post body. X posts use thread format with 280 char limit per tweet and 0-1 hashtags. All social posts use Shayne's personal voice ("I built") not project voice ("We announce").
+**Why:** LinkedIn doesn't render markdown — backticks and code blocks appear as raw text and look broken. Inline links in LinkedIn posts are penalized by the algorithm (reduced reach). X's character limit requires thread format for any substantive content. Personal voice drives higher engagement on both platforms. These rules apply to all future social content for the project.
+
+### 2026-02-09: Blog post is LinkedIn Articles format (markdown OK)
+**By:** Basher
+**What:** The launch blog post (sensei-launch.md) targets LinkedIn Articles (long-form), which fully supports markdown, headers, code blocks, and rich formatting. The no-markdown rule applies only to LinkedIn feed posts, not Articles.
+**Why:** LinkedIn Articles and LinkedIn feed posts have completely different rendering engines. Conflating them would result in either ugly feed posts (raw markdown) or stripped-down articles (no code examples). The distinction must be clear for anyone writing content.
