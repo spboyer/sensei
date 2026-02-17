@@ -1,43 +1,96 @@
-# Astro Starter Kit: Minimal
+# Sensei — Site
 
-```sh
-npm create astro@latest -- --template minimal
-```
+Marketing and documentation site for [Sensei](https://spboyer.github.io/sensei/).
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Built with Astro 5.x and Tailwind CSS v4. Single-page, zero client JS, static output.
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
+## Project Structure
 
 ```text
-/
-├── public/
+docs/
+├── astro.config.mjs          # Site config (base: /sensei, static output)
+├── package.json
+├── public/                    # Static assets
 ├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+│   ├── components/
+│   │   ├── Hero.astro         # Tagline, install command, copy-to-clipboard
+│   │   ├── Problem.astro      # "Why skills fail" pain point
+│   │   ├── HowItWorks.astro   # Three-step workflow explanation
+│   │   ├── BeforeAfter.astro  # Low→High YAML transformation (manual syntax highlight)
+│   │   ├── ScoringLevels.astro # Low / Medium / Medium-High / High breakdown
+│   │   ├── QuickStart.astro   # Install + run commands, copy-to-clipboard
+│   │   └── Footer.astro       # Links, copyright
+│   ├── layouts/
+│   │   └── BaseLayout.astro   # <head>, OG/Twitter meta tags, global styles
+│   ├── pages/
+│   │   └── index.astro        # Single landing page composing all components
+│   └── styles/
+│       └── global.css         # Tailwind v4 @theme directives (palette, typography)
+└── tsconfig.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Commands
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+Run from the `docs/` directory:
 
-Any static assets, like images, can be placed in the `public/` directory.
+| Command           | Action                                              |
+| :---------------- | :-------------------------------------------------- |
+| `npm install`     | Install dependencies                                |
+| `npm run dev`     | Local dev server at `localhost:4321/sensei/`         |
+| `npm run build`   | Production build to `dist/` (static HTML, no JS)    |
+| `npm run preview` | Preview the production build locally before deploy  |
 
-## 🧞 Commands
+## Deployment
 
-All commands are run from the root of the project, from a terminal:
+GitHub Actions auto-deploys on push to `main` when `docs/**` changes.
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+- **Workflow:** `.github/workflows/deploy-pages.yml`
+- **Pattern:** Two-job build + deploy (checkout → build → upload artifact → deploy-pages)
+- **Trigger:** Push to `main` (`docs/**` path filter) + manual `workflow_dispatch`
+- **Prerequisite:** GitHub Pages source must be set to "GitHub Actions" in repo settings
 
-## 👀 Want to learn more?
+## Design System
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Danish minimalist. Black ground, restrained palette, generous whitespace.
+
+### Palette
+
+| Token              | Value     | Usage                        |
+| :----------------- | :-------- | :--------------------------- |
+| `--color-black`    | `#0a0a0a` | Page background              |
+| `--color-dark-gray`| `#1a1a1a` | Card / section backgrounds   |
+| `--color-mid-gray` | `#6b7280` | Secondary text, dividers     |
+| `--color-light-gray`| `#f5f5f5`| Primary text                 |
+| `--color-orange-accent` | `#f97316` | CTAs, highlights, keys   |
+
+### Typography
+
+Inter via `--font-sans`. System font stack fallback.
+
+### Spacing
+
+All sections: `py-24 md:py-32 px-6`. Content: `max-w-5xl mx-auto` (hero: `max-w-4xl`). Dividers: `border-mid-gray/10`.
+
+### Syntax Highlighting
+
+BeforeAfter uses hand-crafted `<span>` elements — three colors (orange keys, light-gray values, mid-gray comments). No Shiki/Prism dependency.
+
+## Components
+
+Each component is self-contained — own data, markup, inline scripts. No shared state, no external JS.
+
+| Component        | Purpose                                          |
+| :--------------- | :----------------------------------------------- |
+| `Hero`           | Headline, subline, install command with clipboard |
+| `Problem`        | Names the pain — skill collision, vague triggers  |
+| `HowItWorks`     | Three-step scan → score → fix flow               |
+| `BeforeAfter`    | Side-by-side YAML: Low score → High score         |
+| `ScoringLevels`  | Four-tier breakdown with criteria per level       |
+| `QuickStart`     | Install + run block with clipboard, repo link     |
+| `Footer`         | Navigation links, license, copyright              |
+
+## Notes
+
+- Tailwind v4 uses `@tailwindcss/vite` — not `@astrojs/tailwind`. Theme lives in CSS, not a JS config file.
+- All external links use `target="_blank" rel="noopener noreferrer"`.
+- Copy-to-clipboard uses `navigator.clipboard` with unique element IDs (avoids collisions between Hero and QuickStart).
