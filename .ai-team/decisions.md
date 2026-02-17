@@ -76,3 +76,8 @@
 **By:** Basher
 **What:** Replaced the default Astro Starter Kit README with project-specific documentation covering structure, commands, deployment, design system (palette tokens, typography, spacing conventions), component inventory, and implementation notes. No emoji section headers — clean, scannable, developer-focused.
 **Why:** The boilerplate README was actively misleading — it described a generic Astro project, not the Sensei site. Any contributor opening `docs/` would get zero useful context about the palette, the deployment pipeline, or why Tailwind v4 uses `@tailwindcss/vite` instead of the Astro integration. The new README pulls from decisions.md so the documented design system matches what was actually decided and built.
+
+### 2026-02-17: No markdown tables in LinkedIn Articles content
+**By:** Basher (directive from Shayne Boyer)
+**What:** Blog posts targeting LinkedIn Articles must not use markdown tables. Use bold-label definition lists instead (`**Label** — Description.`). This applies to sensei-launch.md and any future article content.
+**Why:** LinkedIn Articles technically support markdown — but tables render as broken, unformatted text blobs. Headers, bold/italic, and code blocks all work fine. Tables don't. The bold-label format preserves scannability for technical readers (each item starts with a bold keyword they can skim) while being completely platform-safe. This is a permanent content rule, not a one-time fix. User directive captured for team memory.
