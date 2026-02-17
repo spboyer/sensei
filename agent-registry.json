@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "squads": [
+    {
+      "id": "sensei",
+      "name": "sensei",
+      "description": "GitHub Pages site for Sensei — clean Danish-style developer marketing page built with Astro + Tailwind CSS.",
+      "path": "c:\\Users\\shboyer\\GitHub\\sensei",
+      "icon": "🔷",
+      "universe": "unknown",
+      "launchCommand": ""
+    }
+  ]
+}
