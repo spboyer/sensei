@@ -66,3 +66,8 @@
 **By:** Basher
 **What:** The launch blog post (sensei-launch.md) targets LinkedIn Articles (long-form), which fully supports markdown, headers, code blocks, and rich formatting. The no-markdown rule applies only to LinkedIn feed posts, not Articles.
 **Why:** LinkedIn Articles and LinkedIn feed posts have completely different rendering engines. Conflating them would result in either ugly feed posts (raw markdown) or stripped-down articles (no code examples). The distinction must be clear for anyone writing content.
+
+### 2026-02-17: Blog post examples must use generic/themed references, not internal Azure tools
+**By:** Basher
+**What:** INVOKES and FOR SINGLE OPERATIONS examples in sensei-launch.md must use the pdf-processor theme (pdf-tools MCP, file-system) — not Azure-specific MCP tools (azure-azd, azure-deploy). The Anthropic reference uses "informed by" framing, not "builds on."
+**Why:** The blog post is public-facing. Azure-internal MCP tool names mean nothing to external readers and create a false impression that Sensei is Azure-specific. All examples in a post should use a consistent theme — the pdf-processor skill is the running example throughout, so INVOKES/FOR SINGLE OPERATIONS must match. The Anthropic framing matters because Sensei draws from multiple specification influences; over-crediting one source misrepresents the project's origins. These fixes were approved once and lost to a rewrite — this decision prevents a third occurrence.
