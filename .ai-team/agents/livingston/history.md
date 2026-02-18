@@ -23,3 +23,4 @@
 📌 Team update (2026-02-18): SkillsBench advisory checks 11–15 added to references/scoring.md (advisory-only, no level changes) — decided by Rusty
 📌 Team update (2026-02-18): SkillsBench evidence base added as references/skillsbench.md (859 tokens) — decided by Basher
 📌 Team update (2026-02-18): All coders must use Opus 4.6; all code review must use GPT-5.3-Codex — directive by Shayne Boyer
+📌 Team update (2026-02-18): Score subcommand documented in README.md and AGENTS.md — decided by Basher

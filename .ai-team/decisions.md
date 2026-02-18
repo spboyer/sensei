@@ -57,10 +57,10 @@
 **What:** The `deploy-pages.yml` workflow build job passes, but the deploy job fails with `404 Not Found` because GitHub Pages is not enabled on the `spboyer/sensei` repository. Owner must go to **Settings → Pages → Build and deployment → Source** and select **"GitHub Actions"**. After enabling, either re-run the failed workflow or push any change to `docs/` to trigger a new deploy. The site URL will be `https://spboyer.github.io/sensei/`.
 **Why:** The `actions/deploy-pages@v4` action requires the Pages API to be enabled on the repo. This is a one-time manual step that can't be done via git — it's a repo settings change. Once enabled, all future pushes to `main` touching `docs/**` will auto-deploy.
 
-### 2026-02-09: Social post platform formatting rules
-**By:** Basher
-**What:** LinkedIn posts must use plain text only (no markdown — backticks, code blocks, and headers don't render). Links go in first comment, not post body. X posts use thread format with 280 char limit per tweet and 0-1 hashtags. All social posts use Shayne's personal voice ("I built") not project voice ("We announce").
-**Why:** LinkedIn doesn't render markdown — backticks and code blocks appear as raw text and look broken. Inline links in LinkedIn posts are penalized by the algorithm (reduced reach). X's character limit requires thread format for any substantive content. Personal voice drives higher engagement on both platforms. These rules apply to all future social content for the project.
+### 2026-02-09: Social and article content formatting rules
+**By:** Basher (consolidated 2026-02-18)
+**What:** Three content types with distinct formatting rules: (1) **LinkedIn feed posts** — plain text only (no markdown), links in first comment not post body, personal voice ("I built"). (2) **LinkedIn Articles** — markdown OK for headers, bold/italic, code blocks, but **no tables** (render as broken text). Use bold-label definition lists (`**Label** — Description.`) instead. (3) **X posts** — thread format, 280 char limit per tweet, 0-1 hashtags. All content uses Shayne's personal voice.
+**Why:** LinkedIn feed posts and Articles have completely different rendering engines — conflating them causes either broken feed posts or stripped-down articles. Feed post links are penalized by the algorithm. Tables in Articles render as broken text blobs. Personal voice drives higher engagement. These rules are permanent content standards.
 
 ### 2026-02-18: SkillsBench evidence base added as reference document
 **By:** Basher
@@ -82,13 +82,7 @@
 **What:** Added 5 advisory checks (11–15) to `references/scoring.md` based on SkillsBench paper findings. Checks cover module count optimization (2–3 optimal), complexity classification (detailed > comprehensive), negative delta risk detection, procedural content quality, and over-specificity warnings. These are advisory-only — they do not change the existing Low/Medium/Medium-High/High scoring levels. Includes a summary table mapping each check to paper evidence.
 **Why:** SkillsBench (arXiv:2602.12670) provides the first large-scale empirical evidence on what makes skills effective vs harmful. Key finding: excessive documentation actually hurts performance (−2.9pp for comprehensive skills). These checks encode those findings so Sensei can warn users before they over-engineer their skills. Kept file at 1996/2000 tokens through aggressive compression.
 
-### 2026-02-09: Blog post is LinkedIn Articles format (markdown OK)
-**By:** Basher
-**What:** The launch blog post (sensei-launch.md) targets LinkedIn Articles (long-form), which fully supports markdown, headers, code blocks, and rich formatting. The no-markdown rule applies only to LinkedIn feed posts, not Articles.
-**Why:** LinkedIn Articles and LinkedIn feed posts have completely different rendering engines. Conflating them would result in either ugly feed posts (raw markdown) or stripped-down articles (no code examples). The distinction must be clear for anyone writing content.
-
 ### 2026-02-17: Blog post examples must use generic/themed references, not internal Azure tools
-
 **By:** Basher
 **What:** INVOKES and FOR SINGLE OPERATIONS examples in sensei-launch.md must use the pdf-processor theme (pdf-tools MCP, file-system) — not Azure-specific MCP tools (azure-azd, azure-deploy). The Anthropic reference uses "informed by" framing, not "builds on."
 **Why:** The blog post is public-facing. Azure-internal MCP tool names mean nothing to external readers and create a false impression that Sensei is Azure-specific. All examples in a post should use a consistent theme — the pdf-processor skill is the running example throughout, so INVOKES/FOR SINGLE OPERATIONS must match. The Anthropic framing matters because Sensei draws from multiple specification influences; over-crediting one source misrepresents the project's origins. These fixes were approved once and lost to a rewrite — this decision prevents a third occurrence.
@@ -98,7 +92,7 @@
 **What:** Replaced the default Astro Starter Kit README with project-specific documentation covering structure, commands, deployment, design system (palette tokens, typography, spacing conventions), component inventory, and implementation notes. No emoji section headers — clean, scannable, developer-focused.
 **Why:** The boilerplate README was actively misleading — it described a generic Astro project, not the Sensei site. Any contributor opening `docs/` would get zero useful context about the palette, the deployment pipeline, or why Tailwind v4 uses `@tailwindcss/vite` instead of the Astro integration. The new README pulls from decisions.md so the documented design system matches what was actually decided and built.
 
-### 2026-02-17: No markdown tables in LinkedIn Articles content
-**By:** Basher (directive from Shayne Boyer)
-**What:** Blog posts targeting LinkedIn Articles must not use markdown tables. Use bold-label definition lists instead (`**Label** — Description.`). This applies to sensei-launch.md and any future article content.
-**Why:** LinkedIn Articles technically support markdown — but tables render as broken, unformatted text blobs. Headers, bold/italic, and code blocks all work fine. Tables don't. The bold-label format preserves scannability for technical readers (each item starts with a bold keyword they can skim) while being completely platform-safe. This is a permanent content rule, not a one-time fix. User directive captured for team memory.
+### 2026-02-18: Score subcommand documented in README.md and AGENTS.md
+**By:** Basher
+**What:** Added `npm run tokens -- score [skillDir]` to both README.md (Using Scripts Directly + Token Budget sections) and AGENTS.md (repo tree, Testing Changes, CLI Reference). README.md now at 4074/4200 tokens; AGENTS.md at 1553/2000 tokens.
+**Why:** Pre-PR documentation polish. The `score` command runs 5 SkillsBench-informed advisory checks (module count, complexity, negative delta risk, procedural content, over-specificity). Developers need to discover it alongside the existing `count`/`check`/`suggest`/`compare` commands. Kept additions minimal — README has only ~126 tokens of remaining headroom, so any future README additions need to be offset by trimming elsewhere.

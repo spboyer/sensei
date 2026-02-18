@@ -54,4 +54,11 @@
 - **Paper:** SkillsBench (arXiv:2602.12670) — 86 tasks, 11 domains, 7,308 trajectories.
 📌 Team update (2026-02-18): SkillsBench evidence base added as references/skillsbench.md (859 tokens) — decided by Basher
 📌 Team update (2026-02-18): All coders must use Opus 4.6; all code review must use GPT-5.3-Codex — directive by Shayne Boyer
+📌 Team update (2026-02-18): Score subcommand documented in README.md and AGENTS.md — decided by Basher
 📌 Team update (2026-02-18): Score module tests use temp directories for filesystem isolation; pure function testing for non-filesystem checks — decided by Livingston
+
+### GPT-5.3-Codex code review fixes
+
+- **Issue 1 (High): Path validation for `score` command.** `scoreSkill()` and the CLI `score` case both silently produced false "healthy" results for non-existent paths. Added early validation in `cli.ts` (exits with error message + code 1) and a guard in `scoreSkill()` (returns a single `path-validation` warning check). This makes the function safe both as a CLI command and when called programmatically.
+- **Issue 2 (Medium): Node 18 compatibility for `readdirSync({ recursive: true })`.** The `recursive` option on `readdirSync` requires Node 20+, but `package.json` declares `>=18.0.0`. Replaced with a `listFilesRecursive()` helper that manually walks subdirectories. Updated `checkModuleCount` to use it.
+- **Test updates:** The "handles missing SKILL.md" test was updated to expect the new path-validation warning (1 check) instead of 5 silent checks. Added a new test for non-existent directories. All 53 tests pass.
