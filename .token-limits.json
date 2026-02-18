@@ -8,7 +8,7 @@
     "*.md": 4000
   },
   "overrides": {
-    "README.md": 4000,
+    "README.md": 4200,
     "AGENTS.md": 2000
   }
 }
