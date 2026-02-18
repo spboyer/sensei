@@ -22,6 +22,7 @@ sensei/
 │   ├── loop.md           # Ralph loop workflow
 │   ├── examples.md       # Before/after transformations
 │   ├── configuration.md  # Project config patterns
+│   ├── skillsbench.md    # SkillsBench evidence base
 │   └── test-templates/   # Framework-specific test templates
 │       ├── jest.md       # Jest test template
 │       ├── pytest.md     # pytest test template
@@ -39,7 +40,8 @@ sensei/
             ├── count.ts  # Token counting
             ├── check.ts  # Limit validation
             ├── suggest.ts # Optimization suggestions
-            └── compare.ts # Git-based comparison
+            ├── compare.ts # Git-based comparison
+            └── score.ts  # SkillsBench advisory scoring
 ```
 
 ## Key Conventions
@@ -132,6 +134,9 @@ npm run tokens -- suggest
 # Compare with previous commit
 npm run tokens -- compare HEAD~1
 
+# Score skill against SkillsBench advisory checks
+npm run tokens -- score .
+
 # Run unit tests
 cd scripts && npm test
 ```
@@ -143,6 +148,7 @@ npm run tokens -- count [paths...]     # Count tokens in markdown files
 npm run tokens -- check [paths...]     # Check files against token limits
 npm run tokens -- suggest [paths...]   # Get optimization suggestions
 npm run tokens -- compare [refs...]    # Compare tokens between git refs
+npm run tokens -- score [skillDir]    # SkillsBench advisory checks
 
 # Options
 --format=json       # Output as JSON instead of table

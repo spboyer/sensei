@@ -92,6 +92,9 @@ npm run tokens -- check --strict
 # Get optimization suggestions
 npm run tokens -- suggest
 
+# Score a skill directory (SkillsBench advisory checks)
+npm run tokens -- score .
+
 # Compare with previous commit
 npm run tokens -- compare HEAD~1
 ```
@@ -357,6 +360,7 @@ See [references/mcp-integration.md](references/mcp-integration.md) for detailed 
 
 - **SKILL.md:** < 500 tokens (soft), < 5000 (hard)
 - **references/*.md:** < 2000 tokens each
+- Score skill: `npm run tokens -- score [dir]`
 - Check with: `npm run tokens -- check`
 - Get suggestions: `npm run tokens -- suggest`
 
