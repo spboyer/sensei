@@ -62,12 +62,33 @@
 **What:** LinkedIn posts must use plain text only (no markdown — backticks, code blocks, and headers don't render). Links go in first comment, not post body. X posts use thread format with 280 char limit per tweet and 0-1 hashtags. All social posts use Shayne's personal voice ("I built") not project voice ("We announce").
 **Why:** LinkedIn doesn't render markdown — backticks and code blocks appear as raw text and look broken. Inline links in LinkedIn posts are penalized by the algorithm (reduced reach). X's character limit requires thread format for any substantive content. Personal voice drives higher engagement on both platforms. These rules apply to all future social content for the project.
 
+### 2026-02-18: SkillsBench evidence base added as reference document
+**By:** Basher
+**What:** Created `references/skillsbench.md` summarizing SkillsBench paper (arXiv:2602.12670) findings. Updated `README.md` intro with 2-sentence evidence summary and added paper to References section. Document is 859 tokens (under 2000 limit).
+**Why:** Sensei's design decisions (token budgets, 2–3 module focus, scoring levels, anti-pattern detection) now have empirical backing from a 7,308-trajectory benchmark. The self-generation warning (F3: -1.3pp) directly validates Sensei's approach of scoring human-authored skills rather than auto-generating them. Any future design debates can reference this evidence base instead of arguing from intuition.
+
+### 2026-02-18: User directive — model usage for SkillsBench implementation
+**By:** Shayne Boyer (via Copilot)
+**What:** All coders must use Opus 4.6 model. All code review must use GPT-5.3-Codex. Fix any issues found during review before merging.
+**Why:** User request — captured for team memory
+
+### 2026-02-18: Score module test patterns use temp directories for filesystem isolation
+**By:** Livingston
+**What:** `score.test.ts` uses `mkdtempSync`/`rmSync` in `beforeEach`/`afterEach` for tests that need filesystem access (`checkModuleCount`, `scoreSkill`). Pure function checks (`classifyComplexity`, `checkProceduralContent`, `checkOverSpecificity`, `checkNegativeDeltaRisk`) take strings/numbers directly — no filesystem mocking needed. All 40 tests pass alongside the existing 12 in `types.test.ts`.
+**Why:** Temp directories are more reliable than `vi.mock('node:fs')` for integration-level checks that actually read directory listings. Pure function testing for the remaining checks keeps tests fast and deterministic. This pattern should be followed for any future filesystem-dependent scoring checks.
+
+### 2026-02-18: SkillsBench advisory scoring checks added
+**By:** Rusty
+**What:** Added 5 advisory checks (11–15) to `references/scoring.md` based on SkillsBench paper findings. Checks cover module count optimization (2–3 optimal), complexity classification (detailed > comprehensive), negative delta risk detection, procedural content quality, and over-specificity warnings. These are advisory-only — they do not change the existing Low/Medium/Medium-High/High scoring levels. Includes a summary table mapping each check to paper evidence.
+**Why:** SkillsBench (arXiv:2602.12670) provides the first large-scale empirical evidence on what makes skills effective vs harmful. Key finding: excessive documentation actually hurts performance (−2.9pp for comprehensive skills). These checks encode those findings so Sensei can warn users before they over-engineer their skills. Kept file at 1996/2000 tokens through aggressive compression.
+
 ### 2026-02-09: Blog post is LinkedIn Articles format (markdown OK)
 **By:** Basher
 **What:** The launch blog post (sensei-launch.md) targets LinkedIn Articles (long-form), which fully supports markdown, headers, code blocks, and rich formatting. The no-markdown rule applies only to LinkedIn feed posts, not Articles.
 **Why:** LinkedIn Articles and LinkedIn feed posts have completely different rendering engines. Conflating them would result in either ugly feed posts (raw markdown) or stripped-down articles (no code examples). The distinction must be clear for anyone writing content.
 
 ### 2026-02-17: Blog post examples must use generic/themed references, not internal Azure tools
+
 **By:** Basher
 **What:** INVOKES and FOR SINGLE OPERATIONS examples in sensei-launch.md must use the pdf-processor theme (pdf-tools MCP, file-system) — not Azure-specific MCP tools (azure-azd, azure-deploy). The Anthropic reference uses "informed by" framing, not "builds on."
 **Why:** The blog post is public-facing. Azure-internal MCP tool names mean nothing to external readers and create a false impression that Sensei is Azure-specific. All examples in a post should use a consistent theme — the pdf-processor skill is the running example throughout, so INVOKES/FOR SINGLE OPERATIONS must match. The Anthropic framing matters because Sensei draws from multiple specification influences; over-crediting one source misrepresents the project's origins. These fixes were approved once and lost to a rewrite — this decision prevents a third occurrence.

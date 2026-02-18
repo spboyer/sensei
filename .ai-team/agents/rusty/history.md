@@ -40,3 +40,18 @@
 📌 Team update (2026-02-09): External links must include target="_blank" and rel="noopener noreferrer" — QA finding by Livingston
 📌 Team update (2026-02-09): SEO meta tags (OG, Twitter card, meta description) added to BaseLayout.astro — QA fix by Livingston
 📌 Team update (2026-02-17): docs/README.md now documents actual project (structure, design system, component inventory) — not Astro boilerplate — decided by Basher
+
+### 2026-02-18: SkillsBench advisory scoring checks
+
+- **Added checks 11–15** to `references/scoring.md` as advisory warnings (do not change Low/Med/Med-High/High levels).
+- **Check 11 (Module Count):** 2–3 reference modules optimal per Finding 5 (+18.6pp). 4+ gets warning.
+- **Check 12 (Complexity):** Classifies skills as compact/detailed/comprehensive per Finding 6. Comprehensive skills (>500 tokens or 4+ refs) flagged (−2.9pp).
+- **Check 13 (Negative Delta Risk):** Flags patterns that hurt performance — over-specification, conflicting procedures, overlapping skills.
+- **Check 14 (Procedural Content):** Ensures skills contain how-to guidance, not just declarative facts.
+- **Check 15 (Over-Specificity):** Catches hardcoded paths/IPs/magic numbers that prevent generalization.
+- **Token budget:** Final file at 1996/2000 tokens. Required aggressive compression from initial draft (2637 tokens). Summary table included.
+- **Key file:** `references/scoring.md`
+- **Paper:** SkillsBench (arXiv:2602.12670) — 86 tasks, 11 domains, 7,308 trajectories.
+📌 Team update (2026-02-18): SkillsBench evidence base added as references/skillsbench.md (859 tokens) — decided by Basher
+📌 Team update (2026-02-18): All coders must use Opus 4.6; all code review must use GPT-5.3-Codex — directive by Shayne Boyer
+📌 Team update (2026-02-18): Score module tests use temp directories for filesystem isolation; pure function testing for non-filesystem checks — decided by Livingston
