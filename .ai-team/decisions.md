@@ -96,3 +96,8 @@
 **By:** Basher
 **What:** Added `npm run tokens -- score [skillDir]` to both README.md (Using Scripts Directly + Token Budget sections) and AGENTS.md (repo tree, Testing Changes, CLI Reference). README.md now at 4074/4200 tokens; AGENTS.md at 1553/2000 tokens.
 **Why:** Pre-PR documentation polish. The `score` command runs 5 SkillsBench-informed advisory checks (module count, complexity, negative delta risk, procedural content, over-specificity). Developers need to discover it alongside the existing `count`/`check`/`suggest`/`compare` commands. Kept additions minimal — README has only ~126 tokens of remaining headroom, so any future README additions need to be offset by trimming elsewhere.
+
+### 2026-02-18: v1.0.0 release created
+**By:** Basher
+**What:** Created v1.0.0 GitHub Release at https://github.com/spboyer/sensei/releases/tag/v1.0.0 with structured release notes covering all Sensei capabilities. Advisory scoring checks (module count, complexity, procedural quality, over-specificity, negative delta risk) presented as Sensei's built-in intelligence — not as external integration or paper reference.
+**Why:** Per Shayne's directive, features are framed as what Sensei does natively. The release notes use a clean developer-focused tone: intro → 7 feature bullets → quick start → Anthropic spec note. This framing decision applies to all future public-facing content about Sensei's advisory checks.

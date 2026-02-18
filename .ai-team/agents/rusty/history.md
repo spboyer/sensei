@@ -56,6 +56,7 @@
 📌 Team update (2026-02-18): All coders must use Opus 4.6; all code review must use GPT-5.3-Codex — directive by Shayne Boyer
 📌 Team update (2026-02-18): Score subcommand documented in README.md and AGENTS.md — decided by Basher
 📌 Team update (2026-02-18): Score module tests use temp directories for filesystem isolation; pure function testing for non-filesystem checks — decided by Livingston
+📌 Team update (2026-02-18): v1.0.0 release created — advisory checks framed as Sensei's built-in intelligence, not external integration. Applies to all future public-facing content — decided by Basher (per Shayne's directive)
 
 ### GPT-5.3-Codex code review fixes
 
