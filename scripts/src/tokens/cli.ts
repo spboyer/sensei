@@ -135,8 +135,9 @@ function main(): void {
         console.error(`Error: Path does not exist or is not a directory: ${skillDir}`);
         process.exit(1);
       }
-      if (!existsSync(join(skillDir, 'SKILL.md'))) {
-        console.error(`Error: No SKILL.md found in: ${skillDir}`);
+      const skillMdPath = join(skillDir, 'SKILL.md');
+      if (!existsSync(skillMdPath) || !statSync(skillMdPath).isFile()) {
+        console.error(`Error: No SKILL.md file found in: ${skillDir}`);
         process.exit(1);
       }
       const result = scoreSkill(skillDir);
