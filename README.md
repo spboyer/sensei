@@ -4,6 +4,8 @@
 
 Sensei automates the improvement of [Agent Skills](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) frontmatter compliance using the [Ralph loop pattern](https://github.com/soderlund/ralph) - iteratively improving skills until they reach Medium-High compliance with all tests passing.
 
+Backed by [SkillsBench](https://arxiv.org/abs/2602.12670) evidence — curated skills boost agent performance +16.2pp; 2–3 modules outperform comprehensive docs.
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -494,6 +496,7 @@ Open an issue with skill name, starting state, and `git log --oneline -10`.
 
 ## References
 
+- [SkillsBench Paper](https://arxiv.org/abs/2602.12670) - Empirical evidence for skill design decisions (86 tasks, 7,308 trajectories)
 - [Ralph Loop Pattern](https://github.com/soderlund/ralph) - Original Ralph loop implementation
 - [Anthropic Skills Documentation](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) - Writing guidance
 - [Skills, Tools & MCP Development Guide](https://github.com/spboyer/azure-mcp-v-skills/blob/main/skills-mcp-development-guide.md) - MCP integration best practices

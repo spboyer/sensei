@@ -268,26 +268,33 @@ const shouldTriggerPrompts = [
 
 **Problem:** Tests don't match frontmatter triggers.
 
----
-
-## Summary Output Example
+### ❌ Too Many Modules (SkillsBench)
 
 ```
-╔══════════════════════════════════════════════════════════════════╗
-║  SENSEI SUMMARY: pdf-processor                                   ║
-╠══════════════════════════════════════════════════════════════════╣
-║  BEFORE                          AFTER                           ║
-║  ──────                          ─────                           ║
-║  Score: Low                      Score: Medium-High              ║
-║  Tokens: 42                      Tokens: 156                     ║
-║  Triggers: 0                     Triggers: 6                     ║
-║  Anti-triggers: 0                Anti-triggers: 3                ║
-║                                                                  ║
-║  TOKEN STATUS: ✅ Under budget (156 < 500)                       ║
-║                                                                  ║
-║  Choose an action:                                               ║
-║    [C] Commit changes                                            ║
-║    [I] Create GitHub issue                                       ║
-║    [S] Skip (discard changes)                                    ║
-╚══════════════════════════════════════════════════════════════════╝
+references/  (6 files — diminishing returns above 3)
+├── overview.md, api-reference.md, advanced-usage.md
+├── troubleshooting.md, examples.md, configuration.md
 ```
+
+**Problem:** 4+ modules yield only +5.9pp vs +18.6pp for 2–3. Consolidate.
+
+### ❌ Conflicting Procedures
+
+```yaml
+description: |
+  Deploy to Azure. Step 1: Run azd up.
+  Alternatively, use az webapp deploy.
+  For production, use the CI/CD pipeline instead.
+```
+
+**Problem:** Multiple contradictory paths confuse the agent. Pick ONE primary path.
+
+### ❌ Declarative Only (No Procedures)
+
+```yaml
+description: |
+  This skill handles PDF files. PDFs are Portable Document
+  Format files used for sharing documents across platforms.
+```
+
+**Problem:** Describes WHAT, not HOW. Skills need action verbs, steps, workflows.

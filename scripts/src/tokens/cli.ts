@@ -10,7 +10,9 @@
  *   npm run tokens compare [refs...]    Compare tokens between git refs
  */
 
-import { count, check, suggest, compare } from './commands/index.js';
+import { existsSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { count, check, suggest, compare, scoreSkill } from './commands/index.js';
 
 function printHelp(): void {
   console.log(`
@@ -24,6 +26,7 @@ Commands:
   check [paths...]     Check files against token limits
   suggest [paths...]   Get optimization suggestions
   compare [refs...]    Compare tokens between git refs
+  score [path]         Score a skill directory against SkillsBench criteria
 
 Options:
   --format=<type>      Output format: json | table (default: table)
@@ -125,6 +128,34 @@ function main(): void {
     case 'compare':
       compare(paths, options);
       break;
+    
+    case 'score': {
+      const skillDir = paths[0] ?? process.cwd();
+      if (!existsSync(skillDir) || !statSync(skillDir).isDirectory()) {
+        console.error(`Error: Path does not exist or is not a directory: ${skillDir}`);
+        process.exit(1);
+      }
+      if (!existsSync(join(skillDir, 'SKILL.md'))) {
+        console.error(`Error: No SKILL.md found in: ${skillDir}`);
+        process.exit(1);
+      }
+      const result = scoreSkill(skillDir);
+      if (options.format === 'json') {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log(`\n📊 Skill Score: ${result.skillPath}`);
+        console.log(`   Complexity: ${result.complexity} | Tokens: ${result.tokenCount} | Modules: ${result.moduleCount}\n`);
+        for (const check of result.checks) {
+          const icon = check.status === 'ok' ? '✅' : check.status === 'optimal' ? '🌟' : '⚠️';
+          console.log(`  ${icon} ${check.name}: ${check.message}`);
+          if (check.evidence) {
+            console.log(`     📎 ${check.evidence}`);
+          }
+        }
+        console.log('');
+      }
+      break;
+    }
     
     default:
       console.error(`Unknown command: ${command}`);
