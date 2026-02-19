@@ -111,3 +111,22 @@
 **By:** Basher
 **What:** Rewrote agent-customization skill frontmatter for microsoft/vscode-copilot-chat to reach High Sensei score: added `**WORKFLOW SKILL**` prefix, DO NOT USE FOR anti-triggers (general coding, runtime debugging, MCP config, extension dev), INVOKES clause (file system tools, ask-questions, subagents), and FOR SINGLE OPERATIONS fallback guidance. Consolidated 6 reference files into 3: instructions.md + workspace-instructions.md + prompts.md → file-customizations.md; agents.md + skills.md → agent-extensibility.md; hooks.md unchanged. Restructured Quick Reference table from 6 rows to 3 category-grouped rows. Added Common Pitfalls section covering YAML silent failures, applyTo scope burn, and description discovery surface.
 **Why:** SkillsBench empirical data (Li et al. arXiv:2602.12670) shows 6+ reference modules incur −2.9pp penalty; 2–3 modules yield +13.7pp net gain. Frontmatter additions (anti-triggers, routing) address Sensei's core scoring factors. GPT-5.3-Codex review found and fixed 2 issues before PR #3866 opened: missing ~/.claude/skills/ path in folder structure, dropped optional frontmatter fields (created_at, updated_at) in agent.yaml spec. Score improved from Medium → High.
+
+### 2026-02-19: Remove SkillsBench branding from output-facing files
+
+**By:** Basher (per Shayne's directive)
+**What:** Stripped all SkillsBench branding, arXiv citations, author names, and paper-specific attribution from output-facing files (SKILL.md, README.md, AGENTS.md, references/scoring.md, references/examples.md). Kept all practical guidance — module count thresholds, complexity tiers, advisory checks, anti-patterns. Replaced pp (percentage point) numbers with plain-language equivalents in user-facing docs. `references/skillsbench.md` left intact as internal knowledge but no longer linked from any output file.
+
+**Files changed:**
+- **SKILL.md** — Removed "(per SkillsBench research)" from budget guidelines; removed skillsbench.md reference link
+- **README.md** — Removed SkillsBench evidence sentence from intro; simplified score command comment; removed SkillsBench paper from References section
+- **AGENTS.md** — Removed skillsbench.md from repo tree; simplified score.ts, score command, and CLI reference comments
+- **references/scoring.md** — Renamed "SkillsBench Advisory Checks" → "Advisory Checks"; removed arXiv attribution; replaced pp numbers with practical language in checks 11–12 and summary table
+- **references/examples.md** — Removed "(SkillsBench)" from anti-pattern heading; replaced pp numbers with practical language
+
+**Why:** Per Shayne's directive: internal research stays internal. SkillsBench references confuse external teams and create maintenance burden when cited in PRs or docs they interact with. The v1.0.0 release decision already established that advisory checks are framed as Sensei's built-in intelligence. This change makes that framing consistent across all files. All token limits verified passing after changes.
+
+### 2026-02-19: No SkillsBench references in Sensei output
+**By:** Shayne Boyer (via Copilot)
+**What:** Sensei must never reference SkillsBench research, arXiv citations, or internal benchmark data in any external-facing output — PRs, PR descriptions, reports, recommendations, or before/after summaries. Internal research stays internal.
+**Why:** User directive — SkillsBench is Sensei-internal research that confuses external teams (e.g., Harald's VS Code team) and creates maintenance burden when cited in PRs they own.
