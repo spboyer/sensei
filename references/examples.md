@@ -268,7 +268,7 @@ const shouldTriggerPrompts = [
 
 **Problem:** Tests don't match frontmatter triggers.
 
-### ❌ Too Many Modules (SkillsBench)
+### ❌ Too Many Modules
 
 ```
 references/  (6 files — diminishing returns above 3)
@@ -276,7 +276,7 @@ references/  (6 files — diminishing returns above 3)
 ├── troubleshooting.md, examples.md, configuration.md
 ```
 
-**Problem:** 4+ modules yield only +5.9pp vs +18.6pp for 2–3. Consolidate.
+**Problem:** 4+ modules show diminishing returns compared to 2–3. Consolidate.
 
 ### ❌ Conflicting Procedures
 

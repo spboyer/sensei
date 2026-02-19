@@ -264,19 +264,19 @@ When `INVOKES:` present, calculate sub-score:
 
 See [mcp-integration.md](mcp-integration.md) for detailed patterns.
 
-## SkillsBench Advisory Checks
+## Advisory Checks
 
-Per [SkillsBench](https://arxiv.org/abs/2602.12670) (Li et al., 2026). **Advisory only** — does not change scoring levels.
+**Advisory only** — does not change scoring levels.
 
 ### 11. Module Count (F5)
 
-Count `references/**/*.md`. 0–1: OK. **2–3: ✅ optimal (+18.6pp)**. 4+: ⚠️ consolidate (+5.9pp).
+Count `references/**/*.md`. 0–1: OK. **2–3: ✅ optimal**. 4+: ⚠️ diminishing returns, consolidate.
 
 ### 12. Complexity (F6)
 
-- **Compact** (< 200 tokens, 0–1 refs): +17.1pp
-- **Detailed** (200–500 tokens, 1–3 refs): **+18.8pp optimal**
-- **Comprehensive** (> 500 tokens OR 4+ refs): ⚠️ −2.9pp
+- **Compact** (< 200 tokens, 0–1 refs): good
+- **Detailed** (200–500 tokens, 1–3 refs): **optimal**
+- **Comprehensive** (> 500 tokens OR 4+ refs): ⚠️ hurts performance
 
 ### 13. Negative Delta Risk
 
@@ -292,10 +292,10 @@ Flag hardcoded paths, IPs/ports, magic numbers, test-specific references. Skills
 
 ### Advisory Summary
 
-| # | Detects | Evidence |
+| # | Detects | Guidance |
 |---|---------|----------|
-| 11 | Too many modules | 2–3: +18.6pp; 4+: +5.9pp |
-| 12 | Over-documentation | Detailed +18.8pp; Comp. −2.9pp |
-| 13 | Hurting patterns | 16/84 tasks negative |
+| 11 | Too many modules | 2–3 optimal; 4+ diminishing returns |
+| 12 | Over-documentation | Detailed best; comprehensive hurts |
+| 13 | Hurting patterns | ~19% of tasks can be hurt by skills |
 | 14 | Declarative-only | Procedural > declarative |
 | 15 | Instance-specific | Must guide task classes |

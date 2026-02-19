@@ -167,7 +167,7 @@ Check token budget:
 npm run tokens -- check {skills-dir}/{skill-name}/SKILL.md
 ```
 
-Budget guidelines (per SkillsBench research):
+Budget guidelines:
 - SKILL.md: < 500 tokens (soft), < 5000 (hard)
 - references/*.md: < 1000 tokens each
 
@@ -278,7 +278,7 @@ sensei: improve {skill-name} frontmatter
 - [configuration.md](references/configuration.md) - Project setup patterns
 - [test-templates/](references/test-templates/) - Test scaffolding templates
 - [test-templates/waza.md](references/test-templates/waza.md) - Waza trigger test format
-- [skillsbench.md](references/skillsbench.md) - SkillsBench paper findings and design principles
+
 
 ## Built-in Scripts
 
