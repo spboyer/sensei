@@ -63,3 +63,22 @@
 - **Issue 1 (High): Path validation for `score` command.** `scoreSkill()` and the CLI `score` case both silently produced false "healthy" results for non-existent paths. Added early validation in `cli.ts` (exits with error message + code 1) and a guard in `scoreSkill()` (returns a single `path-validation` warning check). This makes the function safe both as a CLI command and when called programmatically.
 - **Issue 2 (Medium): Node 18 compatibility for `readdirSync({ recursive: true })`.** The `recursive` option on `readdirSync` requires Node 20+, but `package.json` declares `>=18.0.0`. Replaced with a `listFilesRecursive()` helper that manually walks subdirectories. Updated `checkModuleCount` to use it.
 - **Test updates:** The "handles missing SKILL.md" test was updated to expect the new path-validation warning (1 check) instead of 5 silent checks. Added a new test for non-existent directories. All 53 tests pass.
+
+### 2026-02-18: Sensei audit of external skill: agent-customization (microsoft/vscode-copilot-chat)
+
+- **Request:** Harald (via Shayne) asked for highest-impact recommendations on their agent-customization skill. Baseline: ~50% Sensei compliance.
+- **Current score:** Medium-High (not High due to missing routing clarity).
+- **Passes:** Description length ✓, explicit USE FOR triggers ✓, anti-triggers ✓, procedural content ✓. Fails: No skill type prefix, INVOKES, or FOR SINGLE OPERATIONS.
+- **SkillsBench advisory flags (4 warnings):**
+  - Module count: 6 refs (should be 2–3 per optimal; −2.9pp penalty)
+  - Complexity: Comprehensive classification (>500 tokens + 4+ refs; −2.9pp vs Detailed +18.8pp)
+  - Negative delta risk: Edge case clarifications could confuse task selection (16/84 tasks at risk)
+  - Over-specificity: Hardcoded file paths and frontmatter examples; should guide task classes
+- **Highest-impact fixes (in order):**
+  1. Add `**WORKFLOW SKILL**` prefix (trivial, enables High score)
+  2. Add INVOKES clause: Git + shell + YAML parser (low effort, completes High score)
+  3. Add FOR SINGLE OPERATIONS routing (low effort, prevents skill misuse)
+  4. Consolidate 6 refs → 2–3 modules (medium effort, recovers +13.7pp SkillsBench penalty)
+  5. Refactor edge cases into affirmative guidance (medium effort, reduces negative delta risk)
+- **Key insight:** The skill is already strong (Medium-High on first attempt). Minimal changes unlock High. The bigger opportunity is module consolidation — SkillsBench shows 2–3 refs optimal; 6 refs hurt performance. Trade-off: lose fine-grained modularity, gain +13.7pp and better UX.
+- **Method:** Applied Sensei scoring algorithm (checks 1–11, advisory checks 11–15). Documented in `.ai-team/agents/rusty/audit-agent-customization.md` with full scorecard, improved frontmatter, and implementation roadmap.

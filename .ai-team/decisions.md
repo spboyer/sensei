@@ -101,3 +101,8 @@
 **By:** Basher
 **What:** Created v1.0.0 GitHub Release at https://github.com/spboyer/sensei/releases/tag/v1.0.0 with structured release notes covering all Sensei capabilities. Advisory scoring checks (module count, complexity, procedural quality, over-specificity, negative delta risk) presented as Sensei's built-in intelligence — not as external integration or paper reference.
 **Why:** Per Shayne's directive, features are framed as what Sensei does natively. The release notes use a clean developer-focused tone: intro → 7 feature bullets → quick start → Anthropic spec note. This framing decision applies to all future public-facing content about Sensei's advisory checks.
+
+### 2026-02-18: Sensei audit of agent-customization (microsoft/vscode-copilot-chat)
+**By:** Rusty
+**What:** Audited VS Code's agent-customization skill and identified three frontmatter additions to reach High score: (1) add `**WORKFLOW SKILL**` type prefix, (2) add INVOKES clause (Git, shell, YAML parser), (3) add FOR SINGLE OPERATIONS fallback guidance (~15 min combined effort). Secondary finding: 6 reference modules (14.4KB) incurs −2.9pp SkillsBench penalty; consolidation to 2–3 modules would yield +13.7pp net gain (medium effort, future iteration).
+**Why:** Sensei's scoring methodology and SkillsBench-informed advisory checks are portable to external skills. Module count impact (Li et al. arXiv:2602.12670) is empirically validated; 6 refs → 2–3 refs is data-justified optimization. Knowledge capture: decision trees that burden users with task classification ("Instructions vs Skill?") harm performance (16/84 tasks); antidote is affirmative "Use when:" guidance before anti-patterns.
