@@ -146,6 +146,20 @@ function main(): void {
       } else {
         console.log(`\n📊 Skill Score: ${result.skillPath}`);
         console.log(`   Complexity: ${result.complexity} | Tokens: ${result.tokenCount} | Modules: ${result.moduleCount}\n`);
+
+        if (result.specChecks.length > 0) {
+          console.log('  ── Spec Compliance (agentskills.io) ──');
+          for (const check of result.specChecks) {
+            const icon = check.status === 'ok' ? '✅' : check.status === 'optimal' ? '🌟' : '⚠️';
+            console.log(`  ${icon} ${check.name}: ${check.message}`);
+            if (check.evidence) {
+              console.log(`     📎 ${check.evidence}`);
+            }
+          }
+          console.log('');
+        }
+
+        console.log('  ── Advisory Checks (Sensei) ──');
         for (const check of result.checks) {
           const icon = check.status === 'ok' ? '✅' : check.status === 'optimal' ? '🌟' : '⚠️';
           console.log(`  ${icon} ${check.name}: ${check.message}`);

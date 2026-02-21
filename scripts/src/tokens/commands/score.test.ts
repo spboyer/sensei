@@ -12,7 +12,16 @@ import {
   checkNegativeDeltaRisk,
   checkProceduralContent,
   checkOverSpecificity,
-  scoreSkill
+  scoreSkill,
+  parseFrontmatter,
+  checkFrontmatterStructure,
+  checkAllowedFields,
+  checkNameCompliance,
+  checkDirectoryNameMatch,
+  checkDescriptionCompliance,
+  checkCompatibilityCompliance,
+  checkLicenseRecommendation,
+  checkVersionRecommendation
 } from './score.js';
 
 describe('checkModuleCount', () => {
@@ -298,6 +307,234 @@ describe('checkOverSpecificity', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Spec Compliance Checks (agentskills.io/specification)
+// ---------------------------------------------------------------------------
+
+describe('parseFrontmatter', () => {
+  it('parses valid frontmatter', () => {
+    const content = '---\nname: my-skill\ndescription: A test skill.\n---\n# Body';
+    const fm = parseFrontmatter(content);
+    expect(fm).not.toBeNull();
+    expect(fm!.name).toBe('my-skill');
+    expect(fm!.description).toBe('A test skill.');
+  });
+
+  it('returns null for missing frontmatter', () => {
+    expect(parseFrontmatter('# No frontmatter')).toBeNull();
+  });
+
+  it('parses multi-line description', () => {
+    const content = '---\nname: my-skill\ndescription: |\n  Line one.\n  Line two.\n---\n';
+    const fm = parseFrontmatter(content);
+    expect(fm!.description).toContain('Line one');
+    expect(fm!.description).toContain('Line two');
+  });
+});
+
+describe('checkFrontmatterStructure', () => {
+  it('passes for valid frontmatter with required fields', () => {
+    const content = '---\nname: my-skill\ndescription: A skill.\n---\n# Body';
+    const result = checkFrontmatterStructure(content);
+    expect(result.status).toBe('ok');
+  });
+
+  it('warns when content does not start with ---', () => {
+    const result = checkFrontmatterStructure('# No frontmatter');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('must start with');
+  });
+
+  it('warns when name is missing', () => {
+    const content = '---\ndescription: A skill.\n---\n';
+    const result = checkFrontmatterStructure(content);
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('name');
+  });
+
+  it('warns when description is missing', () => {
+    const content = '---\nname: my-skill\n---\n';
+    const result = checkFrontmatterStructure(content);
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('description');
+  });
+});
+
+describe('checkAllowedFields', () => {
+  it('passes for spec-allowed fields only', () => {
+    const fields = { name: 'x', description: 'y', license: 'MIT', metadata: {} };
+    const result = checkAllowedFields(fields);
+    expect(result.status).toBe('ok');
+  });
+
+  it('warns on unknown fields', () => {
+    const fields = { name: 'x', description: 'y', version: '1.0', author: 'me' };
+    const result = checkAllowedFields(fields);
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('version');
+    expect(result.message).toContain('author');
+  });
+
+  it('allows allowed-tools field', () => {
+    const fields = { name: 'x', description: 'y', 'allowed-tools': 'Bash Read' };
+    const result = checkAllowedFields(fields);
+    expect(result.status).toBe('ok');
+  });
+});
+
+describe('checkNameCompliance', () => {
+  it('passes for valid kebab-case name', () => {
+    const result = checkNameCompliance('pdf-processor');
+    expect(result.status).toBe('ok');
+  });
+
+  it('warns on uppercase letters', () => {
+    const result = checkNameCompliance('PDF-Processor');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('lowercase');
+  });
+
+  it('warns on leading hyphen', () => {
+    const result = checkNameCompliance('-bad-name');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('start or end');
+  });
+
+  it('warns on trailing hyphen', () => {
+    const result = checkNameCompliance('bad-name-');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('start or end');
+  });
+
+  it('warns on consecutive hyphens', () => {
+    const result = checkNameCompliance('bad--name');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('consecutive');
+  });
+
+  it('warns on underscores', () => {
+    const result = checkNameCompliance('bad_name');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('only lowercase');
+  });
+
+  it('warns when exceeding 64 chars', () => {
+    const longName = 'a'.repeat(65);
+    const result = checkNameCompliance(longName);
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('64');
+  });
+
+  it('passes at exactly 64 chars', () => {
+    const name = 'a'.repeat(64);
+    const result = checkNameCompliance(name);
+    expect(result.status).toBe('ok');
+  });
+});
+
+describe('checkDirectoryNameMatch', () => {
+  it('passes when directory matches name', () => {
+    const result = checkDirectoryNameMatch('/skills/my-skill', 'my-skill');
+    expect(result.status).toBe('ok');
+  });
+
+  it('warns when directory does not match', () => {
+    const result = checkDirectoryNameMatch('/skills/other-name', 'my-skill');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('other-name');
+    expect(result.message).toContain('my-skill');
+  });
+});
+
+describe('checkDescriptionCompliance', () => {
+  it('passes for valid description', () => {
+    const result = checkDescriptionCompliance('A useful skill that does things.');
+    expect(result.status).toBe('ok');
+  });
+
+  it('warns on empty description', () => {
+    const result = checkDescriptionCompliance('');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('non-empty');
+  });
+
+  it('warns when exceeding 1024 chars', () => {
+    const result = checkDescriptionCompliance('x'.repeat(1025));
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('1024');
+  });
+
+  it('passes at exactly 1024 chars', () => {
+    const result = checkDescriptionCompliance('x'.repeat(1024));
+    expect(result.status).toBe('ok');
+  });
+});
+
+describe('checkCompatibilityCompliance', () => {
+  it('passes when not present', () => {
+    const result = checkCompatibilityCompliance(undefined);
+    expect(result.status).toBe('ok');
+  });
+
+  it('passes for valid compatibility', () => {
+    const result = checkCompatibilityCompliance('Requires git, docker');
+    expect(result.status).toBe('ok');
+  });
+
+  it('warns when exceeding 500 chars', () => {
+    const result = checkCompatibilityCompliance('x'.repeat(501));
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('500');
+  });
+});
+
+describe('checkLicenseRecommendation', () => {
+  it('returns optimal when license is present', () => {
+    const result = checkLicenseRecommendation({ name: 'x', description: 'y', license: 'MIT' });
+    expect(result.status).toBe('optimal');
+    expect(result.message).toContain('MIT');
+  });
+
+  it('warns when license is missing', () => {
+    const result = checkLicenseRecommendation({ name: 'x', description: 'y' });
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('strongly recommended');
+  });
+
+  it('warns when license is empty string', () => {
+    const result = checkLicenseRecommendation({ name: 'x', description: 'y', license: '  ' });
+    expect(result.status).toBe('warning');
+  });
+});
+
+describe('checkVersionRecommendation', () => {
+  it('returns optimal when metadata.version is present', () => {
+    const result = checkVersionRecommendation({ name: 'x', metadata: { version: '1.0' } });
+    expect(result.status).toBe('optimal');
+    expect(result.message).toContain('1.0');
+  });
+
+  it('warns when metadata is missing', () => {
+    const result = checkVersionRecommendation({ name: 'x', description: 'y' });
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('strongly recommended');
+  });
+
+  it('warns when metadata exists but has no version', () => {
+    const result = checkVersionRecommendation({ name: 'x', metadata: { author: 'me' } });
+    expect(result.status).toBe('warning');
+  });
+
+  it('warns when version is empty string', () => {
+    const result = checkVersionRecommendation({ name: 'x', metadata: { version: '  ' } });
+    expect(result.status).toBe('warning');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Integration: scoreSkill
+// ---------------------------------------------------------------------------
+
 describe('scoreSkill', () => {
   let tempDir: string;
 
@@ -336,6 +573,7 @@ describe('scoreSkill', () => {
 
     expect(result.skillPath).toBe(tempDir);
     expect(result.checks).toHaveLength(5);
+    expect(result.specChecks.length).toBeGreaterThan(0);
     expect(result.tokenCount).toBeGreaterThan(0);
     expect(result.moduleCount).toBe(2);
 
@@ -345,6 +583,11 @@ describe('scoreSkill', () => {
     expect(checkNames).toContain('negative-delta-risk');
     expect(checkNames).toContain('procedural-content');
     expect(checkNames).toContain('over-specificity');
+
+    const specNames = result.specChecks.map(c => c.name);
+    expect(specNames).toContain('spec-frontmatter');
+    expect(specNames).toContain('spec-name');
+    expect(specNames).toContain('spec-description');
   });
 
   it('handles missing SKILL.md with path-validation warning', () => {

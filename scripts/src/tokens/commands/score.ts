@@ -1,10 +1,27 @@
 /**
  * Score skill directories against SkillsBench-informed advisory criteria
+ * and agentskills.io specification compliance checks.
+ *
+ * Spec reference: https://agentskills.io/specification
  */
 
 import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 import { estimateTokens } from './types.js';
+
+/** Max skill name length per agentskills.io spec */
+const MAX_SKILL_NAME_LENGTH = 64;
+
+/** Max description length per agentskills.io spec */
+const MAX_DESCRIPTION_LENGTH = 1024;
+
+/** Max compatibility field length per agentskills.io spec */
+const MAX_COMPATIBILITY_LENGTH = 500;
+
+/** Allowed frontmatter fields per agentskills.io spec */
+const ALLOWED_FIELDS = new Set([
+  'name', 'description', 'license', 'allowed-tools', 'metadata', 'compatibility'
+]);
 
 /** Recursively list all files in a directory (Node 18 compatible) */
 function listFilesRecursive(dir: string): string[] {
@@ -33,10 +50,299 @@ export interface AdvisoryCheck {
   readonly evidence?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Spec Compliance Checks (agentskills.io/specification)
+// ---------------------------------------------------------------------------
+
+/** Parsed frontmatter fields */
+interface ParsedFrontmatter {
+  readonly fields: Record<string, unknown>;
+  readonly name?: string;
+  readonly description?: string;
+  readonly compatibility?: string;
+}
+
+/**
+ * Parse YAML frontmatter from SKILL.md content.
+ * Lightweight parser — extracts key-value pairs without a full YAML library.
+ */
+export function parseFrontmatter(content: string): ParsedFrontmatter | null {
+  const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (!match) return null;
+
+  const fmContent = match[1];
+  const fields: Record<string, unknown> = {};
+
+  // Extract top-level keys (handles single-line and multi-line values)
+  const lines = fmContent.split('\n');
+  let currentKey: string | null = null;
+  let currentValue = '';
+
+  for (const line of lines) {
+    const keyMatch = line.match(/^(\w[\w-]*)\s*:\s*(.*)/);
+    if (keyMatch) {
+      if (currentKey) {
+        fields[currentKey] = currentValue.trim();
+      }
+      currentKey = keyMatch[1];
+      const rawVal = keyMatch[2].trim();
+      currentValue = rawVal === '|' || rawVal === '>' ? '' : rawVal;
+    } else if (currentKey && (line.startsWith('  ') || line.startsWith('\t'))) {
+      currentValue += (currentValue ? '\n' : '') + line.trim();
+    }
+  }
+  if (currentKey) {
+    fields[currentKey] = currentValue.trim();
+  }
+
+  return {
+    fields,
+    name: typeof fields['name'] === 'string' ? fields['name'] : undefined,
+    description: typeof fields['description'] === 'string' ? fields['description'] : undefined,
+    compatibility: typeof fields['compatibility'] === 'string' ? fields['compatibility'] : undefined,
+  };
+}
+
+/**
+ * Spec Check: Validate frontmatter has valid YAML structure with required fields.
+ */
+export function checkFrontmatterStructure(content: string): AdvisoryCheck {
+  if (!content.startsWith('---')) {
+    return {
+      name: 'spec-frontmatter',
+      status: 'warning',
+      message: 'SKILL.md must start with YAML frontmatter (---)',
+      evidence: 'agentskills.io spec: Frontmatter (required)'
+    };
+  }
+
+  const fm = parseFrontmatter(content);
+  if (!fm) {
+    return {
+      name: 'spec-frontmatter',
+      status: 'warning',
+      message: 'SKILL.md frontmatter not properly closed with ---',
+      evidence: 'agentskills.io spec: Frontmatter (required)'
+    };
+  }
+
+  const missing: string[] = [];
+  if (!fm.name) missing.push('name');
+  if (!fm.description) missing.push('description');
+
+  if (missing.length > 0) {
+    return {
+      name: 'spec-frontmatter',
+      status: 'warning',
+      message: `Missing required fields: ${missing.join(', ')}`,
+      evidence: 'agentskills.io spec: name and description are required'
+    };
+  }
+
+  return {
+    name: 'spec-frontmatter',
+    status: 'ok',
+    message: 'Frontmatter structure valid with required fields'
+  };
+}
+
+/**
+ * Spec Check: Validate no unknown fields in frontmatter.
+ */
+export function checkAllowedFields(fields: Record<string, unknown>): AdvisoryCheck {
+  const extra = Object.keys(fields).filter(k => !ALLOWED_FIELDS.has(k));
+
+  if (extra.length > 0) {
+    return {
+      name: 'spec-allowed-fields',
+      status: 'warning',
+      message: `Unknown frontmatter fields: ${extra.join(', ')}. Allowed: ${[...ALLOWED_FIELDS].join(', ')}`,
+      evidence: 'agentskills.io spec: Only name, description, license, allowed-tools, metadata, compatibility allowed'
+    };
+  }
+
+  return {
+    name: 'spec-allowed-fields',
+    status: 'ok',
+    message: 'All frontmatter fields are spec-compliant'
+  };
+}
+
+/**
+ * Spec Check: Validate skill name format.
+ * - Max 64 characters
+ * - Lowercase alphanumeric and hyphens only
+ * - No leading/trailing hyphens
+ * - No consecutive hyphens
+ */
+export function checkNameCompliance(name: string): AdvisoryCheck {
+  const errors: string[] = [];
+
+  if (name.length > MAX_SKILL_NAME_LENGTH) {
+    errors.push(`exceeds ${MAX_SKILL_NAME_LENGTH} char limit (${name.length})`);
+  }
+  if (name !== name.toLowerCase()) {
+    errors.push('must be lowercase');
+  }
+  if (name.startsWith('-') || name.endsWith('-')) {
+    errors.push('cannot start or end with hyphen');
+  }
+  if (name.includes('--')) {
+    errors.push('cannot contain consecutive hyphens');
+  }
+  if (!/^[a-z0-9-]+$/.test(name)) {
+    errors.push('only lowercase letters, digits, and hyphens allowed');
+  }
+
+  if (errors.length > 0) {
+    return {
+      name: 'spec-name',
+      status: 'warning',
+      message: `Name "${name}": ${errors.join('; ')}`,
+      evidence: 'agentskills.io spec: name field constraints'
+    };
+  }
+
+  return {
+    name: 'spec-name',
+    status: 'ok',
+    message: `Name "${name}" is spec-compliant`
+  };
+}
+
+/**
+ * Spec Check: Validate directory name matches skill name.
+ */
+export function checkDirectoryNameMatch(skillDir: string, name: string): AdvisoryCheck {
+  const dirName = basename(skillDir);
+  if (dirName !== name) {
+    return {
+      name: 'spec-dir-match',
+      status: 'warning',
+      message: `Directory "${dirName}" does not match skill name "${name}"`,
+      evidence: 'agentskills.io spec: directory name must match skill name'
+    };
+  }
+
+  return {
+    name: 'spec-dir-match',
+    status: 'ok',
+    message: `Directory name matches skill name "${name}"`
+  };
+}
+
+/**
+ * Spec Check: Validate description constraints.
+ */
+export function checkDescriptionCompliance(description: string): AdvisoryCheck {
+  if (!description.trim()) {
+    return {
+      name: 'spec-description',
+      status: 'warning',
+      message: 'Description must be non-empty',
+      evidence: 'agentskills.io spec: description is required and non-empty'
+    };
+  }
+
+  if (description.length > MAX_DESCRIPTION_LENGTH) {
+    return {
+      name: 'spec-description',
+      status: 'warning',
+      message: `Description exceeds ${MAX_DESCRIPTION_LENGTH} char limit (${description.length})`,
+      evidence: 'agentskills.io spec: description max 1024 characters'
+    };
+  }
+
+  return {
+    name: 'spec-description',
+    status: 'ok',
+    message: `Description length OK (${description.length}/${MAX_DESCRIPTION_LENGTH})`
+  };
+}
+
+/**
+ * Spec Check: Validate compatibility field if present.
+ */
+export function checkCompatibilityCompliance(compatibility: string | undefined): AdvisoryCheck {
+  if (compatibility === undefined) {
+    return {
+      name: 'spec-compatibility',
+      status: 'ok',
+      message: 'Compatibility field not present (optional)'
+    };
+  }
+
+  if (compatibility.length > MAX_COMPATIBILITY_LENGTH) {
+    return {
+      name: 'spec-compatibility',
+      status: 'warning',
+      message: `Compatibility exceeds ${MAX_COMPATIBILITY_LENGTH} char limit (${compatibility.length})`,
+      evidence: 'agentskills.io spec: compatibility max 500 characters'
+    };
+  }
+
+  return {
+    name: 'spec-compatibility',
+    status: 'ok',
+    message: `Compatibility field OK (${compatibility.length}/${MAX_COMPATIBILITY_LENGTH})`
+  };
+}
+
+/**
+ * Spec Recommendation: Suggest adding a license field.
+ * Not required by spec, but strongly recommended for discoverability and trust.
+ */
+export function checkLicenseRecommendation(fields: Record<string, unknown>): AdvisoryCheck {
+  if ('license' in fields && typeof fields['license'] === 'string' && fields['license'].trim()) {
+    return {
+      name: 'spec-license',
+      status: 'optimal',
+      message: `License specified: ${fields['license']}`,
+    };
+  }
+
+  return {
+    name: 'spec-license',
+    status: 'warning',
+    message: 'No license field — strongly recommended for discoverability and trust',
+    evidence: 'agentskills.io spec: optional license field'
+  };
+}
+
+/**
+ * Spec Recommendation: Suggest adding version metadata.
+ * Not required by spec, but strongly recommended for tracking and compatibility.
+ */
+export function checkVersionRecommendation(fields: Record<string, unknown>): AdvisoryCheck {
+  const metadata = fields['metadata'];
+  if (metadata && typeof metadata === 'object' && metadata !== null) {
+    const metaRecord = metadata as Record<string, unknown>;
+    if ('version' in metaRecord && typeof metaRecord['version'] === 'string' && metaRecord['version'].trim()) {
+      return {
+        name: 'spec-version',
+        status: 'optimal',
+        message: `Version specified: ${metaRecord['version']}`,
+      };
+    }
+  }
+
+  return {
+    name: 'spec-version',
+    status: 'warning',
+    message: 'No metadata.version field — strongly recommended for tracking and compatibility',
+    evidence: 'agentskills.io spec: optional metadata key-value pairs'
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Advisory Checks (Sensei-original, SkillsBench-informed)
+// ---------------------------------------------------------------------------
+
 /** Full scoring result for a skill */
 export interface ScoringResult {
   readonly skillPath: string;
   readonly checks: AdvisoryCheck[];
+  readonly specChecks: AdvisoryCheck[];
   readonly complexity: 'compact' | 'detailed' | 'comprehensive';
   readonly moduleCount: number;
   readonly tokenCount: number;
@@ -291,6 +597,7 @@ export function scoreSkill(skillDir: string): ScoringResult {
         status: 'warning',
         message: `Path does not exist or is not a directory: ${skillDir}`
       }],
+      specChecks: [],
       complexity: 'compact',
       moduleCount: 0,
       tokenCount: 0
@@ -308,6 +615,7 @@ export function scoreSkill(skillDir: string): ScoringResult {
         status: 'warning',
         message: `No SKILL.md found in: ${skillDir}`
       }],
+      specChecks: [],
       complexity: 'compact',
       moduleCount: 0,
       tokenCount: 0
@@ -340,6 +648,7 @@ export function scoreSkill(skillDir: string): ScoringResult {
       ? 'detailed'
       : 'compact';
 
+  // Advisory checks (Sensei-original)
   const checks: AdvisoryCheck[] = [
     moduleCountCheck,
     complexityCheck,
@@ -348,9 +657,27 @@ export function scoreSkill(skillDir: string): ScoringResult {
     checkOverSpecificity(content)
   ];
 
+  // Spec compliance checks (agentskills.io)
+  const specChecks: AdvisoryCheck[] = [checkFrontmatterStructure(content)];
+  const fm = parseFrontmatter(content);
+  if (fm) {
+    specChecks.push(checkAllowedFields(fm.fields));
+    if (fm.name) {
+      specChecks.push(checkNameCompliance(fm.name));
+      specChecks.push(checkDirectoryNameMatch(skillDir, fm.name));
+    }
+    if (fm.description !== undefined) {
+      specChecks.push(checkDescriptionCompliance(fm.description));
+    }
+    specChecks.push(checkCompatibilityCompliance(fm.compatibility));
+    specChecks.push(checkLicenseRecommendation(fm.fields));
+    specChecks.push(checkVersionRecommendation(fm.fields));
+  }
+
   return {
     skillPath: skillDir,
     checks,
+    specChecks,
     complexity,
     moduleCount,
     tokenCount

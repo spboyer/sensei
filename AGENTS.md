@@ -4,7 +4,7 @@ Instructions for AI coding agents working with this repository.
 
 ## Overview
 
-This is **Sensei**, a skill for improving SKILL.md frontmatter compliance. It follows the [Anthropic skill specification](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills).
+This is **Sensei**, a skill for improving SKILL.md frontmatter compliance. It follows the [Agent Skills specification](https://agentskills.io/specification) (maintained by [Anthropic](https://github.com/agentskills/agentskills)).
 
 ## Repository Structure
 

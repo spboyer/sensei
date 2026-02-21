@@ -2,6 +2,8 @@
 
 Detailed scoring criteria for evaluating skill frontmatter compliance.
 
+Structural validation follows the [Agent Skills specification](https://agentskills.io/specification) ([reference library](https://github.com/agentskills/agentskills/tree/main/skills-ref)). Advisory checks are Sensei-original, informed by SkillsBench research.
+
 ## Adherence Levels
 
 ### Low Adherence
@@ -96,6 +98,21 @@ When MCP tools and skills have overlapping names (e.g., `azure-deploy` skill vs 
 - **Duplicate invocation** - LLM calling both for the same request
 - **Wrong path selection** - Using workflow skill for a simple query
 - **Skill collision** - Multiple skills triggering for the same prompt
+
+## Spec Compliance Checks (agentskills.io)
+
+These checks are programmatic and run via `npm run tokens -- score`. They validate structural conformance to the [Agent Skills specification](https://agentskills.io/specification).
+
+| Check | What it validates | Spec rule |
+|-------|-------------------|-----------|
+| `spec-frontmatter` | YAML frontmatter exists, `name` and `description` present | Required fields |
+| `spec-allowed-fields` | No unknown fields (only `name`, `description`, `license`, `allowed-tools`, `metadata`, `compatibility`) | Field allowlist |
+| `spec-name` | Lowercase, ≤64 chars, no leading/trailing `-`, no `--`, alphanumeric + hyphens only | Name constraints |
+| `spec-dir-match` | Directory name matches skill `name` field | Directory = name |
+| `spec-description` | Non-empty, ≤1024 characters | Description constraints |
+| `spec-compatibility` | If present, ≤500 characters | Compatibility constraints |
+| `spec-license` | Recommends adding `license` field | Optional but strongly recommended |
+| `spec-version` | Recommends adding `metadata.version` | Optional but strongly recommended |
 
 ## Rule-Based Checks
 
