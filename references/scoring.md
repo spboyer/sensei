@@ -181,6 +181,8 @@ Optional field documenting:
 
 ```python
 def score_skill(skill):
+    if len(skill.description) > 1024:
+        return "Invalid"  # exceeds spec hard limit
     if len(skill.description) < 150:
         return "Low"
     

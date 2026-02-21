@@ -211,6 +211,7 @@ Ask how to proceed:
 
 | Score | Requirements |
 |-------|--------------|
+| **Invalid** | Description > 1024 chars (exceeds spec hard limit) |
 | **Low** | Description < 150 chars OR no triggers |
 | **Medium** | Description >= 150 chars AND has trigger keywords |
 | **Medium-High** | Has "USE FOR:" AND "DO NOT USE FOR:" |
