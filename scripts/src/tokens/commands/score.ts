@@ -3,6 +3,7 @@
  * and agentskills.io specification compliance checks.
  *
  * Spec reference: https://agentskills.io/specification
+ * Copilot CLI fields: https://docs.github.com/copilot/reference/custom-agents-configuration#yaml-frontmatter-properties
  */
 
 import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';

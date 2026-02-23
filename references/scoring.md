@@ -183,7 +183,7 @@ Optional field documenting:
 
 ### Copilot CLI Extension Fields
 
-These fields are supported by the Copilot CLI and validated by Sensei when present:
+These fields are [Copilot CLI extensions](https://docs.github.com/copilot/reference/custom-agents-configuration#yaml-frontmatter-properties) (not part of the agentskills.io spec) and validated by Sensei when present:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
