@@ -9,6 +9,7 @@
   },
   "overrides": {
     "README.md": 4200,
-    "AGENTS.md": 2000
+    "AGENTS.md": 2000,
+    "references/scoring.md": 3000
   }
 }

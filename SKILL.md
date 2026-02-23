@@ -144,6 +144,9 @@ description: |
   [1-2 sentence description of what the skill does]
   USE FOR: [phrase1], [phrase2], [phrase3], [phrase4], [phrase5].
   DO NOT USE FOR: [scenario1] (use other-skill), [scenario2].
+allowed-tools: shell, read, write    # optional: auto-allowed tools
+user-invocable: true                 # optional: default true
+disable-model-invocation: false      # optional: default false
 ---
 ```
 
@@ -263,6 +266,19 @@ description: |
 ```
 
 See [references/examples.md](references/examples.md) for more before/after transformations.
+
+### Reference-Only Pattern
+
+Use `user-invocable: false` + `disable-model-invocation: true` to create a skill that acts as a shared reference file (loaded from disk, never invoked):
+
+```yaml
+---
+name: team-conventions
+description: "Shared coding conventions loaded as context."
+user-invocable: false
+disable-model-invocation: true
+---
+```
 
 ## Commit Messages
 
