@@ -3,7 +3,7 @@
  * and agentskills.io specification compliance checks.
  *
  * Spec reference: https://agentskills.io/specification
- * Copilot CLI fields: https://github.com/github/copilot-agent-runtime/blob/main/src/skills/types.ts
+ * Copilot CLI fields: not yet documented publicly (see skillFrontmatterSchema in copilot-agent-runtime)
  */
 
 import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';

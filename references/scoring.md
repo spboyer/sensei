@@ -183,7 +183,7 @@ Optional field documenting:
 
 ### Copilot CLI Extension Fields
 
-These fields are defined in the [Copilot agent runtime](https://github.com/github/copilot-agent-runtime/blob/main/src/skills/types.ts) skill frontmatter schema (not part of the agentskills.io spec) and validated by Sensei when present:
+These fields are part of the Copilot skill frontmatter schema (not yet documented publicly; not part of the agentskills.io spec) and validated by Sensei when present:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
