@@ -348,10 +348,10 @@ const YAML_BOOLEAN_VALUES = new Set([
 ]);
 
 /**
- * Spec Check: Validate that a frontmatter field is a boolean value when present.
+ * Copilot CLI Check: Validate that a frontmatter field is a boolean value when present.
  */
 export function checkBooleanField(fieldName: string, value: string | undefined): AdvisoryCheck {
-  const checkName = `spec-${fieldName}`;
+  const checkName = `copilot-${fieldName}`;
 
   if (value === undefined) {
     return {
@@ -382,12 +382,12 @@ export function checkBooleanField(fieldName: string, value: string | undefined):
 }
 
 /**
- * Spec Check: Validate allowed-tools format (comma-separated list) when present.
+ * Copilot CLI Check: Validate allowed-tools format (comma-separated list) when present.
  */
 export function checkAllowedToolsFormat(value: string | undefined): AdvisoryCheck {
   if (value === undefined) {
     return {
-      name: 'spec-allowed-tools',
+      name: 'copilot-allowed-tools',
       status: 'ok',
       message: 'allowed-tools not present (optional)'
     };
@@ -396,7 +396,7 @@ export function checkAllowedToolsFormat(value: string | undefined): AdvisoryChec
   const trimmed = value.trim();
   if (!trimmed) {
     return {
-      name: 'spec-allowed-tools',
+      name: 'copilot-allowed-tools',
       status: 'warning',
       message: 'allowed-tools is empty — omit the field or specify tool names',
       evidence: 'Copilot CLI skill frontmatter: comma-separated list of tool names'
@@ -404,14 +404,14 @@ export function checkAllowedToolsFormat(value: string | undefined): AdvisoryChec
   }
 
   return {
-    name: 'spec-allowed-tools',
+    name: 'copilot-allowed-tools',
     status: 'ok',
     message: `allowed-tools: ${trimmed}`
   };
 }
 
 /**
- * Advisory Check: Detect "reference-only" skill pattern.
+ * Copilot CLI Check: Detect "reference-only" skill pattern.
  * When user-invocable=false AND disable-model-invocation=true, the skill
  * is effectively a reference file loaded from disk but never invoked.
  */
@@ -421,7 +421,7 @@ export function checkReferenceOnlyPattern(
 ): AdvisoryCheck {
   if (userInvocable === undefined && disableModelInvocation === undefined) {
     return {
-      name: 'reference-only-pattern',
+      name: 'copilot-reference-only-pattern',
       status: 'ok',
       message: 'Standard invocable skill (defaults apply)'
     };
@@ -435,7 +435,7 @@ export function checkReferenceOnlyPattern(
 
   if (isNotUserInvocable && isModelDisabled) {
     return {
-      name: 'reference-only-pattern',
+      name: 'copilot-reference-only-pattern',
       status: 'optimal',
       message: 'Reference-only skill detected (user-invocable=false + disable-model-invocation=true) — loaded from disk but never invoked directly',
       evidence: 'Copilot CLI: this combination creates a shared context/config file'
@@ -444,7 +444,7 @@ export function checkReferenceOnlyPattern(
 
   if (isNotUserInvocable) {
     return {
-      name: 'reference-only-pattern',
+      name: 'copilot-reference-only-pattern',
       status: 'ok',
       message: 'Skill is not user-invocable but can be model-invoked'
     };
@@ -452,14 +452,14 @@ export function checkReferenceOnlyPattern(
 
   if (isModelDisabled) {
     return {
-      name: 'reference-only-pattern',
+      name: 'copilot-reference-only-pattern',
       status: 'ok',
       message: 'Skill is user-invocable only (model cannot invoke)'
     };
   }
 
   return {
-    name: 'reference-only-pattern',
+    name: 'copilot-reference-only-pattern',
     status: 'ok',
     message: 'Standard invocable skill'
   };

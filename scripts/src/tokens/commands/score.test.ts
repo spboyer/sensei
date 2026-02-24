@@ -452,10 +452,10 @@ describe('checkBooleanField', () => {
 
   it('uses correct check name based on field', () => {
     const r1 = checkBooleanField('user-invocable', 'true');
-    expect(r1.name).toBe('spec-user-invocable');
+    expect(r1.name).toBe('copilot-user-invocable');
 
     const r2 = checkBooleanField('disable-model-invocation', 'false');
-    expect(r2.name).toBe('spec-disable-model-invocation');
+    expect(r2.name).toBe('copilot-disable-model-invocation');
   });
 });
 
@@ -463,7 +463,7 @@ describe('checkAllowedToolsFormat', () => {
   it('passes when not present', () => {
     const result = checkAllowedToolsFormat(undefined);
     expect(result.status).toBe('ok');
-    expect(result.name).toBe('spec-allowed-tools');
+    expect(result.name).toBe('copilot-allowed-tools');
   });
 
   it('passes for valid comma-separated list', () => {
@@ -493,7 +493,7 @@ describe('checkReferenceOnlyPattern', () => {
   it('returns ok when both fields absent (defaults)', () => {
     const result = checkReferenceOnlyPattern(undefined, undefined);
     expect(result.status).toBe('ok');
-    expect(result.name).toBe('reference-only-pattern');
+    expect(result.name).toBe('copilot-reference-only-pattern');
     expect(result.message).toContain('defaults apply');
   });
 

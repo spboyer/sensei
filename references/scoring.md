@@ -113,10 +113,10 @@ These checks are programmatic and run via `npm run tokens -- score`. They valida
 | `spec-compatibility` | If present, ≤500 characters | Compatibility constraints |
 | `spec-license` | Recommends adding `license` field | Optional but strongly recommended |
 | `spec-version` | Recommends adding `metadata.version` | Optional but strongly recommended |
-| `spec-user-invocable` | If present, must be boolean (`true`/`false`) | Copilot CLI extension |
-| `spec-disable-model-invocation` | If present, must be boolean (`true`/`false`) | Copilot CLI extension |
-| `spec-allowed-tools` | If present, must be non-empty comma-separated list | Copilot CLI extension |
-| `reference-only-pattern` | Detects `user-invocable=false` + `disable-model-invocation=true` | Advisory (Copilot CLI) |
+| `copilot-user-invocable` | If present, must be boolean (`true`/`false`) | Copilot CLI extension |
+| `copilot-disable-model-invocation` | If present, must be boolean (`true`/`false`) | Copilot CLI extension |
+| `copilot-allowed-tools` | If present, must be non-empty comma-separated list | Copilot CLI extension |
+| `copilot-reference-only-pattern` | Detects `user-invocable=false` + `disable-model-invocation=true` | Advisory (Copilot CLI) |
 
 ## Rule-Based Checks
 
