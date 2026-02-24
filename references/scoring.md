@@ -106,13 +106,17 @@ These checks are programmatic and run via `npm run tokens -- score`. They valida
 | Check | What it validates | Spec rule |
 |-------|-------------------|-----------|
 | `spec-frontmatter` | YAML frontmatter exists, `name` and `description` present | Required fields |
-| `spec-allowed-fields` | No unknown fields (only `name`, `description`, `license`, `allowed-tools`, `metadata`, `compatibility`) | Field allowlist |
+| `spec-allowed-fields` | No unknown fields (only `name`, `description`, `license`, `allowed-tools`, `metadata`, `compatibility`, `user-invocable`, `disable-model-invocation`) | Field allowlist |
 | `spec-name` | Lowercase, ≤64 chars, no leading/trailing `-`, no `--`, alphanumeric + hyphens only | Name constraints |
 | `spec-dir-match` | Directory name matches skill `name` field | Directory = name |
 | `spec-description` | Non-empty, ≤1024 characters | Description constraints |
 | `spec-compatibility` | If present, ≤500 characters | Compatibility constraints |
 | `spec-license` | Recommends adding `license` field | Optional but strongly recommended |
 | `spec-version` | Recommends adding `metadata.version` | Optional but strongly recommended |
+| `copilot-user-invocable` | If present, must be boolean (`true`/`false`) | Copilot CLI extension |
+| `copilot-disable-model-invocation` | If present, must be boolean (`true`/`false`) | Copilot CLI extension |
+| `copilot-allowed-tools` | If present, must be non-empty comma-separated list | Copilot CLI extension |
+| `copilot-reference-only-pattern` | Detects `user-invocable=false` + `disable-model-invocation=true` | Advisory (Copilot CLI) |
 
 ## Rule-Based Checks
 
@@ -176,6 +180,29 @@ Optional field documenting:
 - Required tools/libraries
 - Supported frameworks
 - Prerequisites
+
+### Copilot CLI Extension Fields
+
+These fields are part of the Copilot skill frontmatter schema (not yet documented publicly; not part of the agentskills.io spec) and validated by Sensei when present:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `allowed-tools` | string | — | Comma-separated list of auto-allowed tools while skill is active |
+| `user-invocable` | boolean | `true` | Whether users can invoke via `/skill-name` |
+| `disable-model-invocation` | boolean | `false` | Prevent the model from invoking this skill |
+
+#### Reference-Only Pattern
+
+When `user-invocable: false` AND `disable-model-invocation: true`, the skill becomes a **reference-only file** — loaded from disk but never invoked by user or model. Useful for shared context, configuration, or conventions.
+
+```yaml
+---
+name: team-conventions
+description: "Shared coding conventions for the team."
+user-invocable: false
+disable-model-invocation: true
+---
+```
 
 ## Scoring Algorithm
 

@@ -3,6 +3,7 @@
  * and agentskills.io specification compliance checks.
  *
  * Spec reference: https://agentskills.io/specification
+ * Copilot CLI fields: not yet documented publicly (see skillFrontmatterSchema in copilot-agent-runtime)
  */
 
 import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
@@ -18,9 +19,10 @@ const MAX_DESCRIPTION_LENGTH = 1024;
 /** Max compatibility field length per agentskills.io spec */
 const MAX_COMPATIBILITY_LENGTH = 500;
 
-/** Allowed frontmatter fields per agentskills.io spec */
+/** Allowed frontmatter fields per agentskills.io spec + Copilot CLI extensions */
 const ALLOWED_FIELDS = new Set([
-  'name', 'description', 'license', 'allowed-tools', 'metadata', 'compatibility'
+  'name', 'description', 'license', 'allowed-tools', 'metadata', 'compatibility',
+  'user-invocable', 'disable-model-invocation'
 ]);
 
 /** Recursively list all files in a directory (Node 18 compatible) */
@@ -60,6 +62,9 @@ interface ParsedFrontmatter {
   readonly name?: string;
   readonly description?: string;
   readonly compatibility?: string;
+  readonly userInvocable?: string;
+  readonly disableModelInvocation?: string;
+  readonly allowedTools?: string;
 }
 
 /**
@@ -100,6 +105,9 @@ export function parseFrontmatter(content: string): ParsedFrontmatter | null {
     name: typeof fields['name'] === 'string' ? fields['name'] : undefined,
     description: typeof fields['description'] === 'string' ? fields['description'] : undefined,
     compatibility: typeof fields['compatibility'] === 'string' ? fields['compatibility'] : undefined,
+    userInvocable: typeof fields['user-invocable'] === 'string' ? fields['user-invocable'] : undefined,
+    disableModelInvocation: typeof fields['disable-model-invocation'] === 'string' ? fields['disable-model-invocation'] : undefined,
+    allowedTools: typeof fields['allowed-tools'] === 'string' ? fields['allowed-tools'] : undefined,
   };
 }
 
@@ -331,6 +339,129 @@ export function checkVersionRecommendation(fields: Record<string, unknown>): Adv
     status: 'warning',
     message: 'No metadata.version field — strongly recommended for tracking and compatibility',
     evidence: 'agentskills.io spec: optional metadata key-value pairs'
+  };
+}
+
+/** Valid boolean string values in YAML frontmatter */
+const YAML_BOOLEAN_VALUES = new Set([
+  'true', 'false', 'yes', 'no', 'on', 'off'
+]);
+
+/**
+ * Copilot CLI Check: Validate that a frontmatter field is a boolean value when present.
+ */
+export function checkBooleanField(fieldName: string, value: string | undefined): AdvisoryCheck {
+  const checkName = `copilot-${fieldName}`;
+
+  if (value === undefined) {
+    return {
+      name: checkName,
+      status: 'ok',
+      message: `${fieldName} not present (optional, uses default)`
+    };
+  }
+
+  const normalized = value.trim().toLowerCase();
+  // Strip surrounding quotes that the YAML parser may leave
+  const unquoted = normalized.replace(/^['"]|['"]$/g, '');
+
+  if (!YAML_BOOLEAN_VALUES.has(unquoted)) {
+    return {
+      name: checkName,
+      status: 'warning',
+      message: `${fieldName} should be a boolean (true/false), got: "${value}"`,
+      evidence: 'Copilot CLI skill frontmatter: boolean field'
+    };
+  }
+
+  return {
+    name: checkName,
+    status: 'ok',
+    message: `${fieldName} = ${unquoted}`
+  };
+}
+
+/**
+ * Copilot CLI Check: Validate allowed-tools format (comma-separated list) when present.
+ */
+export function checkAllowedToolsFormat(value: string | undefined): AdvisoryCheck {
+  if (value === undefined) {
+    return {
+      name: 'copilot-allowed-tools',
+      status: 'ok',
+      message: 'allowed-tools not present (optional)'
+    };
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return {
+      name: 'copilot-allowed-tools',
+      status: 'warning',
+      message: 'allowed-tools is empty — omit the field or specify tool names',
+      evidence: 'Copilot CLI skill frontmatter: comma-separated list of tool names'
+    };
+  }
+
+  return {
+    name: 'copilot-allowed-tools',
+    status: 'ok',
+    message: `allowed-tools: ${trimmed}`
+  };
+}
+
+/**
+ * Copilot CLI Check: Detect "reference-only" skill pattern.
+ * When user-invocable=false AND disable-model-invocation=true, the skill
+ * is effectively a reference file loaded from disk but never invoked.
+ */
+export function checkReferenceOnlyPattern(
+  userInvocable: string | undefined,
+  disableModelInvocation: string | undefined
+): AdvisoryCheck {
+  if (userInvocable === undefined && disableModelInvocation === undefined) {
+    return {
+      name: 'copilot-reference-only-pattern',
+      status: 'ok',
+      message: 'Standard invocable skill (defaults apply)'
+    };
+  }
+
+  const uiNorm = (userInvocable ?? 'true').trim().toLowerCase().replace(/^['"]|['"]$/g, '');
+  const dmNorm = (disableModelInvocation ?? 'false').trim().toLowerCase().replace(/^['"]|['"]$/g, '');
+
+  const isNotUserInvocable = uiNorm === 'false' || uiNorm === 'no' || uiNorm === 'off';
+  const isModelDisabled = dmNorm === 'true' || dmNorm === 'yes' || dmNorm === 'on';
+
+  if (isNotUserInvocable && isModelDisabled) {
+    return {
+      name: 'copilot-reference-only-pattern',
+      status: 'optimal',
+      message: 'Reference-only skill detected (user-invocable=false + disable-model-invocation=true) — loaded from disk but never invoked directly',
+      evidence: 'Copilot CLI: this combination creates a shared context/config file'
+    };
+  }
+
+  if (isNotUserInvocable) {
+    return {
+      name: 'copilot-reference-only-pattern',
+      status: 'ok',
+      message: 'Skill is not user-invocable but can be model-invoked'
+    };
+  }
+
+  if (isModelDisabled) {
+    return {
+      name: 'copilot-reference-only-pattern',
+      status: 'ok',
+      message: 'Skill is user-invocable only (model cannot invoke)'
+    };
+  }
+
+  return {
+    name: 'copilot-reference-only-pattern',
+    status: 'ok',
+    message: 'Standard invocable skill'
   };
 }
 
@@ -672,6 +803,11 @@ export function scoreSkill(skillDir: string): ScoringResult {
     specChecks.push(checkCompatibilityCompliance(fm.compatibility));
     specChecks.push(checkLicenseRecommendation(fm.fields));
     specChecks.push(checkVersionRecommendation(fm.fields));
+    // Copilot CLI extension fields
+    specChecks.push(checkBooleanField('user-invocable', fm.userInvocable));
+    specChecks.push(checkBooleanField('disable-model-invocation', fm.disableModelInvocation));
+    specChecks.push(checkAllowedToolsFormat(fm.allowedTools));
+    specChecks.push(checkReferenceOnlyPattern(fm.userInvocable, fm.disableModelInvocation));
   }
 
   return {
