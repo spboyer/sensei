@@ -35,17 +35,23 @@ description: |
 ### Medium-High Adherence (Target)
 
 A skill is **Medium-High** if:
-- Description >= 150 characters
-- Has explicit "USE FOR:" trigger phrases
-- Has "DO NOT USE FOR:" anti-triggers
+- Description >= 150 characters and ≤ 60 words
+- Has explicit trigger phrases via `WHEN:` (preferred) or `USE FOR:`
+- Leads with unique action verb + domain in first sentence
+
+> **Note:** `WHEN:` scores higher than `USE FOR:` because quoted trigger phrases are more distinctive for cross-model pattern matching.
 
 ```yaml
-# Example: Complete triggers and anti-triggers
+# Example: Cross-model optimized (preferred)
+description: "Extract, rotate, merge, and split PDF files for document processing. WHEN: \"extract PDF text\", \"rotate PDF pages\", \"merge PDFs\", \"split PDF\"."
+
+# Example: Legacy pattern (still accepted)
 description: |
   Process PDF files including text extraction, rotation, and merging.
   USE FOR: "extract PDF text", "rotate PDF", "merge PDFs".
-  DO NOT USE FOR: creating PDFs (use document-creator).
 ```
+
+> ⚠️ **"DO NOT USE FOR:" is actively discouraged.** Anti-trigger clauses introduce the very keywords that cause wrong-skill activation on Claude Sonnet and other models that use fast pattern matching rather than deep negation reasoning. Use positive routing instead.
 
 ### High Adherence
 
@@ -55,13 +61,8 @@ A skill is **High** if:
 - Has routing clarity (`INVOKES:` and/or `FOR SINGLE OPERATIONS:`)
 
 ```yaml
-# Example: Full compliance with routing
-description: |
-  **WORKFLOW SKILL** - Process PDF files including text extraction, rotation, and merging.
-  USE FOR: "extract PDF text", "rotate PDF", "merge PDFs".
-  DO NOT USE FOR: creating PDFs (use document-creator).
-  INVOKES: pdf-tools MCP for extraction, file-system for I/O.
-  FOR SINGLE OPERATIONS: Use pdf-tools MCP directly for simple extractions.
+# Example: Full compliance with routing (cross-model optimized)
+description: "**WORKFLOW SKILL** — Extract, rotate, merge, and split PDF files. WHEN: \"extract PDF text\", \"rotate PDF pages\", \"merge PDFs\", \"split PDF\". INVOKES: pdf-tools MCP for extraction, file-system for I/O. FOR SINGLE OPERATIONS: Use pdf-tools MCP directly for simple extractions."
 ```
 
 ## Skill Type Prefixes
@@ -113,6 +114,7 @@ These checks are programmatic and run via `npm run tokens -- score`. They valida
 | `spec-compatibility` | If present, ≤500 characters | Compatibility constraints |
 | `spec-license` | Recommends adding `license` field | Optional but strongly recommended |
 | `spec-version` | Recommends adding `metadata.version` | Optional but strongly recommended |
+| `spec-security` | No XML angle brackets (`< >`) in frontmatter; name does not use reserved prefixes (`claude-`, `anthropic-`) | Security restrictions ([Anthropic guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf), p31) |
 
 ## Rule-Based Checks
 
@@ -136,6 +138,7 @@ These checks are programmatic and run via `npm run tokens -- score`. They valida
 ### 3. Trigger Detection
 
 **Positive indicators** (case-insensitive):
+- `WHEN:` (preferred — scores higher)
 - `USE FOR:`
 - `USE THIS SKILL`
 - `TRIGGERS:`
@@ -144,19 +147,35 @@ These checks are programmatic and run via `npm run tokens -- score`. They valida
 **Scoring:**
 - None → Low
 - Implicit keywords → Medium
-- Explicit "USE FOR:" → Medium-High
+- Explicit "WHEN:" → Medium-High (preferred)
+- Explicit "USE FOR:" → Medium-High (accepted)
 
 ### 4. Anti-Trigger Detection
 
-**Positive indicators** (case-insensitive):
+> ⚠️ **Context-dependent risk.** Anti-trigger clauses like "DO NOT USE FOR:" carry different risk levels depending on the skill set size and deployment context.
+
+**Risk assessment by context:**
+
+| Context | Risk Level | Guidance |
+|---------|------------|----------|
+| Single skill or small set (1-5 skills) with clear domain boundaries | Low | Anti-triggers are low-risk — domain boundaries are obvious |
+| Medium skill set (5-15 skills) with some overlap | Moderate | Anti-trigger keywords start competing with other skills' triggers |
+| Large skill set (15+ skills) with overlapping domains | **High** | Keyword contamination is measurable — negative keywords become activation keywords on fast-pattern-matching models |
+
+**Why large skill sets are risky:** On Claude Sonnet and similar models that use fast pattern matching (first ~20 words), `DO NOT USE FOR: Function apps` causes Sonnet to key on "Function apps" and **activate** the skill for Functions queries. This was empirically demonstrated across 24 Azure skills ([analysis](https://gist.github.com/kvenkatrajan/52e6e77f5560ca30640490b4cc65d109)). Anthropic's own published skills confirm this pattern — 4 of 5 skills in `anthropics/skills` use positive-only routing (pdf, frontend-design, skill-creator, webapp-testing); only docx uses "Do NOT use for."
+
+> **Note:** Anthropic's [Complete Guide to Building Skills](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) recommends negative triggers for overtriggering (p25). This is reasonable for small, isolated skill sets. For multi-skill production environments, Sensei recommends positive routing with `WHEN:` and distinctive quoted phrases as the cross-model-safe alternative.
+
+**Legacy indicators** (still detected, trigger context-dependent warning):
 - `DO NOT USE FOR:`
 - `NOT FOR:`
 - `Don't use this skill`
 - `Instead use`
 
 **Scoring:**
-- None → caps at Medium
-- Present → enables Medium-High/High
+- Present in large skill sets → emits cross-model compatibility warning
+- Present in small skill sets → informational note only
+- Absent → no penalty (preferred for cross-model compatibility)
 
 ### 5. Routing Clarity (High score)
 
@@ -187,16 +206,21 @@ def score_skill(skill):
         return "Low"
     
     has_triggers = contains_trigger_phrases(skill.description)
-    has_anti_triggers = contains_anti_triggers(skill.description)
     has_routing_clarity = contains_routing_patterns(skill.description)
     
     if not has_triggers:
         return "Low"
-    if not has_anti_triggers:
-        return "Medium"
+    if word_count(skill.description) > 60:
+        return "Medium"  # too dense for cross-model reliability
+    # Note: "DO NOT USE FOR:" is no longer required for Medium-High
     if not has_routing_clarity:
         return "Medium-High"
     return "High"
+
+def contains_trigger_phrases(description):
+    # WHEN: preferred (scores higher), USE FOR: accepted
+    patterns = ['WHEN:', 'USE FOR:', 'USE THIS SKILL', 'TRIGGERS:']
+    return any(p.lower() in description.lower() for p in patterns)
 
 def contains_routing_patterns(description):
     patterns = ['INVOKES:', 'FOR SINGLE OPERATIONS:', 
@@ -211,6 +235,8 @@ def contains_routing_patterns(description):
 | SKILL.md | 500 | 5000 |
 | references/*.md | 1000 | - |
 | Description field | - | 1024 chars |
+
+> **Units note:** Sensei measures in **tokens** (cl100k_base tokenizer), not words. Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) recommends "under 5,000 words" for SKILL.md, while the [Agent Skills spec](https://agentskills.io/specification) recommends "< 5000 tokens" and "under 500 lines." Sensei uses the spec's token-based limits. As a rough conversion: 5000 tokens ≈ 3,750 words. The spec's token budget is stricter, which aligns with SkillsBench evidence that concise skills outperform comprehensive ones.
 
 ## MCP Integration Checks
 
@@ -309,6 +335,84 @@ Check for action verbs (deploy, configure, build) and workflow words (step, then
 
 Flag hardcoded paths, IPs/ports, magic numbers, test-specific references. Skills must guide task classes.
 
+### 16. Cross-Model Description Density
+
+Checks description for cross-model compatibility issues that cause unreliable invocation on Claude Sonnet and similar models.
+
+**Sub-checks:**
+- **Word count** — Descriptions over 60 words dilute attention across skill selection
+- **Anti-trigger contamination** — "DO NOT USE FOR:" clauses introduce competing keywords (risk scales with skill set size — see check 4)
+- **Lead sentence** — First sentence should start with unique action verb + domain
+- **Trigger format** — `WHEN:` with quoted phrases preferred over `USE FOR:` with loose keywords
+
+**Why this matters:**
+> Sonnet selects skills by fast pattern matching on the first ~20 words, not by deep reasoning over 100-word descriptions. Front-load the signal, eliminate noise, and make each skill's identity unmistakable in its opening phrase. ([Source](https://gist.github.com/kvenkatrajan/52e6e77f5560ca30640490b4cc65d109))
+
+**Context note:** Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) recommends negative triggers for overtriggering in general. This works for small, isolated skill sets. For production environments with 10+ overlapping skills, positive routing with `WHEN:` is the safer cross-model approach.
+
+**Recommended template:**
+```yaml
+description: "[ACTION VERB] [UNIQUE_DOMAIN]. [One clarifying sentence]. WHEN: \"phrase1\", \"phrase2\", \"phrase3\"."
+```
+
+### 17. Body Structure Quality
+
+Checks whether the SKILL.md body follows Anthropic's [recommended structure](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) for effective instructions.
+
+**Sub-checks:**
+- **Actionable instructions** — Body uses specific commands, code examples, or step-by-step guidance (not just descriptions)
+- **Examples section** — Has at least one example or scenario showing input → expected output
+- **Error handling** — Documents common failure modes and recovery steps
+- **Troubleshooting** — Includes guidance for when things go wrong (MCP connection issues, validation failures, etc.)
+
+**Detection heuristics:**
+- Actionable: look for code blocks, `Run ...`, `Call ...`, numbered steps
+- Examples: look for `## Example`, `Example:`, `User says:`, `Given:`, `When:`, `Then:`
+- Error handling: look for `## Error`, `## Common Issues`, `If ... fails`, `Error:`, `Solution:`
+- Troubleshooting: look for `## Troubleshooting`, `## Common Problems`, `Symptom:`, `Fix:`
+
+**Good template (from Anthropic guide):**
+```markdown
+# Instructions
+## Step 1: [First Major Step]
+Clear explanation of what happens.
+```bash
+command --with-params
+Expected output: [describe what success looks like]
+```
+
+## Examples
+Example 1: [common scenario]
+User says: "..."
+Actions: 1. ... 2. ...
+Result: ...
+
+## Troubleshooting
+Error: [Common error message]
+Cause: [Why it happens]
+Solution: [How to fix]
+```
+
+### 18. Body Progressive Disclosure
+
+Checks whether the SKILL.md body properly uses progressive disclosure — keeping core instructions in SKILL.md and detailed reference material in `references/`.
+
+**Flag when:**
+- SKILL.md body exceeds 500 lines (spec recommends under 500)
+- Large code blocks (> 50 lines) that could be moved to `references/` or `scripts/`
+- Detailed API reference or configuration docs inline that belong in reference files
+
+**Good pattern:**
+```markdown
+See [references/api-patterns.md](references/api-patterns.md) for rate limiting and pagination.
+```
+
+**Anti-pattern:**
+```markdown
+## Complete API Reference
+[200+ lines of inline API documentation]
+```
+
 ### Advisory Summary
 
 | # | Detects | Guidance |
@@ -318,3 +422,6 @@ Flag hardcoded paths, IPs/ports, magic numbers, test-specific references. Skills
 | 13 | Hurting patterns | ~19% of tasks can be hurt by skills |
 | 14 | Declarative-only | Procedural > declarative |
 | 15 | Instance-specific | Must guide task classes |
+| 16 | Cross-model density | ≤60 words, no anti-triggers, WHEN: preferred, action verb lead |
+| 17 | Body structure quality | Has examples, error handling, and actionable instructions |
+| 18 | Body progressive disclosure | Detailed content should be in references/, not inline |

@@ -572,7 +572,7 @@ describe('scoreSkill', () => {
     const result = scoreSkill(tempDir);
 
     expect(result.skillPath).toBe(tempDir);
-    expect(result.checks).toHaveLength(5);
+    expect(result.checks).toHaveLength(9);
     expect(result.specChecks.length).toBeGreaterThan(0);
     expect(result.tokenCount).toBeGreaterThan(0);
     expect(result.moduleCount).toBe(2);
@@ -583,6 +583,10 @@ describe('scoreSkill', () => {
     expect(checkNames).toContain('negative-delta-risk');
     expect(checkNames).toContain('procedural-content');
     expect(checkNames).toContain('over-specificity');
+    expect(checkNames).toContain('cross-model-word-count');
+    expect(checkNames).toContain('cross-model-anti-trigger');
+    expect(checkNames).toContain('cross-model-lead-verb');
+    expect(checkNames).toContain('cross-model-trigger-format');
 
     const specNames = result.specChecks.map(c => c.name);
     expect(specNames).toContain('spec-frontmatter');

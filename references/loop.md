@@ -255,3 +255,54 @@ git pull --rebase
 git stash pop
 # Resolve manually if needed
 ```
+
+## Success Criteria
+
+Beyond Sensei's frontmatter scoring, Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) recommends defining runtime success criteria. These are aspirational targets — rough benchmarks rather than precise thresholds.
+
+### Quantitative Metrics
+
+| Metric | Target | How to Measure |
+|--------|--------|----------------|
+| Trigger accuracy | 90%+ of relevant queries | Run 10-20 test queries that should trigger the skill. Track how many load automatically. |
+| Tool call efficiency | Fewer calls with skill than without | Compare the same task with and without the skill. Count tool calls and tokens consumed. |
+| Error rate | 0 failed API calls per workflow | Monitor MCP server logs during test runs. Track retry rates and error codes. |
+
+### Qualitative Metrics
+
+| Metric | How to Assess |
+|--------|---------------|
+| No next-step prompting needed | During testing, note how often you need to redirect or clarify |
+| Workflows complete without correction | Run the same request 3-5 times. Compare outputs for consistency. |
+| Consistent results across sessions | Can a new user accomplish the task on first try with minimal guidance? |
+
+## Runtime Iteration Signals
+
+After a skill is deployed, monitor for these signals to guide further iteration.
+
+### Undertriggering
+
+**Symptoms:** Skill doesn't load when it should, users manually enabling it, support questions about when to use it.
+
+**Fixes:**
+- Add more trigger phrases to description — include keywords for technical terms
+- Ensure description is specific enough to distinguish from generic requests
+- Test with paraphrased requests, not just exact trigger phrases
+
+### Overtriggering
+
+**Symptoms:** Skill loads for irrelevant queries, users disabling it, confusion about purpose.
+
+**Fixes:**
+- Make description more specific (narrow the domain)
+- Use distinctive `WHEN:` phrases with quoted terms unique to this skill
+- In small skill sets: adding "Do NOT use for" may help. In large sets (10+): prefer positive-only routing to avoid keyword contamination (see [scoring.md](scoring.md) check 4)
+
+### Execution Issues
+
+**Symptoms:** Inconsistent results, API call failures, user corrections needed.
+
+**Fixes:**
+- Improve body instructions — add error handling, validation steps
+- Add explicit quality checks before finalizing output
+- Consider bundling validation scripts (code is deterministic; language interpretation isn't)

@@ -352,7 +352,9 @@ export interface ScoringResult {
 const ACTION_VERBS = [
   'process', 'extract', 'deploy', 'configure', 'analyze',
   'create', 'build', 'run', 'execute', 'validate',
-  'check', 'test', 'install', 'set up', 'implement'
+  'check', 'test', 'install', 'set up', 'implement',
+  'manage', 'integrate', 'authenticate', 'troubleshoot',
+  'orchestrate', 'scaffold', 'generate', 'publish'
 ] as const;
 
 /** Keywords indicating procedural structure */
@@ -584,6 +586,146 @@ export function checkOverSpecificity(content: string): AdvisoryCheck {
   };
 }
 
+/** Max recommended word count for cross-model description density */
+const MAX_DESCRIPTION_WORDS = 60;
+
+/**
+ * Check 16: Cross-Model Description Density
+ * Checks description for patterns that cause unreliable invocation on
+ * Claude Sonnet and similar models that use fast pattern matching.
+ *
+ * Sub-checks:
+ * - Word count (>60 words = warning)
+ * - Anti-trigger contamination ("DO NOT USE FOR:" = warning)
+ * - Lead sentence (should start with action verb)
+ * - Trigger format (WHEN: preferred over USE FOR:)
+ */
+export function checkCrossModelDensity(description: string): AdvisoryCheck[] {
+  const checks: AdvisoryCheck[] = [];
+
+  if (!description || description.trim().length === 0) {
+    checks.push({
+      name: 'cross-model-density',
+      status: 'warning',
+      message: 'Empty description — cannot assess cross-model density'
+    });
+    return checks;
+  }
+
+  // Word count check
+  const words = description.trim().split(/\s+/);
+  const wordCount = words.length;
+  if (wordCount > MAX_DESCRIPTION_WORDS) {
+    checks.push({
+      name: 'cross-model-word-count',
+      status: 'warning',
+      message: `Description is ${wordCount} words (max ${MAX_DESCRIPTION_WORDS}). Dense descriptions dilute attention on Claude Sonnet — trim to ≤${MAX_DESCRIPTION_WORDS} words`,
+      evidence: 'Cross-model analysis: Sonnet selects by fast pattern matching on the first ~20 words'
+    });
+  } else {
+    checks.push({
+      name: 'cross-model-word-count',
+      status: 'ok',
+      message: `Description is ${wordCount} words (≤${MAX_DESCRIPTION_WORDS} ✓)`
+    });
+  }
+
+  // Anti-trigger contamination check
+  const antiTriggerPatterns = [
+    /DO NOT USE FOR:/i,
+    /NOT FOR:/i,
+    /don'?t use this skill/i
+  ];
+  const hasAntiTrigger = antiTriggerPatterns.some(p => p.test(description));
+  if (hasAntiTrigger) {
+    checks.push({
+      name: 'cross-model-anti-trigger',
+      status: 'warning',
+      message: 'Anti-trigger clauses ("DO NOT USE FOR:") cause keyword contamination on Claude Sonnet — they introduce the very keywords that trigger wrong-skill activation. Remove and use positive routing with WHEN: instead',
+      evidence: 'Cross-model analysis: negation reasoning is weak on Sonnet; anti-triggers introduce competing keywords'
+    });
+  } else {
+    checks.push({
+      name: 'cross-model-anti-trigger',
+      status: 'ok',
+      message: 'No anti-trigger contamination detected'
+    });
+  }
+
+  // Lead sentence action verb check
+  const firstSentence = description.split(/[.!?\n]/)[0]?.trim() ?? '';
+  const firstWord = firstSentence.split(/\s+/)[0]?.toLowerCase().replace(/[^a-z]/g, '') ?? '';
+  const startsWithActionVerb = ACTION_VERBS.some(verb => {
+    const verbFirst = verb.split(/\s+/)[0];
+    return firstWord === verbFirst;
+  });
+  if (!startsWithActionVerb && firstSentence.length > 0) {
+    // Skip check if starts with skill type prefix
+    const startsWithPrefix = /^\*\*(?:WORKFLOW|UTILITY|ANALYSIS) SKILL\*\*/.test(firstSentence);
+    if (!startsWithPrefix) {
+      checks.push({
+        name: 'cross-model-lead-verb',
+        status: 'warning',
+        message: `Lead sentence should start with unique action verb for fast pattern matching. Found: "${firstWord}"`,
+        evidence: 'Cross-model analysis: front-load the signal in the first ~20 words'
+      });
+    } else {
+      // Check the word after the prefix dash
+      const afterPrefix = firstSentence.replace(/^\*\*(?:WORKFLOW|UTILITY|ANALYSIS) SKILL\*\*\s*[-—–]\s*/, '');
+      const prefixFirstWord = afterPrefix.split(/\s+/)[0]?.toLowerCase().replace(/[^a-z]/g, '') ?? '';
+      const prefixHasActionVerb = ACTION_VERBS.some(verb => {
+        const verbFirst = verb.split(/\s+/)[0];
+        return prefixFirstWord === verbFirst;
+      });
+      if (!prefixHasActionVerb) {
+        checks.push({
+          name: 'cross-model-lead-verb',
+          status: 'warning',
+          message: `After skill type prefix, lead with action verb. Found: "${prefixFirstWord}"`,
+          evidence: 'Cross-model analysis: front-load the signal in the first ~20 words'
+        });
+      } else {
+        checks.push({
+          name: 'cross-model-lead-verb',
+          status: 'ok',
+          message: 'Description leads with action verb after skill type prefix'
+        });
+      }
+    }
+  } else {
+    checks.push({
+      name: 'cross-model-lead-verb',
+      status: 'ok',
+      message: 'Description leads with action verb'
+    });
+  }
+
+  // Trigger format preference check (WHEN: > USE FOR:)
+  const hasWhen = /\bWHEN:/i.test(description);
+  const hasUseFor = /\bUSE FOR:/i.test(description);
+  if (hasWhen) {
+    checks.push({
+      name: 'cross-model-trigger-format',
+      status: 'optimal',
+      message: 'Uses WHEN: trigger format (preferred for cross-model compatibility)'
+    });
+  } else if (hasUseFor) {
+    checks.push({
+      name: 'cross-model-trigger-format',
+      status: 'ok',
+      message: 'Uses USE FOR: trigger format (accepted, but WHEN: with quoted phrases is preferred for cross-model reliability)'
+    });
+  } else {
+    checks.push({
+      name: 'cross-model-trigger-format',
+      status: 'warning',
+      message: 'No explicit trigger format (WHEN: or USE FOR:) found — add WHEN: with 3-5 distinctive quoted trigger phrases'
+    });
+  }
+
+  return checks;
+}
+
 /**
  * Run all advisory checks on a skill directory.
  */
@@ -631,9 +773,15 @@ export function scoreSkill(skillDir: string): ScoringResult {
   const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
   if (frontmatterMatch) {
     const fmContent = frontmatterMatch[1];
-    const descMatch = fmContent.match(/description:\s*\|?\s*\n?([\s\S]*?)(?=\n\w+:|$)/);
+    const descMatch = fmContent.match(/description:\s*(?:[|>]-?)\s*\n([\s\S]*?)(?=\n\w+:|$)/);
     if (descMatch) {
-      description = descMatch[1].trim();
+      description = descMatch[1].replace(/^\s+/gm, '').trim();
+    } else {
+      // Try inline description (quoted string)
+      const inlineMatch = fmContent.match(/description:\s*["']?(.*?)["']?\s*$/m);
+      if (inlineMatch) {
+        description = inlineMatch[1].trim();
+      }
     }
   }
 
@@ -654,7 +802,8 @@ export function scoreSkill(skillDir: string): ScoringResult {
     complexityCheck,
     checkNegativeDeltaRisk(content),
     checkProceduralContent(description),
-    checkOverSpecificity(content)
+    checkOverSpecificity(content),
+    ...checkCrossModelDensity(description)
   ];
 
   // Spec compliance checks (agentskills.io)

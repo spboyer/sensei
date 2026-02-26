@@ -1,6 +1,6 @@
 ---
 name: sensei
-description: "**WORKFLOW SKILL** - Iteratively improve skill frontmatter compliance using the Ralph loop pattern. USE FOR: run sensei, sensei help, improve skill, fix frontmatter, skill compliance, frontmatter audit, improve triggers, add anti-triggers, batch skill improvement, check skill tokens, score skill. DO NOT USE FOR: creating new skills from scratch (use skill-creator), writing skill content/body, general markdown editing, or non-SKILL.md files. INVOKES: token counting tools, test runners, git commands. FOR SINGLE OPERATIONS: use token CLI directly for counts/checks."
+description: "**WORKFLOW SKILL** — Iteratively improve skill frontmatter compliance using the Ralph loop pattern. WHEN: \"run sensei\", \"sensei help\", \"improve skill\", \"fix frontmatter\", \"skill compliance\", \"frontmatter audit\", \"score skill\", \"check skill tokens\". INVOKES: token counting tools, test runners, git commands. FOR SINGLE OPERATIONS: use token CLI directly for counts/checks."
 ---
 
 # Sensei
@@ -29,7 +29,7 @@ When user says "sensei help" or asks how to use sensei:
 ║    1. READ    - Load skill's SKILL.md and count tokens           ║
 ║    2. SCORE   - Check compliance (Low/Medium/Medium-High/High)   ║
 ║    3. SCAFFOLD- Create tests from template if missing            ║
-║    4. IMPROVE - Add USE FOR triggers + DO NOT USE FOR            ║
+║    4. IMPROVE - Add WHEN: triggers (cross-model optimized)       ║
 ║    5. TEST    - Run tests, fix if needed                         ║
 ║    6. TOKENS  - Check token budget                               ║
 ║    7. SUMMARY - Show before/after comparison                     ║
@@ -37,9 +37,9 @@ When user says "sensei help" or asks how to use sensei:
 ║    9. REPEAT  - Until Medium-High score achieved                 ║
 ║                                                                  ║
 ║  TARGET SCORE: Medium-High                                       ║
-║    ✓ Description > 150 chars                                     ║
-║    ✓ Has "USE FOR:" trigger phrases                              ║
-║    ✓ Has "DO NOT USE FOR:" anti-triggers                         ║
+║    ✓ Description > 150 chars, ≤ 60 words                         ║
+║    ✓ Has "WHEN:" trigger phrases (preferred)                     ║
+║    ✓ No "DO NOT USE FOR:" (risky in multi-skill envs)             ║
 ║    ✓ Has "INVOKES:" for tool relationships (optional)            ║
 ║    ✓ SKILL.md < 500 tokens (soft limit)                          ║
 ║                                                                  ║
@@ -116,10 +116,10 @@ npm run tokens -- count {skills-dir}/{skill-name}/SKILL.md
 
 ### Step 2: SCORE
 Assess compliance by checking the frontmatter for:
-- Description length (>= 150 chars)
-- "USE FOR:" trigger phrases
-- "DO NOT USE FOR:" anti-triggers
-- "INVOKES:" routing clarity (optional)
+- Description length (>= 150 chars, ≤ 60 words)
+- "WHEN:" trigger phrases (preferred) or "USE FOR:"
+- Routing clarity ("INVOKES:", "FOR SINGLE OPERATIONS:")
+- No "DO NOT USE FOR:" anti-triggers (risky in multi-skill environments)
 
 See [references/scoring.md](references/scoring.md) for detailed criteria.
 
@@ -132,25 +132,32 @@ If `{tests-dir}/{skill-name}/` doesn't exist, create test scaffolding using temp
 ### Step 5: IMPROVE FRONTMATTER
 Enhance the SKILL.md description to include:
 
-1. **Trigger phrases** - "USE FOR:" followed by specific keywords
-2. **Anti-triggers** - "DO NOT USE FOR:" with scenarios that should use other skills
-3. Keep description under 1024 characters
+1. **Lead with action verb** - First sentence: unique action verb + domain
+2. **Trigger phrases** - "WHEN:" (preferred) or "USE FOR:" with 3-5 distinctive quoted phrases
+3. Keep description under 60 words and 1024 characters
 
-Template:
+> ⚠️ **"DO NOT USE FOR:" carries context-dependent risk.** In multi-skill environments (10+ skills with overlapping domains), anti-trigger clauses introduce the very keywords that cause wrong-skill activation on Claude Sonnet and fast-pattern-matching models ([evidence](https://gist.github.com/kvenkatrajan/52e6e77f5560ca30640490b4cc65d109)). For small, isolated skill sets (1-5 skills), the risk is low. When in doubt, use positive routing with `WHEN:` and distinctive quoted phrases.
+
+Template (cross-model optimized):
 ```yaml
 ---
 name: skill-name
-description: |
-  [1-2 sentence description of what the skill does]
-  USE FOR: [phrase1], [phrase2], [phrase3], [phrase4], [phrase5].
-  DO NOT USE FOR: [scenario1] (use other-skill), [scenario2].
+description: "[ACTION VERB] [UNIQUE_DOMAIN]. [One clarifying sentence]. WHEN: \"[phrase1]\", \"[phrase2]\", \"[phrase3]\", \"[phrase4]\", \"[phrase5]\"."
+---
+```
+
+Template (with routing clarity for High score):
+```yaml
+---
+name: skill-name
+description: "**WORKFLOW SKILL** — [ACTION VERB] [UNIQUE_DOMAIN]. [Clarifying sentence]. WHEN: \"[phrase1]\", \"[phrase2]\", \"[phrase3]\". INVOKES: [tools/MCP servers used]. FOR SINGLE OPERATIONS: [when to bypass this skill]."
 ---
 ```
 
 ### Step 6: IMPROVE TESTS
 Update test prompts to match new frontmatter:
-- `shouldTriggerPrompts` - 5+ prompts matching "USE FOR:" phrases
-- `shouldNotTriggerPrompts` - 5+ prompts matching "DO NOT USE FOR:"
+- `shouldTriggerPrompts` - 5+ prompts matching "WHEN:" or "USE FOR:" phrases
+- `shouldNotTriggerPrompts` - 5+ prompts for unrelated topics and different-skill scenarios
 
 ### Step 7: VERIFY
 Run tests (skip if `--fast` flag):
@@ -213,9 +220,11 @@ Ask how to proceed:
 |-------|--------------|
 | **Invalid** | Description > 1024 chars (exceeds spec hard limit) |
 | **Low** | Description < 150 chars OR no triggers |
-| **Medium** | Description >= 150 chars AND has trigger keywords |
-| **Medium-High** | Has "USE FOR:" AND "DO NOT USE FOR:" |
+| **Medium** | Description >= 150 chars AND has triggers but >60 words |
+| **Medium-High** | Has "WHEN:" (preferred) or "USE FOR:" with ≤60 words |
 | **High** | Medium-High + routing clarity (INVOKES/FOR SINGLE OPERATIONS) |
+
+> ⚠️ "DO NOT USE FOR:" is **risky in multi-skill environments** (10+ overlapping skills) — causes keyword contamination on fast-pattern-matching models. Safe for small, isolated skill sets. Use positive routing with `WHEN:` for cross-model safety.
 
 ### MCP Integration Score (when INVOKES present)
 
@@ -251,15 +260,9 @@ When skills interact with MCP tools or other skills, add:
 description: 'Process PDF files'
 ```
 
-**After (High with routing):**
+**After (High with routing, cross-model optimized):**
 ```yaml
-description: |
-  **WORKFLOW SKILL** - Process PDF files including text extraction, rotation, and merging.
-  USE FOR: "extract PDF text", "rotate PDF", "merge PDFs", "PDF to text".
-  DO NOT USE FOR: creating PDFs from scratch (use document-creator),
-  image extraction (use image-extractor).
-  INVOKES: pdf-tools MCP for extraction, file-system for I/O.
-  FOR SINGLE OPERATIONS: Use pdf-tools MCP directly for simple extractions.
+description: "**WORKFLOW SKILL** — Extract, rotate, merge, and split PDF files. WHEN: \"extract PDF text\", \"rotate PDF pages\", \"merge PDFs\", \"split PDF\". INVOKES: pdf-tools MCP for extraction, file-system for I/O. FOR SINGLE OPERATIONS: Use pdf-tools MCP directly for simple extractions."
 ```
 
 See [references/examples.md](references/examples.md) for more before/after transformations.
