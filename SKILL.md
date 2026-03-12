@@ -150,10 +150,10 @@ Template (with routing clarity for High score):
 ```yaml
 ---
 name: skill-name
-description: |
-  [1-2 sentence description of what the skill does]
-  USE FOR: [phrase1], [phrase2], [phrase3], [phrase4], [phrase5].
-  DO NOT USE FOR: [scenario1] (use other-skill), [scenario2].
+description: "**WORKFLOW SKILL** — [ACTION VERB] [UNIQUE_DOMAIN]. [Clarifying sentence]. WHEN: \"[phrase1]\", \"[phrase2]\", \"[phrase3]\". INVOKES: [tools/MCP servers used]. FOR SINGLE OPERATIONS: [when to bypass this skill]."
+allowed-tools: shell, read, write    # optional: auto-allowed tools
+user-invocable: true                 # optional: default true
+disable-model-invocation: false      # optional: default false
 ---
 ```
 
