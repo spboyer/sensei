@@ -145,3 +145,54 @@ When scaffolding, replace:
 | `{purpose}` | What the tool is used for |
 | `{date}` | Current date |
 | Prompt examples | Based on SKILL.md frontmatter |
+
+## Functional Testing (Beyond Triggers)
+
+Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) recommends three testing areas. Trigger testing (above) covers area 1. Areas 2-3 are documented here.
+
+### Area 2: Functional Tests
+
+Goal: Verify the skill produces correct outputs.
+
+```markdown
+## Functional Tests
+
+### Test: [Scenario Name]
+Given: [Input conditions]
+When: Skill executes workflow
+Then:
+  - [Expected output 1]
+  - [Expected output 2]
+  - No API/MCP errors
+  - [Validation criteria]
+
+### Test: Error Recovery
+Given: [Invalid input or MCP failure condition]
+When: Skill encounters error
+Then:
+  - Error is caught and reported clearly
+  - No partial/corrupt output
+  - User is guided to resolution
+```
+
+### Area 3: Performance Comparison
+
+Goal: Prove the skill improves results vs. baseline (no skill).
+
+```markdown
+## Performance Comparison
+
+### Without Skill
+- User provides instructions each time
+- N back-and-forth messages needed
+- M failed API calls requiring retry
+- X tokens consumed
+
+### With Skill
+- Automatic workflow execution
+- N' clarifying questions only
+- 0 failed API calls
+- X' tokens consumed (should be < X)
+```
+
+These are aspirational targets — rough benchmarks rather than precise thresholds. Run the same task with and without the skill 3-5 times to measure.

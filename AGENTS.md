@@ -52,17 +52,15 @@ The `SKILL.md` file follows Anthropic's skill specification:
 ```yaml
 ---
 name: skill-name          # lowercase, hyphens only
-description: |            # Max 1024 chars
-  **WORKFLOW SKILL** - What the skill does.
-  USE FOR: trigger phrases.
-  DO NOT USE FOR: anti-triggers.
-  INVOKES: tools/MCP servers used.
-  FOR SINGLE OPERATIONS: when to bypass.
+description: "**WORKFLOW SKILL** — What the skill does. WHEN: \"trigger 1\", \"trigger 2\", \"trigger 3\". INVOKES: tools/MCP servers used. FOR SINGLE OPERATIONS: when to bypass."
 ---
 
 # Skill Body (Markdown)
 Instructions loaded only after skill triggers.
 ```
+
+> ⚠️ "DO NOT USE FOR:" is actively discouraged — causes keyword contamination on Claude Sonnet.
+> Use inline double-quoted strings for descriptions (not `>-` folded scalars — incompatible with skills.sh).
 
 ### Skill Type Prefixes
 
@@ -82,8 +80,8 @@ Instructions loaded only after skill triggers.
 ### Scoring Levels
 
 - **Low**: No triggers, short description
-- **Medium**: Has triggers, missing anti-triggers
-- **Medium-High**: Has both triggers AND anti-triggers ← TARGET
+- **Medium**: Has triggers, >60 words or missing quoted phrases
+- **Medium-High**: Has WHEN: (preferred) or USE FOR: with ≤60 words ← TARGET
 - **High**: Medium-High + routing clarity (INVOKES/FOR SINGLE OPERATIONS)
 
 ### MCP Integration (when INVOKES present)

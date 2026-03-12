@@ -130,3 +130,9 @@
 **By:** Shayne Boyer (via Copilot)
 **What:** Sensei must never reference SkillsBench research, arXiv citations, or internal benchmark data in any external-facing output — PRs, PR descriptions, reports, recommendations, or before/after summaries. Internal research stays internal.
 **Why:** User directive — SkillsBench is Sensei-internal research that confuses external teams (e.g., Harald's VS Code team) and creates maintenance burden when cited in PRs they own.
+
+
+### 2026-02-20: Model selection — cost is not a constraint
+**By:** Shayne Boyer (via Copilot)
+**What:** Optimize model assignments for quality and speed per role. Cost is not an issue.
+**Why:** User request — team should use the best available models for each role's needs.

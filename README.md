@@ -131,8 +131,11 @@ npm run tokens -- compare HEAD~1
 #### Option 1: Install as Copilot CLI Skill (Recommended)
 
 ```bash
+# Create the skills folder
+mkdir -p "$HOME/.copilot/skills"
+
 # Clone to your skills directory
-git clone https://github.com/spboyer/sensei.git ~/.copilot/skills/sensei
+git clone https://github.com/spboyer/sensei.git "$HOME/.copilot/skills/sensei"
 
 # Install token CLI dependencies
 cd ~/.copilot/skills/sensei/scripts && npm install
