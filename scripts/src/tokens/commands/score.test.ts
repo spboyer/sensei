@@ -21,7 +21,10 @@ import {
   checkDescriptionCompliance,
   checkCompatibilityCompliance,
   checkLicenseRecommendation,
-  checkVersionRecommendation
+  checkVersionRecommendation,
+  checkBooleanField,
+  checkAllowedToolsFormat,
+  checkReferenceOnlyPattern
 } from './score.js';
 
 describe('checkModuleCount', () => {
@@ -375,10 +378,154 @@ describe('checkAllowedFields', () => {
     expect(result.message).toContain('author');
   });
 
-  it('allows allowed-tools field', () => {
-    const fields = { name: 'x', description: 'y', 'allowed-tools': 'Bash Read' };
+  it('allows user-invocable field', () => {
+    const fields = { name: 'x', description: 'y', 'user-invocable': 'false' };
     const result = checkAllowedFields(fields);
     expect(result.status).toBe('ok');
+  });
+
+  it('allows disable-model-invocation field', () => {
+    const fields = { name: 'x', description: 'y', 'disable-model-invocation': 'true' };
+    const result = checkAllowedFields(fields);
+    expect(result.status).toBe('ok');
+  });
+
+  it('allows all Copilot CLI fields together', () => {
+    const fields = {
+      name: 'x', description: 'y', 'allowed-tools': 'Bash',
+      'user-invocable': 'true', 'disable-model-invocation': 'false'
+    };
+    const result = checkAllowedFields(fields);
+    expect(result.status).toBe('ok');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Copilot CLI Extension Field Checks
+// ---------------------------------------------------------------------------
+
+describe('checkBooleanField', () => {
+  it('passes when field is not present', () => {
+    const result = checkBooleanField('user-invocable', undefined);
+    expect(result.status).toBe('ok');
+    expect(result.message).toContain('not present');
+  });
+
+  it('passes for "true"', () => {
+    const result = checkBooleanField('user-invocable', 'true');
+    expect(result.status).toBe('ok');
+    expect(result.message).toContain('true');
+  });
+
+  it('passes for "false"', () => {
+    const result = checkBooleanField('disable-model-invocation', 'false');
+    expect(result.status).toBe('ok');
+    expect(result.message).toContain('false');
+  });
+
+  it('passes for "yes"', () => {
+    const result = checkBooleanField('user-invocable', 'yes');
+    expect(result.status).toBe('ok');
+  });
+
+  it('passes for "no"', () => {
+    const result = checkBooleanField('user-invocable', 'no');
+    expect(result.status).toBe('ok');
+  });
+
+  it('warns on non-boolean value', () => {
+    const result = checkBooleanField('user-invocable', 'maybe');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('boolean');
+    expect(result.message).toContain('maybe');
+  });
+
+  it('warns on numeric value', () => {
+    const result = checkBooleanField('disable-model-invocation', '1');
+    expect(result.status).toBe('warning');
+  });
+
+  it('handles quoted boolean values', () => {
+    const result = checkBooleanField('user-invocable', '"true"');
+    expect(result.status).toBe('ok');
+  });
+
+  it('uses correct check name based on field', () => {
+    const r1 = checkBooleanField('user-invocable', 'true');
+    expect(r1.name).toBe('copilot-user-invocable');
+
+    const r2 = checkBooleanField('disable-model-invocation', 'false');
+    expect(r2.name).toBe('copilot-disable-model-invocation');
+  });
+});
+
+describe('checkAllowedToolsFormat', () => {
+  it('passes when not present', () => {
+    const result = checkAllowedToolsFormat(undefined);
+    expect(result.status).toBe('ok');
+    expect(result.name).toBe('copilot-allowed-tools');
+  });
+
+  it('passes for valid comma-separated list', () => {
+    const result = checkAllowedToolsFormat('Bash, Read, Write');
+    expect(result.status).toBe('ok');
+    expect(result.message).toContain('Bash, Read, Write');
+  });
+
+  it('passes for single tool', () => {
+    const result = checkAllowedToolsFormat('Bash');
+    expect(result.status).toBe('ok');
+  });
+
+  it('warns on empty string', () => {
+    const result = checkAllowedToolsFormat('');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('empty');
+  });
+
+  it('warns on whitespace-only', () => {
+    const result = checkAllowedToolsFormat('   ');
+    expect(result.status).toBe('warning');
+  });
+});
+
+describe('checkReferenceOnlyPattern', () => {
+  it('returns ok when both fields absent (defaults)', () => {
+    const result = checkReferenceOnlyPattern(undefined, undefined);
+    expect(result.status).toBe('ok');
+    expect(result.name).toBe('copilot-reference-only-pattern');
+    expect(result.message).toContain('defaults apply');
+  });
+
+  it('detects reference-only pattern', () => {
+    const result = checkReferenceOnlyPattern('false', 'true');
+    expect(result.status).toBe('optimal');
+    expect(result.message).toContain('Reference-only');
+  });
+
+  it('detects reference-only with yes/no values', () => {
+    const result = checkReferenceOnlyPattern('no', 'yes');
+    expect(result.status).toBe('optimal');
+    expect(result.message).toContain('Reference-only');
+  });
+
+  it('reports user-invocable=false only', () => {
+    const result = checkReferenceOnlyPattern('false', undefined);
+    expect(result.status).toBe('ok');
+    expect(result.message).toContain('not user-invocable');
+    expect(result.message).toContain('model-invoked');
+  });
+
+  it('reports disable-model-invocation=true only', () => {
+    const result = checkReferenceOnlyPattern(undefined, 'true');
+    expect(result.status).toBe('ok');
+    expect(result.message).toContain('user-invocable only');
+  });
+
+  it('returns ok for standard defaults (both true/false)', () => {
+    const result = checkReferenceOnlyPattern('true', 'false');
+    expect(result.status).toBe('ok');
+    expect(result.message).toContain('Standard invocable');
   });
 });
 

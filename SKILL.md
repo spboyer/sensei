@@ -151,6 +151,9 @@ Template (with routing clarity for High score):
 ---
 name: skill-name
 description: "**WORKFLOW SKILL** — [ACTION VERB] [UNIQUE_DOMAIN]. [Clarifying sentence]. WHEN: \"[phrase1]\", \"[phrase2]\", \"[phrase3]\". INVOKES: [tools/MCP servers used]. FOR SINGLE OPERATIONS: [when to bypass this skill]."
+allowed-tools: shell, read, write    # optional: auto-allowed tools
+user-invocable: true                 # optional: default true
+disable-model-invocation: false      # optional: default false
 ---
 ```
 
@@ -266,6 +269,19 @@ description: "**WORKFLOW SKILL** — Extract, rotate, merge, and split PDF files
 ```
 
 See [references/examples.md](references/examples.md) for more before/after transformations.
+
+### Reference-Only Pattern
+
+Use `user-invocable: false` + `disable-model-invocation: true` to create a skill that acts as a shared reference file (loaded from disk, never invoked):
+
+```yaml
+---
+name: team-conventions
+description: "Shared coding conventions loaded as context."
+user-invocable: false
+disable-model-invocation: true
+---
+```
 
 ## Commit Messages
 
