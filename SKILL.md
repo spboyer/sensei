@@ -172,7 +172,7 @@ description: "**WORKFLOW SKILL** — [ACTION VERB] [UNIQUE_DOMAIN]. [Clarifying 
 ```
 
 ### Step 5-GEPA: IMPROVE WITH GEPA (when --gepa flag is set)
-**Replaces Steps 5 and 6** with automated evolutionary optimization.
+**Replaces Step 5** with automated evolutionary optimization. Step 6 (IMPROVE TESTS) still runs normally.
 
 1. **Auto-discover test harness**: Read `{tests-dir}/{skill-name}/triggers.test.ts` and extract
    `shouldTriggerPrompts` and `shouldNotTriggerPrompts` arrays automatically.

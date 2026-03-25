@@ -27,7 +27,6 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from dataclasses import dataclass, field
 
 
 # ── Keyword matching (mirrors trigger-matcher.ts) ──────────────────────────
@@ -123,6 +122,10 @@ def parse_trigger_arrays(test_file: Path) -> dict:
                     depth -= 1
                 i += 1
             array_text = content[start : i - 1]
+            # Strip single-line comments to avoid extracting commented-out prompts
+            array_text = re.sub(r"//.*$", "", array_text, flags=re.MULTILINE)
+            # Strip block comments
+            array_text = re.sub(r"/\*.*?\*/", "", array_text, flags=re.DOTALL)
             # Extract strings from the array — handle ", ', and ` delimiters
             # Use separate passes for each quote type to avoid apostrophe truncation
             strings = re.findall(r'"([^"]*)"', array_text)
@@ -229,24 +232,26 @@ def score_content_quality(skill_md_content: str, frontmatter: dict | None = None
         scores["description_length"] = min(1.0, 1024 / len(desc_text))
         feedback.append(f"Description too long ({len(desc_text)} chars, max 1024)")
 
-    # Required sections
-    for section in ["trigger", "rule", "step"]:
+    # Required body sections (execution-focused, not routing)
+    for section in ["rule", "step"]:
         if f"## {section}" in content_lower or f"# {section}" in content_lower:
             scores[f"has_{section}s"] = 1.0
         else:
             scores[f"has_{section}s"] = 0.0
             feedback.append(f"Missing '## {section.title()}s' section")
 
-    # Routing patterns (positive routing preferred per sensei scoring spec)
+    # Routing patterns — check frontmatter description (where routing belongs)
+    desc_lower = (frontmatter or {}).get("description", "").lower() if frontmatter else ""
+    combined = desc_lower + " " + content_lower
     for pattern, label in [
         ("use for:", "has_use_for"),
         ("when:", "has_when"),
     ]:
-        if pattern in content_lower:
+        if pattern in combined:
             scores[label] = 1.0
         else:
             scores[label] = 0.0
-            feedback.append(f"Missing '{pattern.upper()}' pattern")
+            feedback.append(f"Missing '{pattern.upper()}' pattern (best in frontmatter description)")
 
     # DO NOT USE FOR: is contextual — not penalized or required.
     # In multi-skill environments (10+ skills), anti-triggers cause keyword
@@ -274,7 +279,7 @@ def score_content_quality(skill_md_content: str, frontmatter: dict | None = None
 
 # ── Composite evaluator builder ────────────────────────────────────────────
 
-def build_evaluator(skill_name: str, tests_dir: Path, fast: bool = True):
+def build_evaluator(skill_name: str, tests_dir: Path):
     """Auto-build a GEPA evaluator for a skill from its test harness.
 
     Returns a callable(candidate, example) -> (score, asi_dict).
@@ -353,7 +358,6 @@ def score_skill(
     skill_name: str,
     skills_dir: Path,
     tests_dir: Path,
-    as_json: bool = False,
 ) -> dict:
     """Score a single skill's SKILL.md content quality + trigger accuracy."""
     skill_md = skills_dir / skill_name / "SKILL.md"
@@ -368,6 +372,9 @@ def score_skill(
     harness = discover_test_harness(tests_dir, skill_name)
     quality_score, quality_detail = score_content_quality(body, frontmatter)
 
+    should_count = len(harness["trigger_prompts"]["should_trigger"])
+    should_not_count = len(harness["trigger_prompts"]["should_not_trigger"])
+
     result = {
         "skill": skill_name,
         "quality_score": round(quality_score, 2),
@@ -376,7 +383,7 @@ def score_skill(
         "has_triggers_test": harness["has_triggers"],
         "has_integration_test": harness["has_integration"],
         "has_unit_test": harness["has_unit"],
-        "trigger_prompt_count": len(harness["trigger_prompts"]["should_trigger"]),
+        "trigger_prompt_count": should_count + should_not_count,
     }
 
     # Trigger accuracy if test data available
@@ -419,7 +426,7 @@ def optimize_skill(
     frontmatter, body = parse_frontmatter(content)
 
     # Auto-build evaluator from test harness
-    evaluator, harness = build_evaluator(skill_name, tests_dir, fast=True)
+    evaluator, harness = build_evaluator(skill_name, tests_dir)
 
     # Build dataset from discovered trigger prompts
     dataset = []
@@ -453,15 +460,18 @@ def optimize_skill(
         dataset=dataset,
         objective=(
             f"Optimize the SKILL.md for the '{skill_name}' skill. "
-            f"The goal is to make an LLM correctly invoke this skill for relevant prompts. "
-            f"Improve the YAML frontmatter description (keep under 1024 chars, include WHEN: triggers). "
-            f"Include sections: ## Triggers, ## Rules, ## Steps. "
-            f"Use 'USE FOR:' and 'WHEN:' patterns for positive routing."
+            f"The frontmatter description is used for routing — include WHEN: triggers "
+            f"and keep under 1024 chars. "
+            f"The body is loaded after routing — focus on execution instructions: "
+            f"## Rules (when to use/not use), ## Steps (how to execute), "
+            f"## MCP Tools (tool dependencies). "
+            f"Do NOT duplicate routing signals in the body."
         ),
         background=(
-            f"This is a SKILL.md for GitHub Copilot. The LLM reads it to decide which "
-            f"skill to invoke. It competes with ~24 other skills for selection. "
-            f"The content must clearly differentiate what this skill does vs others."
+            f"This is a SKILL.md for GitHub Copilot. The LLM reads the frontmatter "
+            f"description to decide which skill to invoke. It competes with ~24 other "
+            f"skills for selection. The body is only read after loading, so it should "
+            f"contain execution guidance, not routing signals."
         ),
         config=oa.GEPAConfig(
             engine=oa.EngineConfig(max_metric_calls=max_iterations),
