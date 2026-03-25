@@ -312,9 +312,9 @@ Run sensei on my-skill with skills in src/ai/skills/ and tests in spec/
 
 | Level | Description | Criteria |
 |-------|-------------|----------|
-| **Low** | Basic description | No explicit triggers, no anti-triggers, often < 150 chars |
-| **Medium** | Has trigger keywords | Description > 150 chars, implicit or explicit trigger phrases |
-| **Medium-High** | Has triggers + anti-triggers | "USE FOR:" present AND "DO NOT USE FOR:" present |
+| **Low** | Basic description | No explicit triggers, often < 150 chars |
+| **Medium** | Has trigger keywords | Description > 150 chars, implicit or explicit trigger phrases, >60 words |
+| **Medium-High** | Has WHEN: or USE FOR: | "WHEN:" (preferred) or "USE FOR:" with ≤60 words |
 | **High** | Full compliance | Medium-High + routing clarity (INVOKES/FOR SINGLE OPERATIONS) |
 
 ### Rule-Based Checks
@@ -329,12 +329,12 @@ Run sensei on my-skill with skills in src/ai/skills/ and tests in spec/
    - Maximum: 1024 characters (spec limit)
 
 3. **Trigger phrases**
-   - Contains "USE FOR:", "TRIGGERS:", or "Use this skill when"
+   - Contains "WHEN:", "USE FOR:", or "Use this skill when"
    - Lists specific keywords and phrases
 
-4. **Anti-triggers**
-   - Contains "DO NOT USE FOR:" or "NOT FOR:"
-   - Lists scenarios that should use other skills
+4. **Anti-triggers** (optional, context-dependent)
+   - "DO NOT USE FOR:" — useful for small skill sets (1-5 skills)
+   - ⚠️ Risky in multi-skill environments (10+ skills) — causes keyword contamination
 
 5. **Routing clarity** (for High score)
    - Skill type prefix: `**WORKFLOW SKILL**`, `**UTILITY SKILL**`, or `**ANALYSIS SKILL**`
@@ -345,8 +345,8 @@ Run sensei on my-skill with skills in src/ai/skills/ and tests in spec/
 
 To reach Medium-High, a skill must have:
 - ✅ Description > 150 characters
-- ✅ Explicit trigger phrases ("USE FOR:" or equivalent)
-- ✅ Anti-triggers ("DO NOT USE FOR:" or clear scope limitation)
+- ✅ Explicit trigger phrases ("WHEN:" preferred, or "USE FOR:")
+- ✅ Description ≤ 60 words
 - ✅ SKILL.md < 500 tokens (soft limit, monitored)
 
 ### Target: High (with routing)
@@ -408,20 +408,14 @@ description: 'Process PDF files for various tasks'
 ```yaml
 ---
 name: pdf-processor
-description: |
-  Process PDF files including text extraction, rotation, and merging.
-  USE FOR: "extract PDF text", "rotate PDF", "merge PDFs", "split PDF",
-  "PDF to text", "combine PDF files".
-  DO NOT USE FOR: creating new PDFs (use document-creator), extracting
-  images (use image-extractor), or OCR on scanned documents (use ocr-processor).
+description: "Extract, rotate, merge, and split PDF files. WHEN: \"extract PDF text\", \"rotate PDF pages\", \"merge PDFs\", \"split PDF\", \"PDF to text\"."
 ---
 ```
 
 **Improvements:**
-- ~350 characters (informative but under limit)
+- ~160 characters (informative but under limit)
 - Clear description of purpose
-- Explicit trigger phrases
-- Anti-triggers prevent collision with related skills
+- Explicit WHEN: trigger phrases with distinctive quoted strings
 
 ### After: High Adherence (with routing)
 

@@ -105,7 +105,8 @@ See `references/mcp-integration.md` for patterns.
 - Keep SKILL.md focused on instructions, not documentation
 - Use references/ for detailed explanations
 - Run `npm run tokens -- check` after changes to verify limits
-- Maintain the frontmatter format with USE FOR / DO NOT USE FOR
+- Maintain the frontmatter format with WHEN: / USE FOR: (prefer positive routing)
+- Run `npm run tokens -- score .` to check advisory compliance
 - Add routing clarity (INVOKES/FOR SINGLE OPERATIONS) for High score
 - Use skill type prefixes when appropriate
 
