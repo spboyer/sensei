@@ -98,6 +98,23 @@ Run sensei on all skills
 Run sensei on my-skill --fast
 ```
 
+### GEPA Mode (Deep Optimization)
+```
+Run sensei on my-skill --gepa
+Run sensei on my-skill --gepa --fast
+Run sensei on all skills --gepa
+```
+
+When `--gepa` is used, Step 5 (IMPROVE) is replaced with GEPA evolutionary optimization.
+Instead of template-based improvements, GEPA uses the existing test harness as a fitness
+function and an LLM to propose and evaluate many candidate improvements automatically.
+
+**GEPA score-only mode** (no LLM calls, just evaluate current quality):
+```
+Run sensei score my-skill
+Run sensei score all skills
+```
+
 ## The Ralph Loop
 
 For each skill, execute this loop until score >= Medium-High:
@@ -153,6 +170,32 @@ name: skill-name
 description: "**WORKFLOW SKILL** — [ACTION VERB] [UNIQUE_DOMAIN]. [Clarifying sentence]. WHEN: \"[phrase1]\", \"[phrase2]\", \"[phrase3]\". INVOKES: [tools/MCP servers used]. FOR SINGLE OPERATIONS: [when to bypass this skill]."
 ---
 ```
+
+### Step 5-GEPA: IMPROVE WITH GEPA (when --gepa flag is set)
+**Replaces Steps 5 and 6** with automated evolutionary optimization.
+
+1. **Auto-discover test harness**: Read `{tests-dir}/{skill-name}/triggers.test.ts` and extract
+   `shouldTriggerPrompts` and `shouldNotTriggerPrompts` arrays automatically.
+
+2. **Build evaluator**: Construct a GEPA evaluator that scores candidates on:
+   - Content quality (has ## Triggers, ## Rules, ## Steps, USE FOR, WHEN, DO NOT USE FOR)
+   - Trigger accuracy (keywords extracted from description match test prompts correctly)
+
+3. **Run optimization**: Call the GEPA auto-evaluator script:
+   ```bash
+   python scripts/src/gepa/auto_evaluator.py optimize \
+     --skill {skill-name} \
+     --skills-dir {skills-dir} \
+     --tests-dir {tests-dir} \
+     --iterations 80
+   ```
+
+4. **Review output**: GEPA produces an optimized SKILL.md body. Show the diff to the user.
+   The GEPA evaluator auto-generates from existing tests — no manual configuration needed.
+
+**Key**: GEPA wraps existing tests as its fitness function. It does NOT replace or modify tests.
+The LLM proposes improved SKILL.md text, and the evaluator scores each candidate against the
+same test prompts the CI already uses. Only improvements that score higher are kept.
 
 ### Step 6: IMPROVE TESTS
 Update test prompts to match new frontmatter:
@@ -295,6 +338,24 @@ npm run tokens count              # Count all markdown files
 npm run tokens check              # Check against token limits
 npm run tokens suggest            # Get optimization suggestions
 npm run tokens compare            # Compare with git history
+```
+
+### GEPA Commands
+
+Requires: `pip install gepa` (or `uv pip install gepa`)
+
+```bash
+# Score a single skill (no LLM calls, instant)
+python scripts/src/gepa/auto_evaluator.py score --skill azure-deploy --skills-dir plugin/skills --tests-dir tests
+
+# Score all skills
+python scripts/src/gepa/auto_evaluator.py score-all --skills-dir plugin/skills --tests-dir tests
+
+# Optimize a skill (requires LLM API — uses GitHub Models via gh auth token)
+python scripts/src/gepa/auto_evaluator.py optimize --skill azure-deploy --skills-dir plugin/skills --tests-dir tests
+
+# JSON output (for CI pipelines)
+python scripts/src/gepa/auto_evaluator.py score-all --skills-dir plugin/skills --tests-dir tests --json
 ```
 
 ### Configuration
