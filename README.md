@@ -72,6 +72,14 @@ Run sensei on all Low-adherence skills
 Run sensei on all skills
 ```
 
+#### GEPA Mode (Deep Optimization)
+```
+Run sensei on my-skill-name --gepa
+Run sensei score my-skill-name
+```
+
+Score-only mode runs without LLM calls.
+
 ### Using Scripts Directly
 
 ```bash
@@ -97,11 +105,19 @@ npm run tokens -- score .
 npm run tokens -- compare HEAD~1
 ```
 
+### GEPA Commands
+
+```bash
+python scripts/src/gepa/auto_evaluator.py score --skill my-skill
+python scripts/src/gepa/auto_evaluator.py optimize --skill my-skill
+```
+
 ### Flags
 
 | Flag | Description |
 |------|-------------|
 | `--fast` | Skip tests for faster iteration |
+| `--gepa` | Use GEPA evolutionary optimization instead of template-based improvements |
 | `--skip-integration` | Skip integration tests (unit + trigger tests only) |
 
 > ⚠️ **Note:** Using `--fast` speeds up the loop significantly but may miss issues. Consider running full tests before final commit.
@@ -125,6 +141,8 @@ npm run tokens -- compare HEAD~1
 ### Optional
 
 3. **Test Framework** - Jest, pytest, or similar for trigger tests
+
+4. **Python 3.10+** and **GEPA** - For evolutionary optimization (`pip install gepa`)
 
 ### Installation
 
@@ -212,6 +230,7 @@ npm run tokens -- check
 │     • Add "DO NOT USE FOR:" with anti-triggers          │
 │     • Add compatibility if applicable                   │
 │     • Keep description under 1024 chars                 │
+│     • OR with --gepa: GEPA evolutionary optimization    │
 └─────────────────────┬───────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────┐
@@ -505,6 +524,7 @@ Open an issue with skill name, starting state, and `git log --oneline -10`.
 - [Anthropic Skills Documentation](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) - Writing guidance
 - [Skills, Tools & MCP Development Guide](https://github.com/spboyer/azure-mcp-v-skills/blob/main/skills-mcp-development-guide.md) - MCP integration best practices
 - [Waza Testing Framework](https://github.com/spboyer/waza) - Skill trigger accuracy testing
+- [GEPA](https://gepa-ai.github.io/gepa/) - Evolutionary optimization for skills
 - [skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator) - For creating new skills from scratch
 
 ---

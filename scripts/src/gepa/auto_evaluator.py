@@ -3,18 +3,18 @@
 GEPA auto-evaluator for sensei.
 
 Discovers a skill's existing test harness at runtime and builds a GEPA-compatible
-evaluator. Zero manual configuration — reads triggers.test.ts, unit.test.ts, and
-integration.test.ts to construct the fitness function.
+evaluator. Zero manual configuration — reads triggers.test.ts to extract trigger
+prompts and construct the fitness function.
 
 Usage:
     # Score a skill (no optimization, no LLM calls)
-    python auto_evaluator.py score --skill azure-deploy --skills-dir plugin/skills --tests-dir tests
+    python auto_evaluator.py score --skill azure-deploy --skills-dir skills --tests-dir tests
 
     # Optimize a skill (requires LLM API)
-    python auto_evaluator.py optimize --skill azure-deploy --skills-dir plugin/skills --tests-dir tests
+    python auto_evaluator.py optimize --skill azure-deploy --skills-dir skills --tests-dir tests
 
     # Score all skills
-    python auto_evaluator.py score-all --skills-dir plugin/skills --tests-dir tests
+    python auto_evaluator.py score-all --skills-dir skills --tests-dir tests
 
     # JSON output
     python auto_evaluator.py score --skill azure-deploy --json
@@ -123,9 +123,19 @@ def parse_trigger_arrays(test_file: Path) -> dict:
                     depth -= 1
                 i += 1
             array_text = content[start : i - 1]
-            # Extract strings from the array
-            strings = re.findall(r'["\']([^"\']+)["\']', array_text)
-            result[key] = strings
+            # Extract strings from the array — handle ", ', and ` delimiters
+            # Use separate passes for each quote type to avoid apostrophe truncation
+            strings = re.findall(r'"([^"]*)"', array_text)
+            strings += re.findall(r"'([^']*)'", array_text)
+            strings += re.findall(r"`([^`]*)`", array_text)
+            # Deduplicate while preserving order
+            seen = set()
+            unique = []
+            for s in strings:
+                if s and s not in seen:
+                    seen.add(s)
+                    unique.append(s)
+            result[key] = unique
 
     return result
 
@@ -170,7 +180,31 @@ def discover_test_harness(tests_dir: Path, skill_name: str) -> dict:
 
 # ── Content quality scorer ─────────────────────────────────────────────────
 
-def score_content_quality(skill_md_content: str) -> tuple[float, dict]:
+def parse_frontmatter(content: str) -> tuple[dict, str]:
+    """Parse YAML frontmatter and return (metadata_dict, body).
+
+    Returns empty dict and full content if no valid frontmatter found.
+    """
+    if not content.startswith("---"):
+        return {}, content
+
+    end_idx = content.find("---", 3)
+    if end_idx == -1:
+        return {}, content
+
+    fm_text = content[3:end_idx].strip()
+    body = content[end_idx + 3:].strip()
+
+    metadata = {}
+    for line in fm_text.split("\n"):
+        if ":" in line:
+            key, _, value = line.partition(":")
+            metadata[key.strip()] = value.strip().strip('"').strip("'")
+
+    return metadata, body
+
+
+def score_content_quality(skill_md_content: str, frontmatter: dict | None = None) -> tuple[float, dict]:
     """Score SKILL.md content quality. Pure Python, no LLM calls.
 
     Returns (score, detail_scores).
@@ -179,9 +213,13 @@ def score_content_quality(skill_md_content: str) -> tuple[float, dict]:
     feedback = []
     content_lower = skill_md_content.lower()
 
-    # Description length (first non-heading paragraph)
-    lines = skill_md_content.strip().split("\n")
-    desc_text = " ".join(l for l in lines[:5] if l.strip() and not l.startswith("#"))
+    # Score the frontmatter description if available
+    if frontmatter and frontmatter.get("description"):
+        desc_text = frontmatter["description"]
+    else:
+        # Fallback: first non-heading paragraph from body
+        lines = skill_md_content.strip().split("\n")
+        desc_text = " ".join(l for l in lines[:5] if l.strip() and not l.startswith("#"))
     if 150 <= len(desc_text) <= 1024:
         scores["description_length"] = 1.0
     elif len(desc_text) < 150:
@@ -199,17 +237,22 @@ def score_content_quality(skill_md_content: str) -> tuple[float, dict]:
             scores[f"has_{section}s"] = 0.0
             feedback.append(f"Missing '## {section.title()}s' section")
 
-    # Routing patterns
+    # Routing patterns (positive routing preferred per sensei scoring spec)
     for pattern, label in [
         ("use for:", "has_use_for"),
         ("when:", "has_when"),
-        ("do not use for:", "has_do_not_use_for"),
     ]:
         if pattern in content_lower:
             scores[label] = 1.0
         else:
             scores[label] = 0.0
             feedback.append(f"Missing '{pattern.upper()}' pattern")
+
+    # DO NOT USE FOR: is contextual — not penalized or required.
+    # In multi-skill environments (10+ skills), anti-triggers cause keyword
+    # contamination on fast-pattern-matching models. Safe for small skill sets.
+    if "do not use for:" in content_lower:
+        feedback.append("Has 'DO NOT USE FOR:' — safe for small skill sets, risky for 10+ skills")
 
     # Bad patterns
     bad = [
@@ -245,7 +288,8 @@ def build_evaluator(skill_name: str, tests_dir: Path, fast: bool = True):
         asi = {}
 
         # 1. Content quality (always, fast)
-        quality_score, quality_detail = score_content_quality(candidate)
+        frontmatter, body = parse_frontmatter(candidate)
+        quality_score, quality_detail = score_content_quality(body, frontmatter)
         scores["quality"] = quality_score
         if quality_detail["feedback"]:
             asi["QualityIssues"] = "\n".join(quality_detail["feedback"])
@@ -317,16 +361,12 @@ def score_skill(
         return {"skill": skill_name, "error": f"SKILL.md not found at {skill_md}"}
 
     content = skill_md.read_text()
-    # Strip frontmatter
-    if content.startswith("---"):
-        end_idx = content.index("---", 3)
-        body = content[end_idx + 3 :].strip()
-    else:
-        body = content
+    # Parse frontmatter safely
+    frontmatter, body = parse_frontmatter(content)
 
     # Build evaluator and score
     harness = discover_test_harness(tests_dir, skill_name)
-    quality_score, quality_detail = score_content_quality(body)
+    quality_score, quality_detail = score_content_quality(body, frontmatter)
 
     result = {
         "skill": skill_name,
@@ -376,11 +416,7 @@ def optimize_skill(
         return {"skill": skill_name, "error": f"SKILL.md not found at {skill_md}"}
 
     content = skill_md.read_text()
-    if content.startswith("---"):
-        end_idx = content.index("---", 3)
-        body = content[end_idx + 3 :].strip()
-    else:
-        body = content
+    frontmatter, body = parse_frontmatter(content)
 
     # Auto-build evaluator from test harness
     evaluator, harness = build_evaluator(skill_name, tests_dir, fast=True)
@@ -399,22 +435,28 @@ def optimize_skill(
     # Configure LLM via GitHub Models
     try:
         token = subprocess.check_output(["gh", "auth", "token"]).decode().strip()
-        os.environ.setdefault("OPENAI_API_KEY", token)
-        os.environ.setdefault("OPENAI_API_BASE", "https://models.github.ai/inference")
+        # Validate token looks reasonable (not an error message)
+        if token and len(token) >= 10 and not token.startswith("ERROR"):
+            os.environ.setdefault("OPENAI_API_KEY", token)
+            os.environ.setdefault("OPENAI_API_BASE", "https://models.github.ai/inference")
     except (subprocess.CalledProcessError, FileNotFoundError):
         pass  # Let litellm find credentials from env
 
     proposer_lm = oa.make_litellm_lm(model)
 
+    # Seed with full content so GEPA can optimize frontmatter + body
+    seed = content
+
     result = oa.optimize_anything(
-        seed_candidate=body,
+        seed_candidate=seed,
         evaluator=evaluator,
         dataset=dataset,
         objective=(
-            f"Optimize the SKILL.md content for the '{skill_name}' skill. "
+            f"Optimize the SKILL.md for the '{skill_name}' skill. "
             f"The goal is to make an LLM correctly invoke this skill for relevant prompts. "
-            f"Include sections: ## Triggers, ## Rules, ## Steps, ## MCP Tools, ## References. "
-            f"Include 'USE FOR:', 'WHEN:', and 'DO NOT USE FOR:' patterns for routing."
+            f"Improve the YAML frontmatter description (keep under 1024 chars, include WHEN: triggers). "
+            f"Include sections: ## Triggers, ## Rules, ## Steps. "
+            f"Use 'USE FOR:' and 'WHEN:' patterns for positive routing."
         ),
         background=(
             f"This is a SKILL.md for GitHub Copilot. The LLM reads it to decide which "
@@ -446,13 +488,13 @@ def main():
     # score command
     score_p = subparsers.add_parser("score", help="Score a skill's quality")
     score_p.add_argument("--skill", required=True)
-    score_p.add_argument("--skills-dir", default="plugin/skills")
+    score_p.add_argument("--skills-dir", default="skills")
     score_p.add_argument("--tests-dir", default="tests")
     score_p.add_argument("--json", action="store_true")
 
     # score-all command
     all_p = subparsers.add_parser("score-all", help="Score all skills")
-    all_p.add_argument("--skills-dir", default="plugin/skills")
+    all_p.add_argument("--skills-dir", default="skills")
     all_p.add_argument("--tests-dir", default="tests")
     all_p.add_argument("--json", action="store_true")
     all_p.add_argument("--sort", choices=["score", "name"], default="score")
@@ -460,7 +502,7 @@ def main():
     # optimize command
     opt_p = subparsers.add_parser("optimize", help="Optimize a skill with GEPA")
     opt_p.add_argument("--skill", required=True)
-    opt_p.add_argument("--skills-dir", default="plugin/skills")
+    opt_p.add_argument("--skills-dir", default="skills")
     opt_p.add_argument("--tests-dir", default="tests")
     opt_p.add_argument("--iterations", type=int, default=80)
     opt_p.add_argument("--model", default="openai/gpt-4o")
@@ -469,9 +511,17 @@ def main():
     args = parser.parse_args()
     skills_dir = Path(args.skills_dir)
     tests_dir = Path(args.tests_dir)
+    has_errors = False
+
+    # Validate skills directory exists
+    if not skills_dir.exists():
+        print(f"Error: skills directory '{skills_dir}' not found", file=sys.stderr)
+        sys.exit(1)
 
     if args.command == "score":
         result = score_skill(args.skill, skills_dir, tests_dir)
+        if "error" in result:
+            has_errors = True
         if args.json:
             print(json.dumps(result, indent=2))
         else:
@@ -484,6 +534,8 @@ def main():
         results = [score_skill(s, skills_dir, tests_dir) for s in skills]
         if args.sort == "score":
             results.sort(key=lambda r: r.get("quality_score", 0))
+        if any("error" in r for r in results):
+            has_errors = True
         if args.json:
             print(json.dumps(results, indent=2))
         else:
@@ -493,6 +545,8 @@ def main():
         result = optimize_skill(
             args.skill, skills_dir, tests_dir, args.iterations, args.model
         )
+        if "error" in result:
+            has_errors = True
         if args.json:
             print(json.dumps(result, indent=2, default=str))
         else:
@@ -505,6 +559,9 @@ def main():
                 print(f"  Optimized length: {len(result['optimized'])} chars")
                 print(f"\n--- Optimized content (first 500 chars) ---")
                 print(result["optimized"][:500])
+
+    if has_errors:
+        sys.exit(1)
 
 
 def _print_score(result: dict):

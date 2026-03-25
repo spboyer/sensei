@@ -178,7 +178,8 @@ description: "**WORKFLOW SKILL** — [ACTION VERB] [UNIQUE_DOMAIN]. [Clarifying 
    `shouldTriggerPrompts` and `shouldNotTriggerPrompts` arrays automatically.
 
 2. **Build evaluator**: Construct a GEPA evaluator that scores candidates on:
-   - Content quality (has ## Triggers, ## Rules, ## Steps, USE FOR, WHEN, DO NOT USE FOR)
+   - Content quality (has ## Triggers, ## Rules, ## Steps, USE FOR, WHEN)
+   - Frontmatter description compliance (length, trigger phrases)
    - Trigger accuracy (keywords extracted from description match test prompts correctly)
 
 3. **Run optimization**: Call the GEPA auto-evaluator script:
@@ -342,20 +343,20 @@ npm run tokens compare            # Compare with git history
 
 ### GEPA Commands
 
-Requires: `pip install gepa` (or `uv pip install gepa`)
+Requires: `pip install gepa` (or `uv pip install gepa`). See [requirements](scripts/src/gepa/requirements.txt).
 
 ```bash
 # Score a single skill (no LLM calls, instant)
-python scripts/src/gepa/auto_evaluator.py score --skill azure-deploy --skills-dir plugin/skills --tests-dir tests
+python scripts/src/gepa/auto_evaluator.py score --skill azure-deploy --skills-dir skills --tests-dir tests
 
 # Score all skills
-python scripts/src/gepa/auto_evaluator.py score-all --skills-dir plugin/skills --tests-dir tests
+python scripts/src/gepa/auto_evaluator.py score-all --skills-dir skills --tests-dir tests
 
 # Optimize a skill (requires LLM API — uses GitHub Models via gh auth token)
-python scripts/src/gepa/auto_evaluator.py optimize --skill azure-deploy --skills-dir plugin/skills --tests-dir tests
+python scripts/src/gepa/auto_evaluator.py optimize --skill azure-deploy --skills-dir skills --tests-dir tests
 
 # JSON output (for CI pipelines)
-python scripts/src/gepa/auto_evaluator.py score-all --skills-dir plugin/skills --tests-dir tests --json
+python scripts/src/gepa/auto_evaluator.py score-all --skills-dir skills --tests-dir tests --json
 ```
 
 ### Configuration
