@@ -7,7 +7,7 @@ description: "**WORKFLOW SKILL** — Iteratively improve skill frontmatter compl
 
 > "A true master teaches not by telling, but by refining."
 
-Automates skill frontmatter improvement using the [Ralph loop pattern](https://github.com/soderlund/ralph) - iteratively improving skills until they reach Medium-High compliance with passing tests.
+Automates skill frontmatter improvement using the [Ralph loop pattern](references/loop.md) - iteratively improving skills until they reach Medium-High compliance with passing tests.
 
 ## Help
 

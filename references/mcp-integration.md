@@ -1,6 +1,6 @@
 # MCP Integration Patterns
 
-Best practices for skills that integrate with MCP tools, based on the [Skills, Tools & MCP Development Guide](https://github.com/spboyer/azure-mcp-v-skills/blob/main/skills-mcp-development-guide.md).
+Best practices for skills that integrate with MCP tools.
 
 ## The Hybrid Pattern
 
@@ -131,6 +131,6 @@ Call `azure-get_azure_bestpractices` with:
 
 ## Reference
 
-- [Full MCP Development Guide](https://github.com/spboyer/azure-mcp-v-skills/blob/main/skills-mcp-development-guide.md)
+- [MCP Integration Patterns](mcp-integration.md)
 - [MCP Protocol Specification](https://modelcontextprotocol.io/specification/latest)
-- [Waza Testing Framework](https://github.com/spboyer/waza)
+- [Waza Trigger Test Template](test-templates/waza.md)

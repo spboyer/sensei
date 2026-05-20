@@ -2,7 +2,7 @@
 
 > "A true master teaches not by telling, but by refining." - The Skill Sensei
 
-Sensei automates the improvement of [Agent Skills](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) frontmatter compliance using the [Ralph loop pattern](https://github.com/soderlund/ralph) - iteratively improving skills until they reach Medium-High compliance with all tests passing.
+Sensei automates the improvement of [Agent Skills](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) frontmatter compliance using the [Ralph loop pattern](references/loop.md) - iteratively improving skills until they reach Medium-High compliance with all tests passing.
 
 ## Table of Contents
 
@@ -359,7 +359,7 @@ To reach High, add routing clarity:
 
 ### MCP Integration Checks
 
-When a skill's description contains `INVOKES:`, Sensei performs additional checks based on the [Skills, Tools & MCP Development Guide](https://github.com/spboyer/azure-mcp-v-skills/blob/main/skills-mcp-development-guide.md):
+When a skill's description contains `INVOKES:`, Sensei performs additional checks based on the [MCP Integration Patterns](references/mcp-integration.md):
 
 | Check | Purpose |
 |-------|---------|
@@ -504,7 +504,7 @@ git reset --soft HEAD~1  # Undo last commit
 
 ### Waza Trigger Tests
 
-Sensei supports [Waza](https://github.com/spboyer/waza) for trigger accuracy testing. See `references/test-templates/waza.md`.
+Sensei supports Waza-style trigger accuracy testing. See [the Waza test template](references/test-templates/waza.md).
 
 ### Reporting Issues
 
@@ -514,10 +514,10 @@ Open an issue with skill name, starting state, and `git log --oneline -10`.
 
 ## References
 
-- [Ralph Loop Pattern](https://github.com/soderlund/ralph) - Original Ralph loop implementation
+- [Ralph Loop Pattern](references/loop.md) - Sensei's iterative improvement workflow
 - [Anthropic Skills Documentation](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) - Writing guidance
-- [Skills, Tools & MCP Development Guide](https://github.com/spboyer/azure-mcp-v-skills/blob/main/skills-mcp-development-guide.md) - MCP integration best practices
-- [Waza Testing Framework](https://github.com/spboyer/waza) - Skill trigger accuracy testing
+- [MCP Integration Patterns](references/mcp-integration.md) - MCP integration best practices
+- [Waza Trigger Test Template](references/test-templates/waza.md) - Skill trigger accuracy testing
 - [GEPA](https://gepa-ai.github.io/gepa/) - Evolutionary optimization for skills
 - [skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator) - For creating new skills from scratch
 

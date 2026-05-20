@@ -139,7 +139,7 @@ Score: **High.** Clear purpose. Explicit triggers. Anti-triggers drawing boundar
 
 This is the part that changes everything.
 
-Sensei doesn't hand you a list of violations and walk away. It uses the [Ralph loop pattern](https://github.com/soderlund/ralph) — an iterative improvement cycle that reads, scores, fixes, tests, and verifies until your skill reaches compliance. Automatically.
+Sensei doesn't hand you a list of violations and walk away. It uses the [Ralph loop pattern](../../references/loop.md) — an iterative improvement cycle that reads, scores, fixes, tests, and verifies until your skill reaches compliance. Automatically.
 
 Here's how the loop works: Sensei reads your SKILL.md and scores it. If it's below Medium-High, it scaffolds tests from templates, improves the frontmatter by adding triggers, anti-triggers, and routing clarity, then runs those tests to make sure the changes actually work. It checks your token budget. It shows you a before/after comparison. Then it asks: commit, create an issue, or skip?
 
