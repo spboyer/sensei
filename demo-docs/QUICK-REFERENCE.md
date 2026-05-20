@@ -84,4 +84,4 @@ A: It has explicit triggers AND anti-triggers - minimum for good routing.
 
 - **Repo:** https://github.com/spboyer/sensei
 - **Anthropic Skills Docs:** https://support.anthropic.com/en/articles/12512198
-- **Ralph Loop:** https://github.com/soderlund/ralph
+- **Ralph Loop:** ../references/loop.md
