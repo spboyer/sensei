@@ -42,6 +42,22 @@ function listFilesRecursive(dir: string): string[] {
   return results;
 }
 
+/** Strip simple YAML scalar quotes from frontmatter values. */
+function normalizeFrontmatterValue(value: string): string {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function isBlockScalarMarker(value: string): boolean {
+  return /^[|>][+-]?$/.test(value);
+}
+
 /** Result of a single advisory check */
 export interface AdvisoryCheck {
   readonly name: string;
@@ -82,17 +98,17 @@ export function parseFrontmatter(content: string): ParsedFrontmatter | null {
     const keyMatch = line.match(/^(\w[\w-]*)\s*:\s*(.*)/);
     if (keyMatch) {
       if (currentKey) {
-        fields[currentKey] = currentValue.trim();
+        fields[currentKey] = normalizeFrontmatterValue(currentValue);
       }
       currentKey = keyMatch[1];
       const rawVal = keyMatch[2].trim();
-      currentValue = rawVal === '|' || rawVal === '>' ? '' : rawVal;
+      currentValue = isBlockScalarMarker(rawVal) ? '' : rawVal;
     } else if (currentKey && (line.startsWith('  ') || line.startsWith('\t'))) {
       currentValue += (currentValue ? '\n' : '') + line.trim();
     }
   }
   if (currentKey) {
-    fields[currentKey] = currentValue.trim();
+    fields[currentKey] = normalizeFrontmatterValue(currentValue);
   }
 
   return {
@@ -348,6 +364,17 @@ export interface ScoringResult {
   readonly tokenCount: number;
 }
 
+/** Public scorer result type for library consumers. */
+export type SkillScore = ScoringResult;
+
+/** Options for scoring in-memory SKILL.md content. */
+export interface ScoreSkillContentOptions {
+  /** Optional display path and directory-name context; content is never read from this path. */
+  readonly path?: string;
+  /** Optional caller-provided count of markdown files in references/. Defaults to 0. */
+  readonly moduleCount?: number;
+}
+
 /** Action verbs indicating procedural content */
 const ACTION_VERBS = [
   'process', 'extract', 'deploy', 'configure', 'analyze',
@@ -370,14 +397,20 @@ const PROCEDURE_KEYWORDS = [
  * 0-1: ok, 2-3: optimal, 4+: warning
  */
 export function checkModuleCount(skillDir: string): AdvisoryCheck {
-  const refsDir = join(skillDir, 'references');
-  let mdCount = 0;
+  return createModuleCountCheck(countReferenceModules(skillDir));
+}
 
-  if (existsSync(refsDir)) {
-    const files = listFilesRecursive(refsDir);
-    mdCount = files.filter(f => f.endsWith('.md')).length;
+function countReferenceModules(skillDir: string): number {
+  const refsDir = join(skillDir, 'references');
+  if (!existsSync(refsDir)) {
+    return 0;
   }
 
+  const files = listFilesRecursive(refsDir);
+  return files.filter(f => f.endsWith('.md')).length;
+}
+
+function createModuleCountCheck(mdCount: number): AdvisoryCheck {
   if (mdCount >= 4) {
     return {
       name: 'module-count',
@@ -727,6 +760,63 @@ export function checkCrossModelDensity(description: string): AdvisoryCheck[] {
 }
 
 /**
+ * Run all advisory checks on in-memory SKILL.md content.
+ */
+export function scoreSkillContent(content: string, opts: ScoreSkillContentOptions = {}): SkillScore {
+  const skillPath = opts.path ?? '<memory>';
+  const moduleCount = opts.moduleCount ?? 0;
+  const tokenCount = estimateTokens(content);
+  const moduleCountCheck = createModuleCountCheck(moduleCount);
+
+  const complexityCheck = classifyComplexity(tokenCount, moduleCount);
+  const complexity = complexityCheck.status === 'warning'
+    ? 'comprehensive'
+    : complexityCheck.status === 'optimal'
+      ? 'detailed'
+      : 'compact';
+
+  const fm = parseFrontmatter(content);
+  const description = fm?.description ?? '';
+
+  // Advisory checks (Sensei-original)
+  const checks: AdvisoryCheck[] = [
+    moduleCountCheck,
+    complexityCheck,
+    checkNegativeDeltaRisk(content),
+    checkProceduralContent(description),
+    checkOverSpecificity(content),
+    ...checkCrossModelDensity(description)
+  ];
+
+  // Spec compliance checks (agentskills.io)
+  const specChecks: AdvisoryCheck[] = [checkFrontmatterStructure(content)];
+  if (fm) {
+    specChecks.push(checkAllowedFields(fm.fields));
+    if (fm.name) {
+      specChecks.push(checkNameCompliance(fm.name));
+      if (opts.path) {
+        specChecks.push(checkDirectoryNameMatch(opts.path, fm.name));
+      }
+    }
+    if (fm.description !== undefined) {
+      specChecks.push(checkDescriptionCompliance(fm.description));
+    }
+    specChecks.push(checkCompatibilityCompliance(fm.compatibility));
+    specChecks.push(checkLicenseRecommendation(fm.fields));
+    specChecks.push(checkVersionRecommendation(fm.fields));
+  }
+
+  return {
+    skillPath,
+    checks,
+    specChecks,
+    complexity,
+    moduleCount,
+    tokenCount
+  };
+}
+
+/**
  * Run all advisory checks on a skill directory.
  */
 export function scoreSkill(skillDir: string): ScoringResult {
@@ -764,71 +854,9 @@ export function scoreSkill(skillDir: string): ScoringResult {
     };
   }
 
-  let content = '';
-  let description = '';
-
-  content = readFileSync(skillMdPath, 'utf-8');
-
-  // Extract description from frontmatter
-  const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-  if (frontmatterMatch) {
-    const fmContent = frontmatterMatch[1];
-    const descMatch = fmContent.match(/description:\s*(?:[|>]-?)\s*\n([\s\S]*?)(?=\n\w+:|$)/);
-    if (descMatch) {
-      description = descMatch[1].replace(/^\s+/gm, '').trim();
-    } else {
-      // Try inline description (quoted string)
-      const inlineMatch = fmContent.match(/description:\s*["']?(.*?)["']?\s*$/m);
-      if (inlineMatch) {
-        description = inlineMatch[1].trim();
-      }
-    }
-  }
-
-  const tokenCount = estimateTokens(content);
-  const moduleCountCheck = checkModuleCount(skillDir);
-  const moduleCount = parseInt(moduleCountCheck.message.match(/(\d+)/)?.[1] ?? '0', 10);
-
-  const complexityCheck = classifyComplexity(tokenCount, moduleCount);
-  const complexity = complexityCheck.status === 'warning'
-    ? 'comprehensive'
-    : complexityCheck.status === 'optimal'
-      ? 'detailed'
-      : 'compact';
-
-  // Advisory checks (Sensei-original)
-  const checks: AdvisoryCheck[] = [
-    moduleCountCheck,
-    complexityCheck,
-    checkNegativeDeltaRisk(content),
-    checkProceduralContent(description),
-    checkOverSpecificity(content),
-    ...checkCrossModelDensity(description)
-  ];
-
-  // Spec compliance checks (agentskills.io)
-  const specChecks: AdvisoryCheck[] = [checkFrontmatterStructure(content)];
-  const fm = parseFrontmatter(content);
-  if (fm) {
-    specChecks.push(checkAllowedFields(fm.fields));
-    if (fm.name) {
-      specChecks.push(checkNameCompliance(fm.name));
-      specChecks.push(checkDirectoryNameMatch(skillDir, fm.name));
-    }
-    if (fm.description !== undefined) {
-      specChecks.push(checkDescriptionCompliance(fm.description));
-    }
-    specChecks.push(checkCompatibilityCompliance(fm.compatibility));
-    specChecks.push(checkLicenseRecommendation(fm.fields));
-    specChecks.push(checkVersionRecommendation(fm.fields));
-  }
-
-  return {
-    skillPath: skillDir,
-    checks,
-    specChecks,
-    complexity,
-    moduleCount,
-    tokenCount
-  };
+  const content = readFileSync(skillMdPath, 'utf-8');
+  return scoreSkillContent(content, {
+    path: skillDir,
+    moduleCount: countReferenceModules(skillDir)
+  });
 }

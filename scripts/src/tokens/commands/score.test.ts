@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { scoreSkillContent as publicScoreSkillContent } from '../../score.js';
 import {
   checkModuleCount,
   classifyComplexity,
@@ -13,6 +14,7 @@ import {
   checkProceduralContent,
   checkOverSpecificity,
   scoreSkill,
+  scoreSkillContent,
   parseFrontmatter,
   checkFrontmatterStructure,
   checkAllowedFields,
@@ -330,6 +332,14 @@ describe('parseFrontmatter', () => {
     expect(fm!.description).toContain('Line one');
     expect(fm!.description).toContain('Line two');
   });
+
+  it('parses block scalar descriptions with chomping indicators', () => {
+    const content = '---\nname: my-skill\ndescription: |-\n  Line one.\n  Line two.\n---\n';
+    const fm = parseFrontmatter(content);
+    expect(fm!.description).toContain('Line one');
+    expect(fm!.description).toContain('Line two');
+    expect(fm!.description).not.toContain('|-');
+  });
 });
 
 describe('checkFrontmatterStructure', () => {
@@ -535,6 +545,58 @@ describe('checkVersionRecommendation', () => {
 // Integration: scoreSkill
 // ---------------------------------------------------------------------------
 
+describe('scoreSkillContent', () => {
+  const skillContent = [
+    '---',
+    'name: memory-skill',
+    'description: Deploy and configure applications. WHEN: deploy app, configure app.',
+    '---',
+    '',
+    '# Memory Skill',
+    '',
+    'Step 1: Build.',
+    'Step 2: Deploy.',
+    ''
+  ].join('\n');
+
+  it('scores in-memory content without a filesystem path', () => {
+    const result = scoreSkillContent(skillContent);
+
+    expect(result.skillPath).toBe('<memory>');
+    expect(result.moduleCount).toBe(0);
+    expect(result.tokenCount).toBeGreaterThan(0);
+    expect(result.checks).toHaveLength(9);
+
+    const specNames = result.specChecks.map(c => c.name);
+    expect(specNames).toContain('spec-frontmatter');
+    expect(specNames).toContain('spec-name');
+    expect(specNames).not.toContain('spec-dir-match');
+  });
+
+  it('uses optional path metadata for directory-name checks', () => {
+    const result = scoreSkillContent(skillContent, { path: '/skills/memory-skill' });
+    const dirCheck = result.specChecks.find(c => c.name === 'spec-dir-match');
+
+    expect(result.skillPath).toBe('/skills/memory-skill');
+    expect(dirCheck?.status).toBe('ok');
+  });
+
+  it('uses caller-provided module counts for module and complexity checks', () => {
+    const result = scoreSkillContent(skillContent, { moduleCount: 4 });
+
+    expect(result.moduleCount).toBe(4);
+    expect(result.complexity).toBe('comprehensive');
+    expect(result.checks.find(c => c.name === 'module-count')?.status).toBe('warning');
+  });
+
+  it('is exported from the public scorer entry point', () => {
+    const result = publicScoreSkillContent(skillContent);
+
+    expect(result.skillPath).toBe('<memory>');
+    expect(result.checks.map(c => c.name)).toContain('module-count');
+  });
+});
+
 describe('scoreSkill', () => {
   let tempDir: string;
 
@@ -570,8 +632,10 @@ describe('scoreSkill', () => {
     writeFileSync(join(refsDir, 'api.md'), '# API');
 
     const result = scoreSkill(tempDir);
+    const contentResult = scoreSkillContent(skillContent, { path: tempDir, moduleCount: 2 });
 
     expect(result.skillPath).toBe(tempDir);
+    expect(result).toEqual(contentResult);
     expect(result.checks).toHaveLength(9);
     expect(result.specChecks.length).toBeGreaterThan(0);
     expect(result.tokenCount).toBeGreaterThan(0);

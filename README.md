@@ -105,6 +105,18 @@ npm run tokens -- score .
 npm run tokens -- compare HEAD~1
 ```
 
+---
+
+## Library Usage
+
+```ts
+import { scoreSkillContent } from '@spboyer/sensei/score';
+
+const result = scoreSkillContent(renderedSkillMarkdown, { path: 'skills/my-skill', moduleCount: 2 });
+```
+
+`path` is metadata; `moduleCount` defaults to `0`.
+
 ### GEPA Commands
 
 ```bash

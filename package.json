@@ -1,12 +1,40 @@
 {
-  "name": "sensei",
+  "name": "@spboyer/sensei",
   "version": "1.3.0",
   "description": "AI-powered frontmatter compliance skill for GitHub Copilot",
-  "private": true,
   "type": "module",
   "scripts": {
+    "build": "npm --prefix scripts run build",
     "tokens": "node --import ./scripts/node_modules/tsx/dist/loader.mjs scripts/src/tokens/cli.ts",
-    "test": "cd scripts && npm test"
+    "test": "cd scripts && npm test",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "main": "./scripts/dist/score.js",
+  "types": "./scripts/dist/score.d.ts",
+  "exports": {
+    ".": {
+      "types": "./scripts/dist/score.d.ts",
+      "import": "./scripts/dist/score.js"
+    },
+    "./score": {
+      "types": "./scripts/dist/score.d.ts",
+      "import": "./scripts/dist/score.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "scripts/dist/score.js",
+    "scripts/dist/score.d.ts",
+    "scripts/dist/tokens/commands/score.js",
+    "scripts/dist/tokens/commands/score.d.ts",
+    "scripts/dist/tokens/commands/types.js",
+    "scripts/dist/tokens/commands/types.d.ts",
+    "README.md",
+    "LICENSE.txt"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "copilot",
