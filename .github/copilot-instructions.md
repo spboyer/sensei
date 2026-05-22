@@ -38,12 +38,12 @@ This repository is **Sensei**, an Agent Skill that improves `SKILL.md` frontmatt
 Run the narrowest relevant checks after changes:
 
 ```bash
-npm run tokens -- check
+npm run tokens -- check [paths...]
 npm run tokens -- score .
 npm test
 ```
 
-Use `npm run tokens -- count [paths...]`, `suggest`, or `compare` when working on token budgets or optimization.
+Use `npm run tokens -- count [paths...]`, `npm run tokens -- suggest [paths...]`, or `npm run tokens -- compare [refs...]` when working on token budgets or optimization.
 
 ## Change Guidelines
 
