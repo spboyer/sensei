@@ -3,15 +3,19 @@ const installCommand = 'npx skills add spboyer/sensei';
 const examples = [
   {
     command: 'Run sensei on my-skill-name',
-    description: 'Improve a single skill',
+    description: 'Improve one skill from Copilot CLI',
   },
   {
-    command: 'Run sensei on my-skill-name --fast',
-    description: 'Skip tests for faster iteration',
+    command: 'npx @spboyer/sensei score .',
+    description: 'Score a skill directory without cloning Sensei',
   },
   {
-    command: 'Run sensei on all skills',
-    description: 'Batch-improve every skill in your project',
+    command: 'npx @spboyer/sensei check --root . --strict',
+    description: 'Run token validation in any project',
+  },
+  {
+    command: "import { parseFrontmatter } from '@spboyer/sensei/parse';",
+    description: 'Use granular library exports in your own tooling',
   },
 ];
 ---
@@ -22,7 +26,7 @@ const examples = [
       Quick Start
     </h2>
     <p class="mt-4 text-mid-gray text-lg max-w-2xl">
-      One command to install. Three ways to run.
+      Install it as a skill, run it with npx, wire it into CI, or import the parts you need.
     </p>
     <div class="mt-12">
       <div class="inline-flex items-center bg-dark-gray border border-mid-gray/20 font-mono text-base">
@@ -45,6 +49,26 @@ const examples = [
           <span class="text-sm text-mid-gray">{ex.description}</span>
         </div>
       ))}
+    </div>
+    <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-px bg-mid-gray/10">
+      <div class="bg-dark-gray p-6">
+        <h3 class="text-lg font-semibold text-light-gray">GitHub Action</h3>
+        <p class="mt-2 text-sm text-mid-gray leading-relaxed">
+          Add <code class="text-light-gray">spboyer/sensei@v1.5.0</code> to CI and run <code class="text-light-gray">check</code> on pull requests.
+        </p>
+      </div>
+      <div class="bg-dark-gray p-6">
+        <h3 class="text-lg font-semibold text-light-gray">External roots</h3>
+        <p class="mt-2 text-sm text-mid-gray leading-relaxed">
+          Use <code class="text-light-gray">--root</code> and <code class="text-light-gray">--config</code> to validate skills from another project directory.
+        </p>
+      </div>
+      <div class="bg-dark-gray p-6">
+        <h3 class="text-lg font-semibold text-light-gray">Library exports</h3>
+        <p class="mt-2 text-sm text-mid-gray leading-relaxed">
+          Import <code class="text-light-gray">/score</code>, <code class="text-light-gray">/parse</code>, or <code class="text-light-gray">/checks</code> without pulling in the CLI.
+        </p>
+      </div>
     </div>
     <div class="mt-12">
       <a

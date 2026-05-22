@@ -96,7 +96,7 @@ npx @spboyer/sensei check --root . --config .token-limits.json --strict
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  - uses: spboyer/sensei@v1
+  - uses: spboyer/sensei@v1.5.0
     with:
       command: check
       root: .
