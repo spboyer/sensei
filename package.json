@@ -10,6 +10,9 @@
     "prepack": "npm run build",
     "prepublishOnly": "npm run build && npm test"
   },
+  "bin": {
+    "sensei": "./scripts/dist/tokens/cli.js"
+  },
   "main": "./scripts/dist/score.js",
   "types": "./scripts/dist/score.d.ts",
   "exports": {
@@ -21,15 +24,19 @@
       "types": "./scripts/dist/score.d.ts",
       "import": "./scripts/dist/score.js"
     },
+    "./parse": {
+      "types": "./scripts/dist/parse.d.ts",
+      "import": "./scripts/dist/parse.js"
+    },
+    "./checks": {
+      "types": "./scripts/dist/checks.d.ts",
+      "import": "./scripts/dist/checks.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
-    "scripts/dist/score.js",
-    "scripts/dist/score.d.ts",
-    "scripts/dist/tokens/commands/score.js",
-    "scripts/dist/tokens/commands/score.d.ts",
-    "scripts/dist/tokens/commands/types.js",
-    "scripts/dist/tokens/commands/types.d.ts",
+    "scripts/dist/**",
+    "action.yml",
     "README.md",
     "LICENSE.txt"
   ],

@@ -71,7 +71,7 @@ export interface AdvisoryCheck {
 // ---------------------------------------------------------------------------
 
 /** Parsed frontmatter fields */
-interface ParsedFrontmatter {
+export interface ParsedFrontmatter {
   readonly fields: Record<string, unknown>;
   readonly name?: string;
   readonly description?: string;

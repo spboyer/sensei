@@ -11,8 +11,11 @@
  */
 
 import { existsSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { count, check, suggest, compare, scoreSkill } from './commands/index.js';
+import { getErrorMessage } from './commands/types.js';
+import { resolvePathFromRoot, resolveRootDir } from './commands/utils.js';
 
 function printHelp(): void {
   console.log(`
@@ -35,6 +38,8 @@ Options:
   --no-total           Hide total row (count only)
   --strict             Exit with error if limits exceeded (check only)
   --quiet              Suppress output except errors (check only)
+  --root=<path>        Resolve paths and default config from this project root
+  --config=<path>      Use a specific token limits JSON file
   --min-savings=<n>    Minimum savings to suggest (default: 10)
   --verbose            Show detailed suggestions
   --show-unchanged     Include unchanged files in comparison
@@ -64,7 +69,7 @@ Configuration:
 `);
 }
 
-function parseArgs(args: string[]): { command: string; paths: string[]; options: Record<string, unknown> } {
+export function parseArgs(args: string[]): { command: string; paths: string[]; options: Record<string, unknown> } {
   const command = args[0] ?? 'help';
   const paths: string[] = [];
   const options: Record<string, unknown> = {};
@@ -92,6 +97,14 @@ function parseArgs(args: string[]): { command: string; paths: string[]; options:
       options.minTokens = parseInt(arg.slice(13), 10);
     } else if (arg.startsWith('--min-savings=')) {
       options.minSavings = parseInt(arg.slice(14), 10);
+    } else if (arg === '--root') {
+      options.root = readOptionValue(args, ++i, '--root');
+    } else if (arg.startsWith('--root=')) {
+      options.root = arg.slice(7);
+    } else if (arg === '--config') {
+      options.config = readOptionValue(args, ++i, '--config');
+    } else if (arg.startsWith('--config=')) {
+      options.config = arg.slice(9);
     } else if (!arg.startsWith('-')) {
       paths.push(arg);
     } else {
@@ -103,8 +116,15 @@ function parseArgs(args: string[]): { command: string; paths: string[]; options:
   return { command, paths, options };
 }
 
-function main(): void {
-  const args = process.argv.slice(2);
+function readOptionValue(args: string[], index: number, optionName: string): string {
+  const value = args[index];
+  if (!value || value.startsWith('-')) {
+    throw new Error(`Missing value for ${optionName}`);
+  }
+  return value;
+}
+
+export function main(args = process.argv.slice(2)): void {
   const { command, paths, options } = parseArgs(args);
   
   if (options.help || command === 'help') {
@@ -130,7 +150,8 @@ function main(): void {
       break;
     
     case 'score': {
-      const skillDir = paths[0] ?? process.cwd();
+      const rootDir = resolveRootDir(typeof options.root === 'string' ? options.root : undefined);
+      const skillDir = paths[0] ? resolvePathFromRoot(rootDir, paths[0]) : rootDir;
       if (!existsSync(skillDir) || !statSync(skillDir).isDirectory()) {
         console.error(`Error: Path does not exist or is not a directory: ${skillDir}`);
         process.exit(1);
@@ -179,4 +200,11 @@ function main(): void {
   }
 }
 
-main();
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  try {
+    main();
+  } catch (error) {
+    console.error(`Error: ${getErrorMessage(error)}`);
+    process.exit(1);
+  }
+}

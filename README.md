@@ -80,42 +80,46 @@ Run sensei score my-skill-name
 
 Score-only mode runs without LLM calls.
 
-### Using Scripts Directly
+### External Integration Modes
+
+#### CLI / npx
 
 ```bash
-# Count tokens in all markdown files
-npm run tokens -- count
-
-# Count tokens in specific files
-npm run tokens -- count SKILL.md references/*.md
-
-# Check files against token limits
-npm run tokens -- check
-
-# Check with strict mode (exits 1 if limits exceeded)
-npm run tokens -- check --strict
-
-# Get optimization suggestions
-npm run tokens -- suggest
-
-# Score a skill directory (advisory checks)
-npm run tokens -- score .
-
-# Compare with previous commit
-npm run tokens -- compare HEAD~1
+npx @spboyer/sensei score .
+npx @spboyer/sensei check --root . --config .token-limits.json --strict
 ```
 
----
+`--root` resolves paths and discovers `.token-limits.json`; `--config` points at a specific limits file.
 
-## Library Usage
+#### GitHub Action
+
+```yaml
+steps:
+  - uses: actions/checkout@v4
+  - uses: spboyer/sensei@v1
+    with:
+      command: check
+      root: .
+      path: .
+      config: .token-limits.json
+      strict: 'true'
+```
+
+#### Library API
 
 ```ts
 import { scoreSkillContent } from '@spboyer/sensei/score';
+import { parseFrontmatter } from '@spboyer/sensei/parse';
+import { checkNameCompliance } from '@spboyer/sensei/checks';
 
 const result = scoreSkillContent(renderedSkillMarkdown, { path: 'skills/my-skill', moduleCount: 2 });
+const frontmatter = parseFrontmatter(renderedSkillMarkdown);
+checkNameCompliance(frontmatter?.name ?? '');
 ```
 
 `path` is metadata; `moduleCount` defaults to `0`.
+
+---
 
 ### GEPA Commands
 

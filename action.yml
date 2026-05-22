@@ -1,0 +1,88 @@
+name: Sensei
+description: Validate and score Agent Skills with Sensei.
+
+inputs:
+  command:
+    description: Sensei command to run: check, count, suggest, or score.
+    required: false
+    default: check
+  path:
+    description: File, directory, or skill path to pass to the command.
+    required: false
+    default: .
+  root:
+    description: Project root for path resolution and default config discovery.
+    required: false
+    default: .
+  config:
+    description: Optional token limits JSON file.
+    required: false
+    default: ''
+  strict:
+    description: Fail check when any file exceeds its limit.
+    required: false
+    default: 'true'
+  format:
+    description: Output format, usually table or json.
+    required: false
+    default: table
+  node-version:
+    description: Node.js version to use.
+    required: false
+    default: '20'
+  package-version:
+    description: npm package version or dist-tag to run.
+    required: false
+    default: latest
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Run Sensei
+      shell: bash
+      env:
+        SENSEI_COMMAND: ${{ inputs.command }}
+        SENSEI_PATH: ${{ inputs.path }}
+        SENSEI_ROOT: ${{ inputs.root }}
+        SENSEI_CONFIG: ${{ inputs.config }}
+        SENSEI_STRICT: ${{ inputs.strict }}
+        SENSEI_FORMAT: ${{ inputs.format }}
+        SENSEI_PACKAGE_VERSION: ${{ inputs.package-version }}
+      run: |
+        set -euo pipefail
+
+        case "$SENSEI_COMMAND" in
+          check|count|suggest|score) ;;
+          *)
+            echo "Unsupported Sensei command: $SENSEI_COMMAND" >&2
+            exit 1
+            ;;
+        esac
+
+        args=("$SENSEI_COMMAND")
+
+        if [[ -n "$SENSEI_ROOT" ]]; then
+          args+=("--root" "$SENSEI_ROOT")
+        fi
+
+        if [[ -n "$SENSEI_CONFIG" ]]; then
+          args+=("--config" "$SENSEI_CONFIG")
+        fi
+
+        if [[ -n "$SENSEI_FORMAT" ]]; then
+          args+=("--format=$SENSEI_FORMAT")
+        fi
+
+        if [[ "$SENSEI_COMMAND" == "check" && "$SENSEI_STRICT" == "true" ]]; then
+          args+=("--strict")
+        fi
+
+        if [[ -n "$SENSEI_PATH" ]]; then
+          args+=("$SENSEI_PATH")
+        fi
+
+        npx --yes "@spboyer/sensei@$SENSEI_PACKAGE_VERSION" "${args[@]}"
