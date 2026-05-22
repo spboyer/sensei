@@ -2,24 +2,28 @@
 
 /**
  * Sensei Token Management CLI
- * 
+ *
  * Usage:
- *   npm run tokens count [paths...]     Count tokens in markdown files
- *   npm run tokens check [paths...]     Check files against token limits
- *   npm run tokens suggest [paths...]   Get optimization suggestions
- *   npm run tokens compare [refs...]    Compare tokens between git refs
+ *   sensei count [paths...]     Count tokens in markdown files
+ *   sensei check [paths...]     Check files against token limits
+ *   sensei suggest [paths...]   Get optimization suggestions
+ *   sensei compare [refs...]    Compare tokens between git refs
  */
 
-import { existsSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, realpathSync, statSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { count, check, suggest, compare, scoreSkill } from './commands/index.js';
+import { getErrorMessage } from './commands/types.js';
+import { resolvePathFromRoot, resolveRootDir } from './commands/utils.js';
 
 function printHelp(): void {
   console.log(`
 Sensei Token Management CLI
 
 Usage:
-  npm run tokens <command> [options] [paths...]
+  sensei <command> [options] [paths...]
+  npx @spboyer/sensei <command> [options] [paths...]
 
 Commands:
   count [paths...]     Count tokens in markdown files
@@ -35,19 +39,21 @@ Options:
   --no-total           Hide total row (count only)
   --strict             Exit with error if limits exceeded (check only)
   --quiet              Suppress output except errors (check only)
+  --root=<path>        Resolve paths and default config from this project root
+  --config=<path>      Use a specific token limits JSON file
   --min-savings=<n>    Minimum savings to suggest (default: 10)
   --verbose            Show detailed suggestions
   --show-unchanged     Include unchanged files in comparison
   --help, -h           Show this help message
 
 Examples:
-  npm run tokens count                    Count all markdown files
-  npm run tokens count SKILL.md           Count specific file
-  npm run tokens count --format=json      Output as JSON
-  npm run tokens check --strict           Fail if limits exceeded
-  npm run tokens suggest                  Get optimization tips
-  npm run tokens compare HEAD~3           Compare with 3 commits ago
-  npm run tokens compare main feature     Compare two branches
+  sensei count                    Count all markdown files
+  sensei count SKILL.md           Count specific file
+  sensei count --format=json      Output as JSON
+  sensei check --strict           Fail if limits exceeded
+  sensei suggest                  Get optimization tips
+  sensei compare HEAD~3           Compare with 3 commits ago
+  sensei compare main feature     Compare two branches
 
 Configuration:
   Create .token-limits.json in project root to customize limits:
@@ -64,14 +70,14 @@ Configuration:
 `);
 }
 
-function parseArgs(args: string[]): { command: string; paths: string[]; options: Record<string, unknown> } {
-  const command = args[0] ?? 'help';
+export function parseArgs(args: string[]): { command: string; paths: string[]; options: Record<string, unknown> } {
+  const command = args[0] === '--help' || args[0] === '-h' ? 'help' : args[0] ?? 'help';
   const paths: string[] = [];
   const options: Record<string, unknown> = {};
-  
+
   for (let i = 1; i < args.length; i++) {
     const arg = args[i];
-    
+
     if (arg === '--help' || arg === '-h') {
       options.help = true;
     } else if (arg === '--strict') {
@@ -92,6 +98,14 @@ function parseArgs(args: string[]): { command: string; paths: string[]; options:
       options.minTokens = parseInt(arg.slice(13), 10);
     } else if (arg.startsWith('--min-savings=')) {
       options.minSavings = parseInt(arg.slice(14), 10);
+    } else if (arg === '--root') {
+      options.root = readOptionValue(args, ++i, '--root');
+    } else if (arg.startsWith('--root=')) {
+      options.root = arg.slice(7);
+    } else if (arg === '--config') {
+      options.config = readOptionValue(args, ++i, '--config');
+    } else if (arg.startsWith('--config=')) {
+      options.config = arg.slice(9);
     } else if (!arg.startsWith('-')) {
       paths.push(arg);
     } else {
@@ -99,38 +113,46 @@ function parseArgs(args: string[]): { command: string; paths: string[]; options:
       process.exit(1);
     }
   }
-  
+
   return { command, paths, options };
 }
 
-function main(): void {
-  const args = process.argv.slice(2);
+function readOptionValue(args: string[], index: number, optionName: string): string {
+  const value = args[index];
+  if (!value || value.startsWith('-')) {
+    throw new Error(`Missing value for ${optionName}`);
+  }
+  return value;
+}
+
+export function main(args = process.argv.slice(2)): void {
   const { command, paths, options } = parseArgs(args);
-  
+
   if (options.help || command === 'help') {
     printHelp();
     return;
   }
-  
+
   switch (command) {
     case 'count':
       count(paths, options);
       break;
-    
+
     case 'check':
       check(paths, options);
       break;
-    
+
     case 'suggest':
       suggest(paths, options);
       break;
-    
+
     case 'compare':
       compare(paths, options);
       break;
-    
+
     case 'score': {
-      const skillDir = paths[0] ?? process.cwd();
+      const rootDir = resolveRootDir(typeof options.root === 'string' ? options.root : undefined);
+      const skillDir = paths[0] ? resolvePathFromRoot(rootDir, paths[0]) : rootDir;
       if (!existsSync(skillDir) || !statSync(skillDir).isDirectory()) {
         console.error(`Error: Path does not exist or is not a directory: ${skillDir}`);
         process.exit(1);
@@ -171,12 +193,26 @@ function main(): void {
       }
       break;
     }
-    
+
     default:
       console.error(`Unknown command: ${command}`);
-      console.error('Run "npm run tokens help" for usage information.');
+      console.error('Run "sensei help" for usage information.');
       process.exit(1);
   }
 }
 
-main();
+function isEntrypoint(): boolean {
+  if (!process.argv[1]) {
+    return false;
+  }
+  return realpathSync.native(fileURLToPath(import.meta.url)) === realpathSync.native(resolve(process.argv[1]));
+}
+
+if (isEntrypoint()) {
+  try {
+    main();
+  } catch (error) {
+    console.error(`Error: ${getErrorMessage(error)}`);
+    process.exit(1);
+  }
+}
