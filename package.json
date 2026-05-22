@@ -1,6 +1,6 @@
 {
   "name": "@spboyer/sensei",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "AI-powered frontmatter compliance skill for GitHub Copilot",
   "type": "module",
   "scripts": {
