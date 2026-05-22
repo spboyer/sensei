@@ -2,15 +2,15 @@
 
 /**
  * Sensei Token Management CLI
- * 
+ *
  * Usage:
- *   npm run tokens count [paths...]     Count tokens in markdown files
- *   npm run tokens check [paths...]     Check files against token limits
- *   npm run tokens suggest [paths...]   Get optimization suggestions
- *   npm run tokens compare [refs...]    Compare tokens between git refs
+ *   sensei count [paths...]     Count tokens in markdown files
+ *   sensei check [paths...]     Check files against token limits
+ *   sensei suggest [paths...]   Get optimization suggestions
+ *   sensei compare [refs...]    Compare tokens between git refs
  */
 
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, realpathSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { count, check, suggest, compare, scoreSkill } from './commands/index.js';
@@ -22,7 +22,8 @@ function printHelp(): void {
 Sensei Token Management CLI
 
 Usage:
-  npm run tokens <command> [options] [paths...]
+  sensei <command> [options] [paths...]
+  npx @spboyer/sensei <command> [options] [paths...]
 
 Commands:
   count [paths...]     Count tokens in markdown files
@@ -46,13 +47,13 @@ Options:
   --help, -h           Show this help message
 
 Examples:
-  npm run tokens count                    Count all markdown files
-  npm run tokens count SKILL.md           Count specific file
-  npm run tokens count --format=json      Output as JSON
-  npm run tokens check --strict           Fail if limits exceeded
-  npm run tokens suggest                  Get optimization tips
-  npm run tokens compare HEAD~3           Compare with 3 commits ago
-  npm run tokens compare main feature     Compare two branches
+  sensei count                    Count all markdown files
+  sensei count SKILL.md           Count specific file
+  sensei count --format=json      Output as JSON
+  sensei check --strict           Fail if limits exceeded
+  sensei suggest                  Get optimization tips
+  sensei compare HEAD~3           Compare with 3 commits ago
+  sensei compare main feature     Compare two branches
 
 Configuration:
   Create .token-limits.json in project root to customize limits:
@@ -70,13 +71,13 @@ Configuration:
 }
 
 export function parseArgs(args: string[]): { command: string; paths: string[]; options: Record<string, unknown> } {
-  const command = args[0] ?? 'help';
+  const command = args[0] === '--help' || args[0] === '-h' ? 'help' : args[0] ?? 'help';
   const paths: string[] = [];
   const options: Record<string, unknown> = {};
-  
+
   for (let i = 1; i < args.length; i++) {
     const arg = args[i];
-    
+
     if (arg === '--help' || arg === '-h') {
       options.help = true;
     } else if (arg === '--strict') {
@@ -112,7 +113,7 @@ export function parseArgs(args: string[]): { command: string; paths: string[]; o
       process.exit(1);
     }
   }
-  
+
   return { command, paths, options };
 }
 
@@ -126,29 +127,29 @@ function readOptionValue(args: string[], index: number, optionName: string): str
 
 export function main(args = process.argv.slice(2)): void {
   const { command, paths, options } = parseArgs(args);
-  
+
   if (options.help || command === 'help') {
     printHelp();
     return;
   }
-  
+
   switch (command) {
     case 'count':
       count(paths, options);
       break;
-    
+
     case 'check':
       check(paths, options);
       break;
-    
+
     case 'suggest':
       suggest(paths, options);
       break;
-    
+
     case 'compare':
       compare(paths, options);
       break;
-    
+
     case 'score': {
       const rootDir = resolveRootDir(typeof options.root === 'string' ? options.root : undefined);
       const skillDir = paths[0] ? resolvePathFromRoot(rootDir, paths[0]) : rootDir;
@@ -192,15 +193,22 @@ export function main(args = process.argv.slice(2)): void {
       }
       break;
     }
-    
+
     default:
       console.error(`Unknown command: ${command}`);
-      console.error('Run "npm run tokens help" for usage information.');
+      console.error('Run "sensei help" for usage information.');
       process.exit(1);
   }
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+function isEntrypoint(): boolean {
+  if (!process.argv[1]) {
+    return false;
+  }
+  return realpathSync.native(fileURLToPath(import.meta.url)) === realpathSync.native(resolve(process.argv[1]));
+}
+
+if (isEntrypoint()) {
   try {
     main();
   } catch (error) {

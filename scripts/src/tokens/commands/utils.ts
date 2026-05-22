@@ -2,7 +2,7 @@
  * Shared utility functions for token commands
  */
 
-import { readFileSync, readdirSync, existsSync, statSync, Dirent } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, realpathSync, statSync, Dirent } from 'node:fs';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import type { TokenLimitsConfig } from './types.js';
 import {
@@ -63,12 +63,24 @@ export function resolveRootDir(root?: string): string {
   return rootDir;
 }
 
+function isOutsideRoot(rootDir: string, fullPath: string): boolean {
+  const relativePath = relative(rootDir, fullPath);
+  return relativePath === '..' || relativePath.startsWith(`..${sep}`) || isAbsolute(relativePath);
+}
+
 export function resolvePathFromRoot(rootDir: string, inputPath: string): string {
   const fullPath = isAbsolute(inputPath) ? resolve(inputPath) : resolve(rootDir, inputPath);
-  const relativePath = relative(rootDir, fullPath);
 
-  if (relativePath === '..' || relativePath.startsWith(`..${sep}`) || isAbsolute(relativePath)) {
+  if (isOutsideRoot(rootDir, fullPath)) {
     throw new Error(`Path is outside the configured root: ${inputPath}`);
+  }
+
+  if (existsSync(fullPath)) {
+    const realRootDir = realpathSync.native(rootDir);
+    const realFullPath = realpathSync.native(fullPath);
+    if (isOutsideRoot(realRootDir, realFullPath)) {
+      throw new Error(`Path is outside the configured root: ${inputPath}`);
+    }
   }
 
   return fullPath;
