@@ -39,9 +39,6 @@ jobs:
             exit 1
           fi
 
-      - name: Build package
-        run: npm run build
-
       - name: Publish package
         run: npm publish --access public --provenance
         env:
