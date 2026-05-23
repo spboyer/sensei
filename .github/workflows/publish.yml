@@ -40,7 +40,9 @@ jobs:
         run: npm ci --prefix scripts
 
       - name: Verify tag matches package version
+        id: package
         run: |
+          package_name=$(node -p "require('./package.json').name")
           package_version=$(node -p "require('./package.json').version")
           tag_version="${RELEASE_TAG#v}"
 
@@ -49,10 +51,27 @@ jobs:
             exit 1
           fi
 
+          echo "name=$package_name" >> "$GITHUB_OUTPUT"
+          echo "version=$package_version" >> "$GITHUB_OUTPUT"
+
       - name: Verify package
         run: npm run build && npm test
 
+      - name: Check npm version
+        id: npm
+        run: |
+          package="${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }}"
+
+          if npm view "$package" version >/dev/null 2>&1; then
+            echo "$package is already published; skipping npm publish."
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "$package is not published yet."
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish package
+        if: steps.npm.outputs.published == 'false'
         run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
