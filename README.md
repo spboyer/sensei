@@ -89,7 +89,7 @@ npx @spboyer/sensei score .
 npx @spboyer/sensei check --root . --config .token-limits.json --strict
 ```
 
-`--root` resolves paths and discovers `.token-limits.json`; `--config` points at a specific limits file.
+`--root` resolves paths; `--config` selects limits. Global install: `npm install --global @spboyer/sensei`.
 
 #### GitHub Action
 
@@ -165,13 +165,8 @@ python scripts/src/gepa/auto_evaluator.py optimize --skill my-skill
 #### Option 1: Install as Copilot CLI Skill (Recommended)
 
 ```bash
-# Create the skills folder
 mkdir -p "$HOME/.copilot/skills"
-
-# Clone to your skills directory
 git clone https://github.com/spboyer/sensei.git "$HOME/.copilot/skills/sensei"
-
-# Install token CLI dependencies
 cd ~/.copilot/skills/sensei/scripts && npm install
 ```
 
@@ -185,22 +180,26 @@ Run sensei on my-skill-name
 For project-specific installation:
 
 ```bash
-# From your project root
 mkdir -p .github/skills
 git clone https://github.com/spboyer/sensei.git .github/skills/sensei
-
-# Install dependencies
 cd .github/skills/sensei/scripts && npm install
+```
+
+#### Option 3: Install the CLI from npm
+
+For CLI/library use:
+
+```bash
+npm install --global @spboyer/sensei
+sensei check .
+npx @spboyer/sensei check .
 ```
 
 #### Verify Installation
 
 ```bash
-# Test the token CLI
-cd ~/.copilot/skills/sensei  # or your install path
-npm run tokens -- check
-
-# Should output token counts for all markdown files
+cd ~/.copilot/skills/sensei && npm run tokens -- check
+npx @spboyer/sensei check .
 ```
 
 ---

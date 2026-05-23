@@ -11,10 +11,10 @@
     "prepublishOnly": "npm run build && npm test"
   },
   "bin": {
-    "sensei": "./scripts/dist/tokens/cli.js"
+    "sensei": "scripts/dist/tokens/cli.js"
   },
-  "main": "./scripts/dist/score.js",
-  "types": "./scripts/dist/score.d.ts",
+  "main": "scripts/dist/score.js",
+  "types": "scripts/dist/score.d.ts",
   "exports": {
     ".": {
       "types": "./scripts/dist/score.d.ts",
