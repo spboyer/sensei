@@ -12,7 +12,7 @@ describe('package integration metadata', () => {
 
   it('publishes an npx-compatible CLI binary', () => {
     expect(pkg.bin).toEqual({
-      sensei: './scripts/dist/tokens/cli.js'
+      sensei: 'scripts/dist/tokens/cli.js'
     });
   });
 
