@@ -3,6 +3,10 @@
   "version": "1.5.0",
   "description": "AI-powered frontmatter compliance skill for GitHub Copilot",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spboyer/sensei"
+  },
   "scripts": {
     "build": "npm --prefix scripts run build",
     "tokens": "node --import ./scripts/node_modules/tsx/dist/loader.mjs scripts/src/tokens/cli.ts",
