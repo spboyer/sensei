@@ -116,6 +116,15 @@ function broadcast() {
  * Read newly appended bytes from an NDJSON file and push parsed objects
  * into state.steps. Tolerates partial-line writes by leaving the trailing
  * non-newline-terminated fragment in the offset (we re-read it next time).
+ *
+ * Byte-offset tracking is load-bearing: on the **first** call for a
+ * given run (after `syncStateFromDisk` discovers a pre-existing run dir
+ * — the cross-session reopen path, integration test A6) we DO read from
+ * byte 0 and ingest the full history. On every subsequent call we read
+ * only the appended bytes. Without this, every bursty fs.watch event
+ * (A4) would re-emit the historical step record set as if it were new,
+ * and SSE clients would see N copies of step 1 by the time step N
+ * fires. Do not "simplify" this by always reading from 0.
  */
 async function tailStepsFile(path) {
   if (!existsSync(path)) return;
