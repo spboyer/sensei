@@ -14,28 +14,30 @@ describe('encodeExtensionId', () => {
   it('pins the sensei canonical id mapping', () => {
     // CRITICAL: this exact string is duplicated in .canvas/extension.mjs.
     // If this test fails or you change it, update both places.
+    // Matches the Copilot CLI runtime's encoding (percent-encoding).
     expect(encodeExtensionId(SENSEI_EXTENSION_ID)).toBe(
-      'skill__github.com_spboyer_sensei__sensei'
+      'skill%3Agithub.com%2Fspboyer%2Fsensei%3Asensei'
     );
   });
 
-  it('replaces colons with double underscores', () => {
-    expect(encodeExtensionId('a:b:c')).toBe('a__b__c');
-  });
-
-  it('replaces slashes with single underscores', () => {
-    expect(encodeExtensionId('a/b/c')).toBe('a_b_c');
-  });
-
-  it('lowercases the result', () => {
-    expect(encodeExtensionId('Skill:GitHub.com/Foo/Bar:Baz')).toBe(
-      'skill__github.com_foo_bar__baz'
+  it('is reversible via decodeURIComponent', () => {
+    expect(decodeURIComponent(encodeExtensionId(SENSEI_EXTENSION_ID))).toBe(
+      SENSEI_EXTENSION_ID
     );
+  });
+
+  it('round-trips ids whose components contain underscores (regression)', () => {
+    // The previous __/_ scheme collided here because GitHub repo names
+    // allow underscores (e.g. `my_repo`). Percent-encoding handles this.
+    const id = 'skill:github.com/owner/my_repo:foo';
+    expect(decodeURIComponent(encodeExtensionId(id))).toBe(id);
   });
 
   it('produces only filesystem-safe characters', () => {
     const encoded = encodeExtensionId(SENSEI_EXTENSION_ID);
-    expect(encoded).toMatch(/^[a-z0-9._-]+$/);
+    // %-encoded results are alphanumeric, dot, dash, underscore, tilde,
+    // and percent — all safe on NTFS, APFS, and ext4.
+    expect(encoded).toMatch(/^[A-Za-z0-9._\-~%]+$/);
   });
 });
 
@@ -87,7 +89,7 @@ describe('resolveArtifactsDir', () => {
   it('computes default from COPILOT_HOME + encoded id', () => {
     process.env.COPILOT_HOME = '/tmp/copilot';
     expect(resolveArtifactsDir()).toBe(
-      '/tmp/copilot/extensions/skill__github.com_spboyer_sensei__sensei/artifacts'
+      '/tmp/copilot/extensions/skill%3Agithub.com%2Fspboyer%2Fsensei%3Asensei/artifacts'
     );
   });
 });

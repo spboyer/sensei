@@ -47,7 +47,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SENSEI_EXTENSION_ID = 'skill:github.com/spboyer/sensei:sensei';
 
 function encodeExtensionId(id) {
-  return id.replace(/:/g, '__').replace(/\//g, '_').toLowerCase();
+  return encodeURIComponent(id);
 }
 
 function resolveCopilotHome() {

@@ -78,12 +78,23 @@ $COPILOT_HOME/extensions/<encoded-id>/artifacts/
     └── latest.txt          # text file containing the most recent ULID
 ```
 
-`<encoded-id>` is the canonical extension id (`skill:github.com/spboyer/sensei:sensei`)
-with `:` replaced by `__`, `/` by `_`, and lowercased. The encoding
-keeps the path valid on Windows NTFS (`:` is illegal), macOS APFS, and
-Linux ext4, and is reversible. The CLI helper lives in
-`scripts/src/tokens/commands/artifacts.ts` and is pinned by a unit test;
-an identical copy lives in `.canvas/extension.mjs`.
+`<encoded-id>` is the canonical extension id
+(`skill:github.com/spboyer/sensei:sensei`) passed through
+`encodeURIComponent`. Result for sensei:
+`skill%3Agithub.com%2Fspboyer%2Fsensei%3Asensei`. Percent-encoding is
+RFC-defined, fully reversible (`decodeURIComponent`), and produces only
+characters that are safe on Windows NTFS, macOS APFS, and Linux ext4
+(`%` is legal in path components on all three). This matches the
+Copilot CLI runtime's encoding so dev/test paths line up with what the
+runtime would compute.
+
+The CLI helper lives in `scripts/src/tokens/commands/artifacts.ts` and
+is pinned by a unit test; an identical copy lives in
+`.canvas/extension.mjs`. In production both **read
+`COPILOT_EXTENSION_ARTIFACTS_DIR` from the environment** rather than
+computing the path themselves — the runtime sets it when it spawns the
+provider, so writer and reader always agree even if the encoding scheme
+evolves later.
 
 `latest.txt` is a plain file, not a symlink, because Windows symlinks
 require elevated privileges by default. Other canvas authors should
