@@ -86,7 +86,78 @@ Linux ext4, and is reversible. The CLI helper lives in
 an identical copy lives in `.canvas/extension.mjs`.
 
 `latest.txt` is a plain file, not a symlink, because Windows symlinks
-require elevated privileges by default.
+require elevated privileges by default. Other canvas authors should
+follow the same convention if they need a "current run" pointer.
+
+## Step payload schema
+
+`sensei step --append <json>` accepts any JSON object; the iframe and
+any future watcher consume fields opportunistically. Recommended shape
+(this is a copy-friendly reference contract for other skills that want
+to build a canvas the same way):
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/spboyer/sensei/refs/heads/main/references/canvas.md#step-schema",
+  "title": "SenseiCanvasStep",
+  "description": "One Ralph-loop step record. Appended as a single NDJSON line to runs/<id>/steps.ndjson.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "t": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp. Auto-stamped by `sensei step` if absent."
+    },
+    "step": {
+      "type": "string",
+      "description": "Ralph-loop step tag, e.g. READ, SCORE, SCAFFOLD, IMPROVE, VERIFY, TOKENS, SUMMARY.",
+      "examples": ["READ", "SCORE", "IMPROVE", "VERIFY"]
+    },
+    "skill": {
+      "type": "string",
+      "description": "Name of the skill being processed."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "warn", "error"],
+      "description": "Outcome of the step. Optional; default is success."
+    },
+    "score": {
+      "oneOf": [
+        { "type": "string", "enum": ["Low", "Medium", "Medium-High", "High"] },
+        { "type": "number" }
+      ],
+      "description": "Compliance score after this step. Either the canonical adherence label or a numeric score."
+    },
+    "tokens": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Token count for the skill after this step."
+    },
+    "delta": {
+      "type": "integer",
+      "description": "Score change relative to the previous step for this skill (positive = improvement)."
+    },
+    "message": {
+      "type": "string",
+      "description": "Short human-readable summary of what the step did. Rendered as the step row's right column."
+    }
+  }
+}
+```
+
+All properties are optional. `additionalProperties: true` is intentional
+so future fields don't break older watchers. The iframe renders `t`,
+`step`/`phase`, `skill`, `score`, and `message`/`lastAction` if present.
+
+This schema is informational; `sensei step` does **not** validate
+incoming JSON against it. The CLI's only invariant is that the payload
+parses as a JSON object (arrays and primitives are rejected). Strict
+validation belongs in the agent's prompt or in a dedicated lint pass,
+not in the hot path.
+
 
 ## Overriding the artifact path
 
