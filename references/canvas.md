@@ -199,17 +199,21 @@ also accepts an `X-Copilot-Canvas-Token` header for command-line use.
 Token comparison is constant-time.
 
 `.canvas/extension.mjs` currently ships a local `validateLoopbackToken`
-helper with this signature (pinned to match the eventual SDK export):
+helper with this signature (pinned to match the SDK export per runtime
+spec §11):
 
 ```ts
-validateLoopbackToken(req: IncomingMessage, instanceId: string): boolean
+validateLoopbackToken(req: IncomingMessage): boolean
 ```
 
+Runtime adopted the per-process-token design — every provider fork
+(including reload restarts) gets a fresh token via the env var, so the
+helper takes only the request. The token MUST NOT be cached across
+reload boundaries; this is naturally satisfied because reloads kill and
+re-spawn the provider (fresh module = fresh env-var read).
+
 Once `@github/copilot-sdk/extension` ships the helper, the local stub
-is replaced by the SDK export. Call sites stay the same. The
-`instanceId` parameter is reserved for the SDK's per-instance token
-registry; the stub ignores it because there's one provider, one
-effective instance.
+is replaced by the SDK export. Call sites stay the same.
 
 ## SDK integration (pending)
 

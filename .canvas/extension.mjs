@@ -268,21 +268,24 @@ const LOOPBACK_TOKEN =
 /**
  * Stub for `validateLoopbackToken` from `@github/copilot-sdk/extension`.
  *
- * Signature is pinned to match the eventual SDK export so call sites
- * stay stable through the swap:
+ * Signature is pinned to match the SDK export (per runtime spec §11) so
+ * the call site stays stable through the SDK swap:
  *
- *     validateLoopbackToken(req: IncomingMessage, instanceId: string): boolean
+ *     validateLoopbackToken(req: IncomingMessage): boolean
  *
- * The `instanceId` parameter is reserved for the SDK's per-instance
- * token registry; this stub ignores it because we have exactly one
- * provider process and one effective instance.
+ * Runtime adopted the per-process-token design: every provider fork
+ * (including reload restarts) gets a fresh token via the env var, so the
+ * SDK doesn't need a per-instance registry and the helper takes only the
+ * request. The token MUST NOT be cached across reload boundaries — this
+ * stub reads it once at module load, which is fine because reloads kill
+ * and re-spawn the process (fresh module = fresh env-var read).
  *
  * Accepts the token from either the `t` query parameter (used by the
- * iframe so EventSource and fetch can include it) or an
- * `X-Copilot-Canvas-Token` header (useful for command-line testing).
+ * iframe so EventSource and fetch can include it without a custom
+ * header) or an `X-Copilot-Canvas-Token` header (useful for
+ * command-line testing).
  */
-// eslint-disable-next-line no-unused-vars
-function validateLoopbackToken(req, _instanceId) {
+function validateLoopbackToken(req) {
   const url = new URL(req.url, 'http://127.0.0.1');
   const fromQuery = url.searchParams.get('t');
   const fromHeader = req.headers['x-copilot-canvas-token'];
@@ -327,7 +330,7 @@ const server = http.createServer(async (req, res) => {
   // ships, the local `validateLoopbackToken` stub is replaced by the
   // SDK export — call site stays the same because the signature is
   // pinned.
-  if (!validateLoopbackToken(req, /* instanceId */ 'sensei')) {
+  if (!validateLoopbackToken(req)) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });
     res.end('forbidden');
     return;
