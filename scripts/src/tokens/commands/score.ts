@@ -18,9 +18,25 @@ const MAX_DESCRIPTION_LENGTH = 1024;
 /** Max compatibility field length per agentskills.io spec */
 const MAX_COMPATIBILITY_LENGTH = 500;
 
-/** Allowed frontmatter fields per agentskills.io spec */
+/**
+ * Allowed frontmatter fields per agentskills.io spec, plus known
+ * runtime-specific extensions.
+ *
+ * `canvas` is a Copilot CLI runtime extension to the agentskills.io spec:
+ * skills that opt in by setting `canvas: true` (or providing a canvas
+ * object/array) ship a side-panel UI alongside the chat output. The field
+ * is not part of the agentskills.io spec today; we accept it here so
+ * canvas-bearing skills (including sensei itself) don't trip the
+ * unknown-fields advisory check while the convention is being adopted
+ * upstream.
+ *
+ * If/when the spec adds `canvas`, this comment can be removed and the
+ * field stays in the set.
+ */
 const ALLOWED_FIELDS = new Set([
-  'name', 'description', 'license', 'allowed-tools', 'metadata', 'compatibility'
+  'name', 'description', 'license', 'allowed-tools', 'metadata', 'compatibility',
+  // Copilot CLI runtime extension (see comment above):
+  'canvas'
 ]);
 
 /** Recursively list all files in a directory (Node 18 compatible) */

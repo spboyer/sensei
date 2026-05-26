@@ -390,6 +390,22 @@ describe('checkAllowedFields', () => {
     const result = checkAllowedFields(fields);
     expect(result.status).toBe('ok');
   });
+
+  it('allows canvas field (Copilot CLI runtime extension)', () => {
+    const fields = { name: 'x', description: 'y', canvas: true };
+    const result = checkAllowedFields(fields);
+    expect(result.status).toBe('ok');
+  });
+
+  it('allows canvas field with object form', () => {
+    const fields = {
+      name: 'x',
+      description: 'y',
+      canvas: { entry: './.canvas/extension.mjs', id: 'report' }
+    };
+    const result = checkAllowedFields(fields);
+    expect(result.status).toBe('ok');
+  });
 });
 
 describe('checkNameCompliance', () => {
