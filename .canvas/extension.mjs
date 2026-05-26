@@ -379,12 +379,26 @@ async function main() {
   startWatching();
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const { port } = server.address();
+  const baseUrl = `http://127.0.0.1:${port}/?t=${LOOPBACK_TOKEN}`;
   // The runtime would normally receive this URL via the SDK's open() return
   // value. For standalone runs we log the token-bearing URL so a developer
   // can paste it directly. The token never travels off-loopback.
-  console.log(`[sensei-canvas] listening on http://127.0.0.1:${port}/?t=${LOOPBACK_TOKEN}`);
+  console.log(`[sensei-canvas] listening on ${baseUrl}`);
   if (!process.env.COPILOT_CANVAS_LOOPBACK_TOKEN) {
-    console.log('[sensei-canvas] using ephemeral loopback token (set COPILOT_CANVAS_LOOPBACK_TOKEN to override)');
+    // Loud warning — if the Copilot CLI runtime spawned us with a
+    // different env-var name (or didn't inject a token at all), the host
+    // iframe will be handed a token we don't know about and every data
+    // request will 403. The operator sees an empty canvas with no
+    // obvious cause. This message points at the likely fix.
+    console.warn(
+      '[sensei-canvas] WARNING: COPILOT_CANVAS_LOOPBACK_TOKEN not set; ' +
+        'using an ephemeral token generated at startup.\n' +
+        '[sensei-canvas]   - Standalone / dev: open the URL above directly; it works.\n' +
+        '[sensei-canvas]   - Spawned by Copilot CLI runtime: the host iframe will 403 every\n' +
+        '[sensei-canvas]     data request because the runtime told it a different token.\n' +
+        '[sensei-canvas]     Likely cause: runtime injects under a different env-var name.\n' +
+        '[sensei-canvas]     File an issue against spboyer/sensei if you see this in production.'
+    );
   }
   console.log(`[sensei-canvas] artifacts: ${ARTIFACTS_DIR}`);
 }
