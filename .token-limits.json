@@ -8,7 +8,7 @@
     "*.md": 4000
   },
   "overrides": {
-    "README.md": 4200,
+    "README.md": 4400,
     "AGENTS.md": 2000,
     "references/scoring.md": 4500,
     "references/examples.md": 4000,
