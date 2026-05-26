@@ -17,7 +17,7 @@
  * Stdin form: when `--append` is `-`, the JSON payload is read from stdin.
  */
 
-import { existsSync, mkdirSync, writeFileSync, appendFileSync, renameSync } from 'node:fs';
+import { mkdirSync, writeFileSync, appendFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   resolveArtifactsDir,
@@ -92,11 +92,12 @@ function writeLatestPointer(latestPath: string, runId: string): void {
  * Ensure the run directory exists and seed `manifest.json` on first call.
  *
  * Manifest is intentionally minimal — the report.ts command enriches it
- * on finalize. We use `exists` rather than catching `EEXIST` so concurrent
- * `sensei step` invocations for the same runId don't race on the seed.
+ * on finalize. We always mkdirSync (idempotent) and write manifest.json
+ * with the `wx` (exclusive-create) flag so concurrent `sensei step`
+ * invocations for the same runId don't race: the second writer gets
+ * EEXIST and silently skips — the first writer's startedAt is preserved.
  */
 function ensureRunSeeded(runDir: string, runId: string): void {
-  if (existsSync(runDir)) return;
   mkdirSync(runDir, { recursive: true });
   const manifest = {
     runId,
@@ -104,7 +105,16 @@ function ensureRunSeeded(runDir: string, runId: string): void {
     finishedAt: null as string | null,
     schemaVersion: 1,
   };
-  writeFileSync(join(runDir, 'manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
+  try {
+    writeFileSync(
+      join(runDir, 'manifest.json'),
+      JSON.stringify(manifest, null, 2),
+      { encoding: 'utf8', flag: 'wx' }
+    );
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+    // Already seeded by a concurrent writer — that's fine.
+  }
 }
 
 export async function step(options: StepOptions): Promise<void> {

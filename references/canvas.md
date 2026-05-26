@@ -21,9 +21,10 @@ poll, and reopening the canvas mid-run replays the in-progress state.
 chat agent ──▶ npx @spboyer/sensei step  ──┐
 chat agent ──▶ npx @spboyer/sensei report ─┤
                                             ▼
-                          $COPILOT_HOME/extensions/
-                            skill__github.com_spboyer_sensei__sensei/
-                            artifacts/runs/<ULID>/{steps.ndjson, report.md}
+                          $COPILOT_EXTENSION_ARTIFACTS_DIR/  (set by runtime)
+                            or $COPILOT_HOME/extensions/
+                              skill%3Agithub.com%2Fspboyer%2Fsensei%3Asensei/
+                              artifacts/runs/<run-id>/{steps.ndjson, report.md}
                                             ▲
                           .canvas/extension.mjs (fs.watch + HTTP/SSE)
                                             ▼

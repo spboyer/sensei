@@ -8,6 +8,7 @@ import {
   resolveArtifactsDir,
   resolveRunDir,
   resolveLatestPointerPath,
+  validateRunId,
 } from './artifacts.js';
 
 describe('encodeExtensionId', () => {
@@ -95,11 +96,47 @@ describe('resolveArtifactsDir', () => {
 });
 
 describe('resolveRunDir / resolveLatestPointerPath', () => {
-  it('places runs under <artifactsDir>/runs/<ULID>', () => {
+  it('places runs under <artifactsDir>/runs/<runId>', () => {
     expect(resolveRunDir('/a', '01JX')).toBe(join('/a', 'runs', '01JX'));
   });
 
   it('places latest pointer at <artifactsDir>/runs/latest.txt', () => {
     expect(resolveLatestPointerPath('/a')).toBe(join('/a', 'runs', 'latest.txt'));
+  });
+});
+
+describe('validateRunId', () => {
+  it('accepts a normal ULID-style id', () => {
+    expect(() => validateRunId('01JABCDEFGHJKMNPQRSTUVWXYZ')).not.toThrow();
+  });
+
+  it('accepts alphanumeric ids', () => {
+    expect(() => validateRunId('test-run-001')).not.toThrow();
+    expect(() => validateRunId('01ABC')).not.toThrow();
+  });
+
+  it('rejects an empty string', () => {
+    expect(() => validateRunId('')).toThrow('Invalid runId');
+  });
+
+  it('rejects ids with forward slashes', () => {
+    expect(() => validateRunId('foo/bar')).toThrow('Invalid runId');
+    expect(() => validateRunId('../etc/passwd')).toThrow('Invalid runId');
+  });
+
+  it('rejects ids with backslashes', () => {
+    expect(() => validateRunId('foo\\bar')).toThrow('Invalid runId');
+  });
+
+  it('rejects double-dot traversal', () => {
+    expect(() => validateRunId('..')).toThrow('Invalid runId');
+  });
+
+  it('rejects null bytes', () => {
+    expect(() => validateRunId('foo\0bar')).toThrow('Invalid runId');
+  });
+
+  it('rejects Windows absolute paths', () => {
+    expect(() => validateRunId('C:evil')).toThrow('Invalid runId');
   });
 });

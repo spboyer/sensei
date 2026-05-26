@@ -7,7 +7,7 @@
  * during high-frequency append events.
  */
 
-import { marked } from 'https://cdn.jsdelivr.net/npm/marked@12/lib/marked.esm.js';
+import { marked } from '/vendor/marked.esm.js';
 
 const els = {
   status: document.getElementById('status'),
@@ -42,6 +42,21 @@ function escape(s) {
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
+}
+
+/**
+ * Lightweight sanitizer for marked-rendered HTML.
+ *
+ * The canvas runs on loopback, but report.md content is derived from
+ * agent-supplied JSON (e.g. notes, skill names). Stripping script tags,
+ * event handler attributes, and javascript: URLs prevents accidental or
+ * malicious injection from reaching the canvas iframe.
+ */
+function sanitizeHtml(html) {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/\s+on\w+\s*=/gi, ' data-removed=')
+    .replace(/href\s*=\s*["']?javascript:/gi, 'href="javascript-removed:');
 }
 
 function renderStep(step, idx) {
@@ -80,7 +95,7 @@ async function loadReport(runId) {
     const res = await fetch(withToken('/report'));
     if (!res.ok) return;
     const md = await res.text();
-    els.reportMd.innerHTML = marked.parse(md);
+    els.reportMd.innerHTML = sanitizeHtml(marked.parse(md));
   } catch (err) {
     els.reportMd.textContent = String(err);
   }

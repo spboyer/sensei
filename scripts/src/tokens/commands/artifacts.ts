@@ -78,8 +78,32 @@ export function resolveArtifactsDir(override?: string): string {
   );
 }
 
+/**
+ * Validate a runId to prevent path traversal.
+ *
+ * A runId is an opaque caller-supplied identifier (often a ULID, but the
+ * format is not enforced). We only require that it cannot escape the runs/
+ * directory: no path separators, no `..`, no absolute paths, no null bytes.
+ *
+ * Throws if the runId is invalid.
+ */
+export function validateRunId(runId: string): void {
+  if (
+    !runId ||
+    runId.includes('/') ||
+    runId.includes('\\') ||
+    runId.includes('\0') ||
+    runId === '..' ||
+    runId === '.' ||
+    /^[a-zA-Z]:/.test(runId) // absolute Windows path
+  ) {
+    throw new Error(`Invalid runId: ${JSON.stringify(runId)}`);
+  }
+}
+
 /** Path to a specific run's directory under the artifacts root. */
 export function resolveRunDir(artifactsDir: string, runId: string): string {
+  validateRunId(runId);
   return join(artifactsDir, 'runs', runId);
 }
 

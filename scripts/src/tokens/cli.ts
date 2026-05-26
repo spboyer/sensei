@@ -118,11 +118,11 @@ export function parseArgs(args: string[]): { command: string; paths: string[]; o
     } else if (arg.startsWith('--run-id=')) {
       options.runId = arg.slice(9);
     } else if (arg === '--append') {
-      options.append = readOptionValue(args, ++i, '--append');
+      options.append = readOptionValue(args, ++i, '--append', true);
     } else if (arg.startsWith('--append=')) {
       options.append = arg.slice(9);
     } else if (arg === '--input') {
-      options.input = readOptionValue(args, ++i, '--input');
+      options.input = readOptionValue(args, ++i, '--input', true);
     } else if (arg.startsWith('--input=')) {
       options.input = arg.slice(8);
     } else if (arg === '--finalize') {
@@ -142,13 +142,13 @@ export function parseArgs(args: string[]): { command: string; paths: string[]; o
   return { command, paths, options };
 }
 
-function readOptionValue(args: string[], index: number, optionName: string): string {
+function readOptionValue(args: string[], index: number, optionName: string, allowStdin = false): string {
   const value = args[index];
   if (value === undefined) {
     throw new Error(`Missing value for ${optionName}`);
   }
-  // Allow the literal `-` as a value (used to mean "read from stdin").
-  if (value === '-') return value;
+  // Allow the literal `-` only for stdin-backed options (--append, --input).
+  if (value === '-' && allowStdin) return value;
   if (value.startsWith('-')) {
     throw new Error(`Missing value for ${optionName}`);
   }

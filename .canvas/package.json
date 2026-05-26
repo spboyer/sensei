@@ -8,9 +8,11 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "marked": "^12.0.0"
+  },
   "comments": {
     "sdk-pending": "Once @github/copilot-sdk/extension ships, add it as a dependency and wire createCanvas + joinSession + validateLoopbackToken in extension.mjs. Until then, extension.mjs runs as a standalone HTTP + SSE + watcher process so we can iterate on the iframe and watcher logic independently of the SDK contract.",
-    "marked-via-cdn": "marked is loaded from cdn.jsdelivr.net by app.js to keep the .canvas package zero-deps for now. When we land the SDK shim we can vendor it locally if we want to support offline use."
+    "marked-via-cdn": "marked was previously loaded from cdn.jsdelivr.net. It is now added as a local dependency (see package.json) and served by extension.mjs so the canvas works offline and carries no CDN supply-chain risk."
   }
 }

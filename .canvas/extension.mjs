@@ -312,6 +312,10 @@ const ASSETS = {
   '/index.html': { path: join(__dirname, 'index.html'), type: 'text/html; charset=utf-8' },
   '/app.js': { path: join(__dirname, 'app.js'), type: 'application/javascript' },
   '/styles.css': { path: join(__dirname, 'styles.css'), type: 'text/css' },
+  '/vendor/marked.esm.js': {
+    path: join(__dirname, 'node_modules', 'marked', 'lib', 'marked.esm.js'),
+    type: 'application/javascript',
+  },
 };
 
 async function serveAsset(req, res, asset) {
@@ -391,12 +395,13 @@ async function main() {
   startWatching();
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const { port } = server.address();
-  const baseUrl = `http://127.0.0.1:${port}/?t=${LOOPBACK_TOKEN}`;
-  // The runtime would normally receive this URL via the SDK's open() return
-  // value. For standalone runs we log the token-bearing URL so a developer
-  // can paste it directly. The token never travels off-loopback.
-  console.log(`[sensei-canvas] listening on ${baseUrl}`);
+  const baseUrl = `http://127.0.0.1:${port}/`;
   if (!process.env.COPILOT_CANVAS_LOOPBACK_TOKEN) {
+    // Standalone / dev: log the full token-bearing URL so the developer
+    // can paste it directly into a browser. The token never travels
+    // off-loopback.
+    const standaloneUrl = `${baseUrl}?t=${LOOPBACK_TOKEN}`;
+    console.log(`[sensei-canvas] listening on ${standaloneUrl}`);
     // Loud warning — if the Copilot CLI runtime spawned us with a
     // different env-var name (or didn't inject a token at all), the host
     // iframe will be handed a token we don't know about and every data
@@ -411,6 +416,11 @@ async function main() {
         '[sensei-canvas]     Likely cause: runtime injects under a different env-var name.\n' +
         '[sensei-canvas]     File an issue against spboyer/sensei if you see this in production.'
     );
+  } else {
+    // Runtime-spawned: log only the base URL to avoid leaking the loopback
+    // token into host process logs. The runtime delivers the token to the
+    // iframe through its own channel.
+    console.log(`[sensei-canvas] listening on ${baseUrl}`);
   }
   console.log(`[sensei-canvas] artifacts: ${ARTIFACTS_DIR}`);
 }
