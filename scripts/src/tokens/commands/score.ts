@@ -18,7 +18,7 @@ const MAX_DESCRIPTION_LENGTH = 1024;
 /** Max compatibility field length per agentskills.io spec */
 const MAX_COMPATIBILITY_LENGTH = 500;
 
-/** Allowed frontmatter fields per agentskills.io spec */
+/** Allowed frontmatter fields per agentskills.io spec. */
 const ALLOWED_FIELDS = new Set([
   'name', 'description', 'license', 'allowed-tools', 'metadata', 'compatibility'
 ]);

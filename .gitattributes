@@ -3,3 +3,11 @@
 .ai-team/agents/*/history.md merge=union
 .ai-team/log/** merge=union
 .ai-team/orchestration-log/** merge=union
+
+# Canvas: side-panel UI used by Copilot CLI. Not relevant to git archive
+# tarballs or release downloads — consumers who want the canvas pull the
+# repo directly (e.g. via `npx skills add`). Keeps `npm pack` / GitHub
+# release tarballs lean and prevents the canvas's runtime deps from
+# leaking into CI/Action consumers that only use the `sensei` CLI.
+.canvas/ export-ignore
+references/canvas.md export-ignore

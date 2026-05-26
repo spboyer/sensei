@@ -1,0 +1,148 @@
+:root {
+  --bg: #0d1117;
+  --fg: #c9d1d9;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --border: #30363d;
+  --running: #d29922;
+  --complete: #3fb950;
+  --idle: #8b949e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+h1 {
+  font-size: 1rem;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.status {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.status--idle {
+  color: var(--idle);
+}
+
+.status--running {
+  color: var(--running);
+  border-color: var(--running);
+}
+
+.status--complete {
+  color: var(--complete);
+  border-color: var(--complete);
+}
+
+main {
+  padding: 1rem;
+  overflow: auto;
+  height: calc(100vh - 50px);
+}
+
+.view {
+  display: block;
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+  margin-top: 4rem;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  background: rgba(110, 118, 129, 0.1);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+.run-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+#steps-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 90px 110px 1fr;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+.step-time {
+  color: var(--muted);
+}
+
+.step-tag {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+#report-md h1,
+#report-md h2,
+#report-md h3 {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25rem;
+}
+
+#report-md table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+#report-md th,
+#report-md td {
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+}
+
+#report-md th {
+  background: rgba(110, 118, 129, 0.1);
+}
+
+#report-md a {
+  color: var(--accent);
+}

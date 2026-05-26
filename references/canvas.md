@@ -1,0 +1,232 @@
+# Canvas
+
+Sensei ships an optional Copilot CLI canvas at `.canvas/`. When trusted,
+the Copilot CLI runtime opens it in the side panel during a sensei run so
+the user sees live Ralph-loop progress and a browsable report afterward.
+
+## What the user sees
+
+| Phase | View |
+|---|---|
+| Idle | Empty state with instructions to start a run. |
+| Running | Per-step list (timestamp, step tag, skill, message, score) that streams as the agent works. |
+| Complete | Rendered markdown report (per-skill before/after scores, decisions, notes). |
+
+The phase auto-switches based on what's on disk — the iframe never has to
+poll, and reopening the canvas mid-run replays the in-progress state.
+
+## How it works
+
+```
+chat agent ──▶ npx @spboyer/sensei step  ──┐
+chat agent ──▶ npx @spboyer/sensei report ─┤
+                                            ▼
+                          $COPILOT_EXTENSION_ARTIFACTS_DIR/  (set by runtime)
+                            or $COPILOT_HOME/extensions/
+                              skill%3Agithub.com%2Fspboyer%2Fsensei%3Asensei/
+                              artifacts/runs/<run-id>/{steps.ndjson, report.md}
+                                            ▲
+                          .canvas/extension.mjs (fs.watch + HTTP/SSE)
+                                            ▼
+                                    iframe (index.html + app.js)
+```
+
+There is **no RPC contract** between the agent and the canvas. The agent
+writes NDJSON via the CLI; the canvas provider tails the file and
+broadcasts via Server-Sent Events. This means:
+
+- The agent never branches on "is the canvas open and trusted?" — it just
+  runs the CLI. If no canvas is watching, the writes are still durable on
+  disk (useful for replay later) and chat output is unchanged.
+- Any future writer (CI, a headless script, GEPA) can feed the canvas
+  without learning a new API.
+
+## The CLI surface
+
+### `sensei step --run-id <ulid> --append <json|->`
+
+Append one Ralph-step record to the active run's `steps.ndjson` and
+update `runs/latest.txt`. On the first call for a run, the run directory
+and `manifest.json` are seeded.
+
+Use `-` to read JSON from stdin (useful for large records):
+
+```bash
+echo '{"step":"SCORE","skill":"pdf","score":"Medium-High","message":"trigger phrases added"}' \
+  | npx @spboyer/sensei step --run-id "$RUN_ID" --append -
+```
+
+The `t` field is auto-stamped with the current ISO timestamp if absent.
+The payload must be a JSON object; arrays and primitives are rejected.
+
+### `sensei report --finalize --run-id <ulid> --input <path|->`
+
+Render the final markdown report and mark the run complete. The input is
+a JSON `RunSummary` (see `scripts/src/tokens/commands/report.ts` for the
+type). On finalize, `manifest.json` is updated with `finishedAt` and the
+input summary, `report.md` is written, and `runs/latest.txt` points at
+this run.
+
+## Artifact layout
+
+```
+$COPILOT_HOME/extensions/<encoded-id>/artifacts/
+└── runs/
+    ├── 01ABCDEF.../
+    │   ├── manifest.json   # { runId, startedAt, finishedAt, schemaVersion, summary }
+    │   ├── steps.ndjson    # append-only, one JSON object per line
+    │   └── report.md       # written at finalize
+    └── latest.txt          # text file containing the most recent ULID
+```
+
+`<encoded-id>` is the canonical extension id
+(`skill:github.com/spboyer/sensei:sensei`) passed through
+`encodeURIComponent`. Result for sensei:
+`skill%3Agithub.com%2Fspboyer%2Fsensei%3Asensei`. Percent-encoding is
+RFC-defined, fully reversible (`decodeURIComponent`), and produces only
+characters that are safe on Windows NTFS, macOS APFS, and Linux ext4
+(`%` is legal in path components on all three). This matches the
+Copilot CLI runtime's encoding so dev/test paths line up with what the
+runtime would compute.
+
+The CLI helper lives in `scripts/src/tokens/commands/artifacts.ts` and
+is pinned by a unit test; an identical copy lives in
+`.canvas/extension.mjs`. In production both **read
+`COPILOT_EXTENSION_ARTIFACTS_DIR` from the environment** rather than
+computing the path themselves — the runtime sets it when it spawns the
+provider, so writer and reader always agree even if the encoding scheme
+evolves later.
+
+`latest.txt` is a plain file, not a symlink, because Windows symlinks
+require elevated privileges by default. Other canvas authors should
+follow the same convention if they need a "current run" pointer.
+
+## Step payload schema
+
+`sensei step --append <json>` accepts any JSON object; the iframe and
+any future watcher consume fields opportunistically. Recommended shape
+(this is a copy-friendly reference contract for other skills that want
+to build a canvas the same way):
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/spboyer/sensei/refs/heads/main/references/canvas.md#step-schema",
+  "title": "SenseiCanvasStep",
+  "description": "One Ralph-loop step record. Appended as a single NDJSON line to runs/<id>/steps.ndjson.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "t": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp. Auto-stamped by `sensei step` if absent."
+    },
+    "step": {
+      "type": "string",
+      "description": "Ralph-loop step tag, e.g. READ, SCORE, SCAFFOLD, IMPROVE, VERIFY, TOKENS, SUMMARY.",
+      "examples": ["READ", "SCORE", "IMPROVE", "VERIFY"]
+    },
+    "skill": {
+      "type": "string",
+      "description": "Name of the skill being processed."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "warn", "error"],
+      "description": "Outcome of the step. Optional; default is success."
+    },
+    "score": {
+      "oneOf": [
+        { "type": "string", "enum": ["Low", "Medium", "Medium-High", "High"] },
+        { "type": "number" }
+      ],
+      "description": "Compliance score after this step. Either the canonical adherence label or a numeric score."
+    },
+    "tokens": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Token count for the skill after this step."
+    },
+    "delta": {
+      "type": "integer",
+      "description": "Score change relative to the previous step for this skill (positive = improvement)."
+    },
+    "message": {
+      "type": "string",
+      "description": "Short human-readable summary of what the step did. Rendered as the step row's right column."
+    }
+  }
+}
+```
+
+All properties are optional. `additionalProperties: true` is intentional
+so future fields don't break older watchers. The iframe renders `t`,
+`step`/`phase`, `skill`, `score`, and `message`/`lastAction` if present.
+
+This schema is informational; `sensei step` does **not** validate
+incoming JSON against it. The CLI's only invariant is that the payload
+parses as a JSON object (arrays and primitives are rejected). Strict
+validation belongs in the agent's prompt or in a dedicated lint pass,
+not in the hot path.
+
+
+## Overriding the artifact path
+
+The provider and the CLI both honor `COPILOT_EXTENSION_ARTIFACTS_DIR`. The
+Copilot CLI runtime sets this when it spawns the provider so the writer
+and reader always agree on the path. The CLI also accepts
+`--artifacts-dir <path>` for tests and local development.
+
+## Loopback-token validation
+
+The canvas's HTTP server gates every **data** endpoint (`/state`,
+`/events`, `/report`) on a per-process loopback token; only the iframe,
+which receives the token in its bootstrap URL, can read run state.
+Static assets (`/`, `/index.html`, `/app.js`, `/styles.css`) are
+unauthenticated so the iframe can boot from a plain `<script>` tag.
+
+Token resolution:
+
+1. `COPILOT_CANVAS_LOOPBACK_TOKEN` env var, set by the Copilot CLI
+   runtime when it spawns the provider.
+2. If unset (standalone dev), a 32-byte hex token is generated at
+   startup and printed to stdout as part of the listening URL, so a
+   developer can paste the full URL into a browser.
+
+The iframe forwards the token via the `?t=` query string on every
+`fetch` and on the `EventSource('/events?t=...')` URL. The provider
+also accepts an `X-Copilot-Canvas-Token` header for command-line use.
+Token comparison is constant-time.
+
+`.canvas/extension.mjs` currently ships a local `validateLoopbackToken`
+helper with this signature (pinned to match the SDK export per runtime
+spec §11):
+
+```ts
+validateLoopbackToken(req: IncomingMessage): boolean
+```
+
+Runtime adopted the per-process-token design — every provider fork
+(including reload restarts) gets a fresh token via the env var, so the
+helper takes only the request. The token MUST NOT be cached across
+reload boundaries; this is naturally satisfied because reloads kill and
+re-spawn the provider (fresh module = fresh env-var read).
+
+Once `@github/copilot-sdk/extension` ships the helper, the local stub
+is replaced by the SDK export. Call sites stay the same.
+
+## SDK integration (pending)
+
+`.canvas/extension.mjs` runs as a standalone HTTP + SSE + watcher process
+today so the iframe and watcher can be iterated on independently of the
+`@github/copilot-sdk/extension` package. When the SDK ships, three things
+change at the bottom of the file:
+
+1. Wrap the registration in `joinSession({ canvases: [createCanvas(...)] })`.
+2. Return `{ url, title }` (with a per-instance loopback token) from the
+   canvas's `open()` handler instead of logging the URL.
+3. Validate the loopback token on every request via
+   `validateLoopbackToken(req, instanceId)`.
+
+The watcher, SSE, and file format do not change.

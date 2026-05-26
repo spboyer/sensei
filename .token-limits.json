@@ -8,10 +8,11 @@
     "*.md": 4000
   },
   "overrides": {
-    "README.md": 4200,
+    "README.md": 4400,
     "AGENTS.md": 2000,
     "references/scoring.md": 4500,
     "references/examples.md": 4000,
-    "references/loop.md": 2500
+    "references/loop.md": 2500,
+    "references/canvas.md": 2500
   }
 }

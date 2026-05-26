@@ -13,7 +13,7 @@
 import { existsSync, realpathSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { count, check, suggest, compare, scoreSkill } from './commands/index.js';
+import { count, check, suggest, compare, scoreSkill, step, report } from './commands/index.js';
 import { getErrorMessage } from './commands/types.js';
 import { resolvePathFromRoot, resolveRootDir } from './commands/utils.js';
 
@@ -31,6 +31,13 @@ Commands:
   suggest [paths...]   Get optimization suggestions
   compare [refs...]    Compare tokens between git refs
   score [path]         Score a skill directory against SkillsBench criteria
+  step --run-id <id> --append <json|->
+                       Append a Ralph-loop step to the active run's
+                       steps.ndjson; updates runs/latest.txt. Feeds the
+                       sensei canvas.
+  report --finalize --run-id <id> --input <path|->
+                       Write the final report.md for a run from a JSON
+                       summary; updates manifest.json + latest.txt.
 
 Options:
   --format=<type>      Output format: json | table (default: table)
@@ -106,6 +113,24 @@ export function parseArgs(args: string[]): { command: string; paths: string[]; o
       options.config = readOptionValue(args, ++i, '--config');
     } else if (arg.startsWith('--config=')) {
       options.config = arg.slice(9);
+    } else if (arg === '--run-id') {
+      options.runId = readOptionValue(args, ++i, '--run-id');
+    } else if (arg.startsWith('--run-id=')) {
+      options.runId = arg.slice(9);
+    } else if (arg === '--append') {
+      options.append = readOptionValue(args, ++i, '--append', true);
+    } else if (arg.startsWith('--append=')) {
+      options.append = arg.slice(9);
+    } else if (arg === '--input') {
+      options.input = readOptionValue(args, ++i, '--input', true);
+    } else if (arg.startsWith('--input=')) {
+      options.input = arg.slice(8);
+    } else if (arg === '--finalize') {
+      options.finalize = true;
+    } else if (arg === '--artifacts-dir') {
+      options.artifactsDir = readOptionValue(args, ++i, '--artifacts-dir');
+    } else if (arg.startsWith('--artifacts-dir=')) {
+      options.artifactsDir = arg.slice(16);
     } else if (!arg.startsWith('-')) {
       paths.push(arg);
     } else {
@@ -117,15 +142,20 @@ export function parseArgs(args: string[]): { command: string; paths: string[]; o
   return { command, paths, options };
 }
 
-function readOptionValue(args: string[], index: number, optionName: string): string {
+function readOptionValue(args: string[], index: number, optionName: string, allowStdin = false): string {
   const value = args[index];
-  if (!value || value.startsWith('-')) {
+  if (value === undefined) {
+    throw new Error(`Missing value for ${optionName}`);
+  }
+  // Allow the literal `-` only for stdin-backed options (--append, --input).
+  if (value === '-' && allowStdin) return value;
+  if (value.startsWith('-')) {
     throw new Error(`Missing value for ${optionName}`);
   }
   return value;
 }
 
-export function main(args = process.argv.slice(2)): void {
+export async function main(args = process.argv.slice(2)): Promise<void> {
   const { command, paths, options } = parseArgs(args);
 
   if (options.help || command === 'help') {
@@ -149,6 +179,30 @@ export function main(args = process.argv.slice(2)): void {
     case 'compare':
       compare(paths, options);
       break;
+
+    case 'step': {
+      await step({
+        runId: typeof options.runId === 'string' ? options.runId : undefined,
+        append: typeof options.append === 'string' ? options.append : undefined,
+        artifactsDir:
+          typeof options.artifactsDir === 'string' ? options.artifactsDir : undefined,
+      });
+      break;
+    }
+
+    case 'report': {
+      if (!options.finalize) {
+        console.error('Error: `sensei report` requires --finalize in v1.');
+        process.exit(1);
+      }
+      await report({
+        runId: typeof options.runId === 'string' ? options.runId : undefined,
+        input: typeof options.input === 'string' ? options.input : undefined,
+        artifactsDir:
+          typeof options.artifactsDir === 'string' ? options.artifactsDir : undefined,
+      });
+      break;
+    }
 
     case 'score': {
       const rootDir = resolveRootDir(typeof options.root === 'string' ? options.root : undefined);
@@ -209,10 +263,8 @@ function isEntrypoint(): boolean {
 }
 
 if (isEntrypoint()) {
-  try {
-    main();
-  } catch (error) {
+  main().catch((error) => {
     console.error(`Error: ${getErrorMessage(error)}`);
     process.exit(1);
-  }
+  });
 }
