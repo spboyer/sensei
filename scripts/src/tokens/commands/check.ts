@@ -3,17 +3,18 @@
  */
 
 import { readFileSync, existsSync, statSync } from 'node:fs';
-import { relative, resolve } from 'node:path';
-import { loadConfig, getLimitForFile, findMarkdownFiles } from './utils.js';
+import { relative } from 'node:path';
+import { loadConfig, getLimitForFile, findMarkdownFiles, resolvePathFromRoot, resolveRootDir } from './utils.js';
 import {
   estimateTokens,
   normalizePath,
   getErrorMessage,
   type ValidationResult,
-  type ValidationReport
+  type ValidationReport,
+  type RootConfigOptions
 } from './types.js';
 
-interface CheckOptions {
+interface CheckOptions extends RootConfigOptions {
   readonly format?: 'json' | 'table';
   readonly strict?: boolean;
   readonly quiet?: boolean;
@@ -110,8 +111,8 @@ function outputJson(results: ValidationResult[]): void {
  */
 export function check(paths: string[], options: CheckOptions = {}): void {
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  const rootDir = process.cwd();
-  const config = loadConfig(rootDir);
+  const rootDir = resolveRootDir(opts.root);
+  const config = loadConfig(rootDir, opts.config);
   
   let filesToProcess: string[] = [];
   
@@ -119,7 +120,7 @@ export function check(paths: string[], options: CheckOptions = {}): void {
     filesToProcess = findMarkdownFiles(rootDir);
   } else {
     for (const p of paths) {
-      const fullPath = resolve(rootDir, p);
+      const fullPath = resolvePathFromRoot(rootDir, p);
       
       if (!existsSync(fullPath)) {
         console.error(`⚠️  Path not found: ${p}`);

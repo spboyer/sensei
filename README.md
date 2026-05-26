@@ -2,7 +2,7 @@
 
 > "A true master teaches not by telling, but by refining." - The Skill Sensei
 
-Sensei automates the improvement of [Agent Skills](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) frontmatter compliance using the [Ralph loop pattern](https://github.com/soderlund/ralph) - iteratively improving skills until they reach Medium-High compliance with all tests passing.
+Sensei automates the improvement of [Agent Skills](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) frontmatter compliance using the [Ralph loop pattern](references/loop.md) - iteratively improving skills until they reach Medium-High compliance with all tests passing.
 
 ## Table of Contents
 
@@ -72,29 +72,60 @@ Run sensei on all Low-adherence skills
 Run sensei on all skills
 ```
 
-### Using Scripts Directly
+#### GEPA Mode (Deep Optimization)
+```
+Run sensei on my-skill-name --gepa
+Run sensei score my-skill-name
+```
+
+Score-only mode runs without LLM calls.
+
+### External Integration Modes
+
+#### CLI / npx
 
 ```bash
-# Count tokens in all markdown files
-npm run tokens -- count
+npx @spboyer/sensei score .
+npx @spboyer/sensei check --root . --config .token-limits.json --strict
+```
 
-# Count tokens in specific files
-npm run tokens -- count SKILL.md references/*.md
+`--root` resolves paths; `--config` selects limits. Global install: `npm install --global @spboyer/sensei`.
 
-# Check files against token limits
-npm run tokens -- check
+#### GitHub Action
 
-# Check with strict mode (exits 1 if limits exceeded)
-npm run tokens -- check --strict
+```yaml
+steps:
+  - uses: actions/checkout@v4
+  - uses: spboyer/sensei@v1.5.0
+    with:
+      command: check
+      root: .
+      path: .
+      config: .token-limits.json
+      strict: 'true'
+```
 
-# Get optimization suggestions
-npm run tokens -- suggest
+#### Library API
 
-# Score a skill directory (advisory checks)
-npm run tokens -- score .
+```ts
+import { scoreSkillContent } from '@spboyer/sensei/score';
+import { parseFrontmatter } from '@spboyer/sensei/parse';
+import { checkNameCompliance } from '@spboyer/sensei/checks';
 
-# Compare with previous commit
-npm run tokens -- compare HEAD~1
+const result = scoreSkillContent(renderedSkillMarkdown, { path: 'skills/my-skill', moduleCount: 2 });
+const frontmatter = parseFrontmatter(renderedSkillMarkdown);
+checkNameCompliance(frontmatter?.name ?? '');
+```
+
+`path` is metadata; `moduleCount` defaults to `0`.
+
+---
+
+### GEPA Commands
+
+```bash
+python scripts/src/gepa/auto_evaluator.py score --skill my-skill
+python scripts/src/gepa/auto_evaluator.py optimize --skill my-skill
 ```
 
 ### Flags
@@ -102,6 +133,7 @@ npm run tokens -- compare HEAD~1
 | Flag | Description |
 |------|-------------|
 | `--fast` | Skip tests for faster iteration |
+| `--gepa` | Use GEPA evolutionary optimization instead of template-based improvements |
 | `--skip-integration` | Skip integration tests (unit + trigger tests only) |
 
 > ⚠️ **Note:** Using `--fast` speeds up the loop significantly but may miss issues. Consider running full tests before final commit.
@@ -126,18 +158,15 @@ npm run tokens -- compare HEAD~1
 
 3. **Test Framework** - Jest, pytest, or similar for trigger tests
 
+4. **Python 3.10+** and **GEPA** - For evolutionary optimization (`pip install gepa`)
+
 ### Installation
 
 #### Option 1: Install as Copilot CLI Skill (Recommended)
 
 ```bash
-# Create the skills folder
 mkdir -p "$HOME/.copilot/skills"
-
-# Clone to your skills directory
 git clone https://github.com/spboyer/sensei.git "$HOME/.copilot/skills/sensei"
-
-# Install token CLI dependencies
 cd ~/.copilot/skills/sensei/scripts && npm install
 ```
 
@@ -151,22 +180,26 @@ Run sensei on my-skill-name
 For project-specific installation:
 
 ```bash
-# From your project root
 mkdir -p .github/skills
 git clone https://github.com/spboyer/sensei.git .github/skills/sensei
-
-# Install dependencies
 cd .github/skills/sensei/scripts && npm install
+```
+
+#### Option 3: Install the CLI from npm
+
+For CLI/library use:
+
+```bash
+npm install --global @spboyer/sensei
+sensei check .
+npx @spboyer/sensei check .
 ```
 
 #### Verify Installation
 
 ```bash
-# Test the token CLI
-cd ~/.copilot/skills/sensei  # or your install path
-npm run tokens -- check
-
-# Should output token counts for all markdown files
+cd ~/.copilot/skills/sensei && npm run tokens -- check
+npx @spboyer/sensei check .
 ```
 
 ---
@@ -212,6 +245,7 @@ npm run tokens -- check
 │     • Add "DO NOT USE FOR:" with anti-triggers          │
 │     • Add compatibility if applicable                   │
 │     • Keep description under 1024 chars                 │
+│     • OR with --gepa: GEPA evolutionary optimization    │
 └─────────────────────┬───────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────┐
@@ -293,9 +327,9 @@ Run sensei on my-skill with skills in src/ai/skills/ and tests in spec/
 
 | Level | Description | Criteria |
 |-------|-------------|----------|
-| **Low** | Basic description | No explicit triggers, no anti-triggers, often < 150 chars |
-| **Medium** | Has trigger keywords | Description > 150 chars, implicit or explicit trigger phrases |
-| **Medium-High** | Has triggers + anti-triggers | "USE FOR:" present AND "DO NOT USE FOR:" present |
+| **Low** | Basic description | No explicit triggers, often < 150 chars |
+| **Medium** | Has trigger keywords | Description > 150 chars, implicit or explicit trigger phrases, >60 words |
+| **Medium-High** | Has WHEN: or USE FOR: | "WHEN:" (preferred) or "USE FOR:" with ≤60 words |
 | **High** | Full compliance | Medium-High + routing clarity (INVOKES/FOR SINGLE OPERATIONS) |
 
 ### Rule-Based Checks
@@ -310,12 +344,12 @@ Run sensei on my-skill with skills in src/ai/skills/ and tests in spec/
    - Maximum: 1024 characters (spec limit)
 
 3. **Trigger phrases**
-   - Contains "USE FOR:", "TRIGGERS:", or "Use this skill when"
+   - Contains "WHEN:", "USE FOR:", or "Use this skill when"
    - Lists specific keywords and phrases
 
-4. **Anti-triggers**
-   - Contains "DO NOT USE FOR:" or "NOT FOR:"
-   - Lists scenarios that should use other skills
+4. **Anti-triggers** (optional, context-dependent)
+   - "DO NOT USE FOR:" — useful for small skill sets (1-5 skills)
+   - ⚠️ Risky in multi-skill environments (10+ skills) — causes keyword contamination
 
 5. **Routing clarity** (for High score)
    - Skill type prefix: `**WORKFLOW SKILL**`, `**UTILITY SKILL**`, or `**ANALYSIS SKILL**`
@@ -326,8 +360,8 @@ Run sensei on my-skill with skills in src/ai/skills/ and tests in spec/
 
 To reach Medium-High, a skill must have:
 - ✅ Description > 150 characters
-- ✅ Explicit trigger phrases ("USE FOR:" or equivalent)
-- ✅ Anti-triggers ("DO NOT USE FOR:" or clear scope limitation)
+- ✅ Explicit trigger phrases ("WHEN:" preferred, or "USE FOR:")
+- ✅ Description ≤ 60 words
 - ✅ SKILL.md < 500 tokens (soft limit, monitored)
 
 ### Target: High (with routing)
@@ -340,7 +374,7 @@ To reach High, add routing clarity:
 
 ### MCP Integration Checks
 
-When a skill's description contains `INVOKES:`, Sensei performs additional checks based on the [Skills, Tools & MCP Development Guide](https://github.com/spboyer/azure-mcp-v-skills/blob/main/skills-mcp-development-guide.md):
+When a skill's description contains `INVOKES:`, Sensei performs additional checks based on the [MCP Integration Patterns](references/mcp-integration.md):
 
 | Check | Purpose |
 |-------|---------|
@@ -389,20 +423,14 @@ description: 'Process PDF files for various tasks'
 ```yaml
 ---
 name: pdf-processor
-description: |
-  Process PDF files including text extraction, rotation, and merging.
-  USE FOR: "extract PDF text", "rotate PDF", "merge PDFs", "split PDF",
-  "PDF to text", "combine PDF files".
-  DO NOT USE FOR: creating new PDFs (use document-creator), extracting
-  images (use image-extractor), or OCR on scanned documents (use ocr-processor).
+description: "Extract, rotate, merge, and split PDF files. WHEN: \"extract PDF text\", \"rotate PDF pages\", \"merge PDFs\", \"split PDF\", \"PDF to text\"."
 ---
 ```
 
 **Improvements:**
-- ~350 characters (informative but under limit)
+- ~160 characters (informative but under limit)
 - Clear description of purpose
-- Explicit trigger phrases
-- Anti-triggers prevent collision with related skills
+- Explicit WHEN: trigger phrases with distinctive quoted strings
 
 ### After: High Adherence (with routing)
 
@@ -491,7 +519,7 @@ git reset --soft HEAD~1  # Undo last commit
 
 ### Waza Trigger Tests
 
-Sensei supports [Waza](https://github.com/spboyer/waza) for trigger accuracy testing. See `references/test-templates/waza.md`.
+Sensei supports Waza-style trigger accuracy testing. See [the Waza test template](references/test-templates/waza.md).
 
 ### Reporting Issues
 
@@ -501,10 +529,11 @@ Open an issue with skill name, starting state, and `git log --oneline -10`.
 
 ## References
 
-- [Ralph Loop Pattern](https://github.com/soderlund/ralph) - Original Ralph loop implementation
+- [Ralph Loop Pattern](references/loop.md) - Sensei's iterative improvement workflow
 - [Anthropic Skills Documentation](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) - Writing guidance
-- [Skills, Tools & MCP Development Guide](https://github.com/spboyer/azure-mcp-v-skills/blob/main/skills-mcp-development-guide.md) - MCP integration best practices
-- [Waza Testing Framework](https://github.com/spboyer/waza) - Skill trigger accuracy testing
+- [MCP Integration Patterns](references/mcp-integration.md) - MCP integration best practices
+- [Waza Trigger Test Template](references/test-templates/waza.md) - Skill trigger accuracy testing
+- [GEPA](https://gepa-ai.github.io/gepa/) - Evolutionary optimization for skills
 - [skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator) - For creating new skills from scratch
 
 ---

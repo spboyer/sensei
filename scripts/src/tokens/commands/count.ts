@@ -3,16 +3,17 @@
  */
 
 import { readFileSync, existsSync, statSync } from 'node:fs';
-import { relative, resolve } from 'node:path';
-import { findMarkdownFiles } from './utils.js';
+import { relative } from 'node:path';
+import { findMarkdownFiles, resolvePathFromRoot, resolveRootDir } from './utils.js';
 import {
   estimateTokens,
   normalizePath,
   getErrorMessage,
-  type TokenMetadata
+  type TokenMetadata,
+  type RootConfigOptions
 } from './types.js';
 
-interface CountOptions {
+interface CountOptions extends RootConfigOptions {
   readonly format?: 'json' | 'table';
   readonly sort?: 'tokens' | 'name' | 'path';
   readonly minTokens?: number;
@@ -133,7 +134,7 @@ function outputJson(results: FileResult[], rootDir: string): void {
  */
 export function count(paths: string[], options: CountOptions = {}): void {
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  const rootDir = process.cwd();
+  const rootDir = resolveRootDir(opts.root);
   
   let filesToProcess: string[] = [];
   
@@ -143,7 +144,7 @@ export function count(paths: string[], options: CountOptions = {}): void {
   } else {
     // Process specified paths
     for (const p of paths) {
-      const fullPath = resolve(rootDir, p);
+      const fullPath = resolvePathFromRoot(rootDir, p);
       
       if (!existsSync(fullPath)) {
         console.error(`⚠️  Path not found: ${p}`);

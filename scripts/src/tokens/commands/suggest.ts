@@ -3,8 +3,8 @@
  */
 
 import { readFileSync, existsSync, statSync } from 'node:fs';
-import { relative, resolve } from 'node:path';
-import { loadConfig, getLimitForFile, findMarkdownFiles } from './utils.js';
+import { relative } from 'node:path';
+import { loadConfig, getLimitForFile, findMarkdownFiles, resolvePathFromRoot, resolveRootDir } from './utils.js';
 import {
   estimateTokens,
   normalizePath,
@@ -16,10 +16,11 @@ import {
   TOKENS_PER_CODE_LINE,
   TOKENS_PER_TABLE_ROW,
   type Suggestion,
-  type FileAnalysis
+  type FileAnalysis,
+  type RootConfigOptions
 } from './types.js';
 
-interface SuggestOptions {
+interface SuggestOptions extends RootConfigOptions {
   readonly format?: 'json' | 'text';
   readonly minSavings?: number;
   readonly verbose?: boolean;
@@ -221,8 +222,8 @@ function outputJson(analyses: FileAnalysis[]): void {
  */
 export function suggest(paths: string[], options: SuggestOptions = {}): void {
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  const rootDir = process.cwd();
-  const config = loadConfig(rootDir);
+  const rootDir = resolveRootDir(opts.root);
+  const config = loadConfig(rootDir, opts.config);
   
   let filesToProcess: string[] = [];
   
@@ -230,7 +231,7 @@ export function suggest(paths: string[], options: SuggestOptions = {}): void {
     filesToProcess = findMarkdownFiles(rootDir);
   } else {
     for (const p of paths) {
-      const fullPath = resolve(rootDir, p);
+      const fullPath = resolvePathFromRoot(rootDir, p);
       
       if (!existsSync(fullPath)) {
         console.error(`⚠️  Path not found: ${p}`);

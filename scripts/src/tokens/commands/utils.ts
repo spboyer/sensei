@@ -2,8 +2,8 @@
  * Shared utility functions for token commands
  */
 
-import { readFileSync, readdirSync, existsSync, Dirent } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, readdirSync, existsSync, realpathSync, statSync, Dirent } from 'node:fs';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import type { TokenLimitsConfig } from './types.js';
 import {
   DEFAULT_LIMITS,
@@ -17,9 +17,11 @@ import {
 /**
  * Loads token limits configuration from .token-limits.json or returns defaults.
  */
-export function loadConfig(rootDir: string): TokenLimitsConfig {
-  const configPath = join(rootDir, '.token-limits.json');
-  
+export function loadConfig(rootDir: string, explicitConfigPath?: string): TokenLimitsConfig {
+  const configPath = explicitConfigPath
+    ? resolveConfigPath(rootDir, explicitConfigPath)
+    : join(rootDir, '.token-limits.json');
+
   if (existsSync(configPath)) {
     try {
       const content = readFileSync(configPath, 'utf-8');
@@ -31,14 +33,58 @@ export function loadConfig(rootDir: string): TokenLimitsConfig {
       
       return parsed as TokenLimitsConfig;
     } catch (error) {
+      if (explicitConfigPath) {
+        throw new Error(`Invalid token limits config at ${configPath}: ${getErrorMessage(error)}`);
+      }
       console.error(`⚠️  Warning: Invalid .token-limits.json (${getErrorMessage(error)}), using defaults`);
       return DEFAULT_LIMITS;
     }
+  }
+
+  if (explicitConfigPath) {
+    throw new Error(`Token limits config not found: ${configPath}`);
   }
   
   return DEFAULT_LIMITS;
 }
 
+function resolveConfigPath(rootDir: string, configPath: string): string {
+  return isAbsolute(configPath) ? configPath : resolve(rootDir, configPath);
+}
+
+export function resolveRootDir(root?: string): string {
+  const rootDir = resolve(process.cwd(), root ?? '.');
+  if (!existsSync(rootDir)) {
+    throw new Error(`Root path not found: ${rootDir}`);
+  }
+  if (!statSync(rootDir).isDirectory()) {
+    throw new Error(`Root path is not a directory: ${rootDir}`);
+  }
+  return rootDir;
+}
+
+function isOutsideRoot(rootDir: string, fullPath: string): boolean {
+  const relativePath = relative(rootDir, fullPath);
+  return relativePath === '..' || relativePath.startsWith(`..${sep}`) || isAbsolute(relativePath);
+}
+
+export function resolvePathFromRoot(rootDir: string, inputPath: string): string {
+  const fullPath = isAbsolute(inputPath) ? resolve(inputPath) : resolve(rootDir, inputPath);
+
+  if (isOutsideRoot(rootDir, fullPath)) {
+    throw new Error(`Path is outside the configured root: ${inputPath}`);
+  }
+
+  if (existsSync(fullPath)) {
+    const realRootDir = realpathSync.native(rootDir);
+    const realFullPath = realpathSync.native(fullPath);
+    if (isOutsideRoot(realRootDir, realFullPath)) {
+      throw new Error(`Path is outside the configured root: ${inputPath}`);
+    }
+  }
+
+  return fullPath;
+}
 /**
  * Calculates specificity score for a glob pattern.
  */

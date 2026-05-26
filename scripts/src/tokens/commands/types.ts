@@ -99,6 +99,11 @@ export interface FileAnalysis {
   readonly potentialSavings: number;
 }
 
+export interface RootConfigOptions {
+  readonly root?: string;
+  readonly config?: string;
+}
+
 /** Characters per token approximation */
 const CHARS_PER_TOKEN = 4;
 

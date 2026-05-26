@@ -1,12 +1,51 @@
 {
-  "name": "sensei",
-  "version": "1.3.0",
+  "name": "@spboyer/sensei",
+  "version": "1.5.1",
   "description": "AI-powered frontmatter compliance skill for GitHub Copilot",
-  "private": true,
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spboyer/sensei.git"
+  },
   "scripts": {
+    "build": "npm --prefix scripts run build",
     "tokens": "node --import ./scripts/node_modules/tsx/dist/loader.mjs scripts/src/tokens/cli.ts",
-    "test": "cd scripts && npm test"
+    "test": "cd scripts && npm test",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "bin": {
+    "sensei": "scripts/dist/tokens/cli.js"
+  },
+  "main": "scripts/dist/score.js",
+  "types": "scripts/dist/score.d.ts",
+  "exports": {
+    ".": {
+      "types": "./scripts/dist/score.d.ts",
+      "import": "./scripts/dist/score.js"
+    },
+    "./score": {
+      "types": "./scripts/dist/score.d.ts",
+      "import": "./scripts/dist/score.js"
+    },
+    "./parse": {
+      "types": "./scripts/dist/parse.d.ts",
+      "import": "./scripts/dist/parse.js"
+    },
+    "./checks": {
+      "types": "./scripts/dist/checks.d.ts",
+      "import": "./scripts/dist/checks.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "scripts/dist/**",
+    "action.yml",
+    "README.md",
+    "LICENSE.txt"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "copilot",

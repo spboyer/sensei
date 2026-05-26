@@ -31,16 +31,20 @@ sensei/
     ├── package.json      # Dependencies (tsx, vitest, typescript)
     ├── tsconfig.json
     ├── vitest.config.ts
-    └── src/tokens/
-        ├── cli.ts        # CLI entry point
-        └── commands/
-            ├── types.ts  # Interfaces, constants, utilities
-            ├── utils.ts  # Config loading, file discovery
-            ├── count.ts  # Token counting
-            ├── check.ts  # Limit validation
-            ├── suggest.ts # Optimization suggestions
-            ├── compare.ts # Git-based comparison
-            └── score.ts  # Advisory scoring
+    └── src/
+        ├── tokens/
+        │   ├── cli.ts        # CLI entry point
+        │   └── commands/
+        │       ├── types.ts  # Interfaces, constants, utilities
+        │       ├── utils.ts  # Config loading, file discovery
+        │       ├── count.ts  # Token counting
+        │       ├── check.ts  # Limit validation
+        │       ├── suggest.ts # Optimization suggestions
+        │       ├── compare.ts # Git-based comparison
+        │       └── score.ts  # Advisory scoring
+        └── gepa/
+            ├── auto_evaluator.py  # GEPA auto-evaluator CLI
+            └── requirements.txt   # Python dependencies (gepa)
 ```
 
 ## Key Conventions
@@ -101,7 +105,8 @@ See `references/mcp-integration.md` for patterns.
 - Keep SKILL.md focused on instructions, not documentation
 - Use references/ for detailed explanations
 - Run `npm run tokens -- check` after changes to verify limits
-- Maintain the frontmatter format with USE FOR / DO NOT USE FOR
+- Maintain the frontmatter format with WHEN: / USE FOR: (prefer positive routing)
+- Run `npm run tokens -- score .` to check advisory compliance
 - Add routing clarity (INVOKES/FOR SINGLE OPERATIONS) for High score
 - Use skill type prefixes when appropriate
 
@@ -136,6 +141,12 @@ npm run tokens -- score .
 
 # Run unit tests
 cd scripts && npm test
+
+# GEPA: Score a skill (no LLM calls)
+python scripts/src/gepa/auto_evaluator.py score --skill my-skill --skills-dir skills --tests-dir tests
+
+# GEPA: Score all skills
+python scripts/src/gepa/auto_evaluator.py score-all --skills-dir skills --tests-dir tests
 ```
 
 ## Token CLI Reference
@@ -198,4 +209,6 @@ Examples:
 
 - Node.js 18+ (for token management scripts)
 - npm (for running scripts)
+- Python 3.10+ (for GEPA auto-evaluator, optional)
+- gepa package (for GEPA optimization, `pip install gepa`)
 - No runtime dependencies for the skill itself
