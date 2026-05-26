@@ -177,6 +177,40 @@ Copilot CLI runtime sets this when it spawns the provider so the writer
 and reader always agree on the path. The CLI also accepts
 `--artifacts-dir <path>` for tests and local development.
 
+## Loopback-token validation
+
+The canvas's HTTP server gates every **data** endpoint (`/state`,
+`/events`, `/report`) on a per-process loopback token; only the iframe,
+which receives the token in its bootstrap URL, can read run state.
+Static assets (`/`, `/index.html`, `/app.js`, `/styles.css`) are
+unauthenticated so the iframe can boot from a plain `<script>` tag.
+
+Token resolution:
+
+1. `COPILOT_CANVAS_LOOPBACK_TOKEN` env var, set by the Copilot CLI
+   runtime when it spawns the provider.
+2. If unset (standalone dev), a 32-byte hex token is generated at
+   startup and printed to stdout as part of the listening URL, so a
+   developer can paste the full URL into a browser.
+
+The iframe forwards the token via the `?t=` query string on every
+`fetch` and on the `EventSource('/events?t=...')` URL. The provider
+also accepts an `X-Copilot-Canvas-Token` header for command-line use.
+Token comparison is constant-time.
+
+`.canvas/extension.mjs` currently ships a local `validateLoopbackToken`
+helper with this signature (pinned to match the eventual SDK export):
+
+```ts
+validateLoopbackToken(req: IncomingMessage, instanceId: string): boolean
+```
+
+Once `@github/copilot-sdk/extension` ships the helper, the local stub
+is replaced by the SDK export. Call sites stay the same. The
+`instanceId` parameter is reserved for the SDK's per-instance token
+registry; the stub ignores it because there's one provider, one
+effective instance.
+
 ## SDK integration (pending)
 
 `.canvas/extension.mjs` runs as a standalone HTTP + SSE + watcher process

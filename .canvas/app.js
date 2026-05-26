@@ -61,11 +61,23 @@ function renderStep(step, idx) {
   return li;
 }
 
+/**
+ * Loopback token plumbed from the page URL (the provider hands the
+ * iframe a URL like `http://127.0.0.1:PORT/?t=...`). Every fetch and
+ * the SSE EventSource forward this on the query string so the provider
+ * can validate them.
+ */
+const TOKEN = new URLSearchParams(window.location.search).get('t') ?? '';
+function withToken(path) {
+  const sep = path.includes('?') ? '&' : '?';
+  return TOKEN ? `${path}${sep}t=${encodeURIComponent(TOKEN)}` : path;
+}
+
 async function loadReport(runId) {
   if (runId === lastReportRunId) return;
   lastReportRunId = runId;
   try {
-    const res = await fetch('/report');
+    const res = await fetch(withToken('/report'));
     if (!res.ok) return;
     const md = await res.text();
     els.reportMd.innerHTML = marked.parse(md);
@@ -103,7 +115,7 @@ function apply(state) {
   if (state.runId) loadReport(state.runId);
 }
 
-const es = new EventSource('/events');
+const es = new EventSource(withToken('/events'));
 es.onmessage = (e) => {
   try {
     apply(JSON.parse(e.data));

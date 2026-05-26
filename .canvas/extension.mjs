@@ -231,6 +231,67 @@ function startWatching() {
 }
 
 // ---------------------------------------------------------------------------
+// Loopback-token validation (stub)
+// ---------------------------------------------------------------------------
+
+/**
+ * Constant-time string equality. Returns false for length mismatch so the
+ * comparison still runs over zero bytes when lengths differ.
+ */
+function timingSafeEqual(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/**
+ * Per-instance loopback token used to gate every HTTP request.
+ *
+ * Resolution:
+ *   - `COPILOT_CANVAS_LOOPBACK_TOKEN` env var if set (set by the Copilot
+ *     CLI runtime when it spawns the provider).
+ *   - Otherwise, a 32-byte hex token generated once at startup and
+ *     logged so a developer running this standalone can copy the full
+ *     URL out of the log.
+ *
+ * The token only ever leaves this process via:
+ *   - The URL handed back to the runtime (production) or printed to
+ *     stdout (standalone dev).
+ *   - The iframe page, which reads `?t=...` from its own `location` and
+ *     forwards it on every fetch + EventSource URL.
+ */
+import { randomBytes } from 'node:crypto';
+const LOOPBACK_TOKEN =
+  process.env.COPILOT_CANVAS_LOOPBACK_TOKEN ?? randomBytes(32).toString('hex');
+
+/**
+ * Stub for `validateLoopbackToken` from `@github/copilot-sdk/extension`.
+ *
+ * Signature is pinned to match the eventual SDK export so call sites
+ * stay stable through the swap:
+ *
+ *     validateLoopbackToken(req: IncomingMessage, instanceId: string): boolean
+ *
+ * The `instanceId` parameter is reserved for the SDK's per-instance
+ * token registry; this stub ignores it because we have exactly one
+ * provider process and one effective instance.
+ *
+ * Accepts the token from either the `t` query parameter (used by the
+ * iframe so EventSource and fetch can include it) or an
+ * `X-Copilot-Canvas-Token` header (useful for command-line testing).
+ */
+// eslint-disable-next-line no-unused-vars
+function validateLoopbackToken(req, _instanceId) {
+  const url = new URL(req.url, 'http://127.0.0.1');
+  const fromQuery = url.searchParams.get('t');
+  const fromHeader = req.headers['x-copilot-canvas-token'];
+  const provided = fromQuery ?? (typeof fromHeader === 'string' ? fromHeader : null);
+  if (!provided) return false;
+  return timingSafeEqual(provided, LOOPBACK_TOKEN);
+}
+
+// ---------------------------------------------------------------------------
 // HTTP / SSE server
 // ---------------------------------------------------------------------------
 
@@ -254,11 +315,23 @@ async function serveAsset(req, res, asset) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1');
-  // TODO(sdk): once @github/copilot-sdk/extension ships, gate every
-  // request on validateLoopbackToken(req, instanceId). Today there's no
-  // token because there's no runtime issuing one.
   const asset = ASSETS[url.pathname];
+
+  // Static assets (HTML/CSS/JS) carry no user data and are served
+  // unauthenticated so the iframe can boot from a simple
+  // `<script src="./app.js">`. The iframe then forwards the loopback
+  // token on every data-endpoint request below.
   if (req.method === 'GET' && asset) return serveAsset(req, res, asset);
+
+  // Token-gate every data endpoint. Once `@github/copilot-sdk/extension`
+  // ships, the local `validateLoopbackToken` stub is replaced by the
+  // SDK export — call site stays the same because the signature is
+  // pinned.
+  if (!validateLoopbackToken(req, /* instanceId */ 'sensei')) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('forbidden');
+    return;
+  }
 
   if (req.method === 'GET' && url.pathname === '/state') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -307,8 +380,12 @@ async function main() {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const { port } = server.address();
   // The runtime would normally receive this URL via the SDK's open() return
-  // value. For standalone runs we log it so a developer can open it directly.
-  console.log(`[sensei-canvas] listening on http://127.0.0.1:${port}/`);
+  // value. For standalone runs we log the token-bearing URL so a developer
+  // can paste it directly. The token never travels off-loopback.
+  console.log(`[sensei-canvas] listening on http://127.0.0.1:${port}/?t=${LOOPBACK_TOKEN}`);
+  if (!process.env.COPILOT_CANVAS_LOOPBACK_TOKEN) {
+    console.log('[sensei-canvas] using ephemeral loopback token (set COPILOT_CANVAS_LOOPBACK_TOKEN to override)');
+  }
   console.log(`[sensei-canvas] artifacts: ${ARTIFACTS_DIR}`);
 }
 
