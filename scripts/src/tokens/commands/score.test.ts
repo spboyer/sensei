@@ -391,20 +391,25 @@ describe('checkAllowedFields', () => {
     expect(result.status).toBe('ok');
   });
 
-  it('allows canvas field (Copilot CLI runtime extension)', () => {
-    const fields = { name: 'x', description: 'y', canvas: true };
+  it('accepts canvas opt-in nested under metadata.copilot.canvas', () => {
+    // Sensei's own SKILL.md uses metadata.copilot.canvas to opt into the
+    // Copilot CLI canvas convention without introducing a top-level
+    // non-spec field. The scorer only checks top-level keys; metadata's
+    // inner shape is free-form per the spec.
+    const fields = {
+      name: 'x',
+      description: 'y',
+      metadata: { copilot: { canvas: true } },
+    };
     const result = checkAllowedFields(fields);
     expect(result.status).toBe('ok');
   });
 
-  it('allows canvas field with object form', () => {
-    const fields = {
-      name: 'x',
-      description: 'y',
-      canvas: { entry: './.canvas/extension.mjs', id: 'report' }
-    };
+  it('warns on a top-level canvas field (use metadata.copilot.canvas instead)', () => {
+    const fields = { name: 'x', description: 'y', canvas: true };
     const result = checkAllowedFields(fields);
-    expect(result.status).toBe('ok');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('canvas');
   });
 });
 
