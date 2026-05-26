@@ -107,7 +107,7 @@ These checks are programmatic and run via `npm run tokens -- score`. They valida
 | Check | What it validates | Spec rule |
 |-------|-------------------|-----------|
 | `spec-frontmatter` | YAML frontmatter exists, `name` and `description` present | Required fields |
-| `spec-allowed-fields` | No unknown fields (only `name`, `description`, `license`, `allowed-tools`, `metadata`, `compatibility`) | Field allowlist |
+| `spec-allowed-fields` | No unknown fields (only `name`, `description`, `license`, `allowed-tools`, `metadata`, `compatibility`, `user-invocable`, `disable-model-invocation`) | Field allowlist |
 | `spec-name` | Lowercase, ≤64 chars, no leading/trailing `-`, no `--`, alphanumeric + hyphens only | Name constraints |
 | `spec-dir-match` | Directory name matches skill `name` field | Directory = name |
 | `spec-description` | Non-empty, ≤1024 characters | Description constraints |
@@ -115,6 +115,10 @@ These checks are programmatic and run via `npm run tokens -- score`. They valida
 | `spec-license` | Recommends adding `license` field | Optional but strongly recommended |
 | `spec-version` | Recommends adding `metadata.version` | Optional but strongly recommended |
 | `spec-security` | No XML angle brackets (`< >`) in frontmatter; name does not use reserved prefixes (`claude-`, `anthropic-`) | Security restrictions ([Anthropic guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf), p31) |
+| `copilot-user-invocable` | If present, must be boolean (`true`/`false`) | Copilot CLI extension |
+| `copilot-disable-model-invocation` | If present, must be boolean (`true`/`false`) | Copilot CLI extension |
+| `copilot-allowed-tools` | If present, must be non-empty comma-separated list | Copilot CLI extension |
+| `copilot-reference-only-pattern` | Detects `user-invocable=false` + `disable-model-invocation=true` | Advisory (Copilot CLI) |
 
 ## Rule-Based Checks
 
@@ -196,36 +200,40 @@ Optional field documenting:
 - Supported frameworks
 - Prerequisites
 
+### Copilot CLI Extension Fields
+
+These fields are part of the Copilot skill frontmatter schema (not yet documented publicly; not part of the agentskills.io spec) and validated by Sensei when present:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `allowed-tools` | string | — | Comma-separated list of auto-allowed tool names while skill is active; entries cannot be blank or whitespace-separated |
+| `user-invocable` | boolean | `true` | Whether users can invoke via `/skill-name` |
+| `disable-model-invocation` | boolean | `false` | Prevent the model from invoking this skill |
+
+#### Reference-Only Pattern
+
+When `user-invocable: false` AND `disable-model-invocation: true`, the skill becomes a **reference-only file** — loaded from disk but never invoked by user or model. Useful for shared context, configuration, or conventions.
+
+```yaml
+---
+name: team-conventions
+description: "Shared coding conventions for the team."
+user-invocable: false
+disable-model-invocation: true
+---
+```
+
 ## Scoring Algorithm
 
 ```python
 def score_skill(skill):
-    if len(skill.description) > 1024:
-        return "Invalid"  # exceeds spec hard limit
-    if len(skill.description) < 150:
+    desc = skill.description
+    if len(desc) > 1024: return "Invalid"
+    if len(desc) < 150 or not has_trigger(desc):
         return "Low"
-    
-    has_triggers = contains_trigger_phrases(skill.description)
-    has_routing_clarity = contains_routing_patterns(skill.description)
-    
-    if not has_triggers:
-        return "Low"
-    if word_count(skill.description) > 60:
-        return "Medium"  # too dense for cross-model reliability
-    # Note: "DO NOT USE FOR:" is no longer required for Medium-High
-    if not has_routing_clarity:
-        return "Medium-High"
-    return "High"
-
-def contains_trigger_phrases(description):
-    # WHEN: preferred (scores higher), USE FOR: accepted
-    patterns = ['WHEN:', 'USE FOR:', 'USE THIS SKILL', 'TRIGGERS:']
-    return any(p.lower() in description.lower() for p in patterns)
-
-def contains_routing_patterns(description):
-    patterns = ['INVOKES:', 'FOR SINGLE OPERATIONS:', 
-                '**WORKFLOW SKILL**', '**UTILITY SKILL**', '**ANALYSIS SKILL**']
-    return any(p.lower() in description.lower() for p in patterns)
+    if word_count(desc) > 60:
+        return "Medium"
+    return "High" if has_routing(desc) else "Medium-High"
 ```
 
 ## Token Budgets
@@ -236,7 +244,7 @@ def contains_routing_patterns(description):
 | references/*.md | 1000 | - |
 | Description field | - | 1024 chars |
 
-> **Units note:** Sensei measures in **tokens** (cl100k_base tokenizer), not words. Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) recommends "under 5,000 words" for SKILL.md, while the [Agent Skills spec](https://agentskills.io/specification) recommends "< 5000 tokens" and "under 500 lines." Sensei uses the spec's token-based limits. As a rough conversion: 5000 tokens ≈ 3,750 words. The spec's token budget is stricter, which aligns with SkillsBench evidence that concise skills outperform comprehensive ones.
+> **Units note:** Sensei measures **tokens** (cl100k_base), not words. The spec recommends <5000 tokens and <500 lines; roughly 5000 tokens ≈ 3,750 words.
 
 ## MCP Integration Checks
 
@@ -371,26 +379,15 @@ Checks whether the SKILL.md body follows Anthropic's [recommended structure](htt
 - Error handling: look for `## Error`, `## Common Issues`, `If ... fails`, `Error:`, `Solution:`
 - Troubleshooting: look for `## Troubleshooting`, `## Common Problems`, `Symptom:`, `Fix:`
 
-**Good template (from Anthropic guide):**
+**Good template:**
 ```markdown
 # Instructions
-## Step 1: [First Major Step]
-Clear explanation of what happens.
-```bash
-command --with-params
-Expected output: [describe what success looks like]
-```
-
+## Step 1: [First major step]
+Run `command --with-params`; success looks like [...]
 ## Examples
-Example 1: [common scenario]
-User says: "..."
-Actions: 1. ... 2. ...
-Result: ...
-
+User says: "..." -> Actions: ... -> Result: ...
 ## Troubleshooting
-Error: [Common error message]
-Cause: [Why it happens]
-Solution: [How to fix]
+Error: [...] Cause: [...] Solution: [...]
 ```
 
 ### 18. Body Progressive Disclosure
