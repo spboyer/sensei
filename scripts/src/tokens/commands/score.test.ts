@@ -472,6 +472,12 @@ describe('checkAllowedToolsFormat', () => {
     expect(result.message).toContain('Bash, Read, Write');
   });
 
+  it('passes for quoted comma-separated list', () => {
+    const result = checkAllowedToolsFormat('"Bash, Read, Write"');
+    expect(result.status).toBe('ok');
+    expect(result.message).toContain('Bash, Read, Write');
+  });
+
   it('passes for single tool', () => {
     const result = checkAllowedToolsFormat('Bash');
     expect(result.status).toBe('ok');
@@ -486,6 +492,24 @@ describe('checkAllowedToolsFormat', () => {
   it('warns on whitespace-only', () => {
     const result = checkAllowedToolsFormat('   ');
     expect(result.status).toBe('warning');
+  });
+
+  it('warns on missing comma between tools', () => {
+    const result = checkAllowedToolsFormat('Bash Read');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('comma-separated');
+  });
+
+  it('warns on trailing comma', () => {
+    const result = checkAllowedToolsFormat('Bash, Read,');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('empty entry');
+  });
+
+  it('warns on repeated comma', () => {
+    const result = checkAllowedToolsFormat('Bash,,Read');
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('empty entry');
   });
 });
 

@@ -403,10 +403,32 @@ export function checkAllowedToolsFormat(value: string | undefined): AdvisoryChec
     };
   }
 
+  const unquoted = trimmed.replace(/^(['"])(.*)\1$/, '$2').trim();
+  const tools = unquoted.split(',').map(tool => tool.trim());
+  const hasEmptyEntry = tools.some(tool => !tool);
+  if (hasEmptyEntry) {
+    return {
+      name: 'copilot-allowed-tools',
+      status: 'warning',
+      message: 'allowed-tools contains an empty entry — use comma-separated tool names without leading, trailing, or repeated commas',
+      evidence: 'Copilot CLI skill frontmatter: comma-separated list of tool names'
+    };
+  }
+
+  const entriesWithWhitespace = tools.filter(tool => /\s/.test(tool));
+  if (entriesWithWhitespace.length > 0) {
+    return {
+      name: 'copilot-allowed-tools',
+      status: 'warning',
+      message: `allowed-tools entries must be comma-separated tool names; found whitespace in: ${entriesWithWhitespace.join(', ')}`,
+      evidence: 'Copilot CLI skill frontmatter: comma-separated list of tool names'
+    };
+  }
+
   return {
     name: 'copilot-allowed-tools',
     status: 'ok',
-    message: `allowed-tools: ${trimmed}`
+    message: `allowed-tools: ${tools.join(', ')}`
   };
 }
 
