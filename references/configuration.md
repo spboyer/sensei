@@ -101,6 +101,20 @@ Run sensei on my-skill --fast
 ```
 (Creates prompts.md for manual review)
 
+## Repo-local Policy
+
+If the target repo prefers short trigger-phrase descriptions, drop a `.sensei.json` at its root:
+
+```json
+{ "frontmatter": { "preferShortDescriptions": true } }
+```
+
+`sensei score` detects this (and short-description cues in `AGENTS.md`) and waives the description-length floor. Disable with `--no-repo-policy`.
+
+## Proof Artifact
+
+`sensei score --emit-proof` writes `sensei-audit.md` next to the skill, summarizing the score, level, and detected repo policy. PR review bots and humans can link it from PR bodies. Override the path with `--emit-proof=path/to/file.md`. In the GitHub Action, set the `emit-proof` input to a path.
+
 ## Environment Variables
 
 Sensei scripts respect these environment variables:
