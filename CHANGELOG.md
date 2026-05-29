@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.4.0
+## Unreleased
 
 Minimal, additive fixes for [#22](https://github.com/spboyer/sensei/issues/22). No breaking changes.
 

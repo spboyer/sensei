@@ -106,7 +106,13 @@ Run sensei on my-skill --fast
 If the target repo prefers short trigger-phrase descriptions, drop a `.sensei.json` at its root:
 
 ```json
-{ "frontmatter": { "preferShortDescriptions": true } }
+{ "descriptionStyle": "short-trigger" }
+```
+
+Or disable the minimum-length advisory:
+
+```json
+{ "advisoryOverrides": { "minDescriptionLength": false } }
 ```
 
 `sensei score` detects this (and short-description cues in `AGENTS.md`) and waives the description-length floor. Disable with `--no-repo-policy`.

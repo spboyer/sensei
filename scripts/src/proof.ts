@@ -21,7 +21,7 @@ export interface ProofOptions {
 function extractFrontmatter(skillMdPath: string): string {
   if (!existsSync(skillMdPath)) return '(SKILL.md not found)';
   const content = readFileSync(skillMdPath, 'utf-8');
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   return match ? match[0] : '(no frontmatter block found)';
 }
 

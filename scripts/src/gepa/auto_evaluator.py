@@ -256,7 +256,7 @@ def score_content_quality(
     elif len(desc_text) < 150:
         if short_ok:
             scores["description_length"] = 1.0
-            scores["description_length_policy_waived"] = 1.0
+            feedback.append("description_length: waived by repo policy (short descriptions preferred)")
         else:
             scores["description_length"] = len(desc_text) / 150
             feedback.append(f"Description too short ({len(desc_text)} chars, need 150+)")
