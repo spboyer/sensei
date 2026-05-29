@@ -16,6 +16,8 @@ import { fileURLToPath } from 'node:url';
 import { count, check, suggest, compare, scoreSkill } from './commands/index.js';
 import { getErrorMessage } from './commands/types.js';
 import { resolvePathFromRoot, resolveRootDir } from './commands/utils.js';
+import { detectRepoPolicy } from '../repo-policy.js';
+import { writeProof, defaultProofPath } from '../proof.js';
 
 function printHelp(): void {
   console.log(`
@@ -44,6 +46,8 @@ Options:
   --min-savings=<n>    Minimum savings to suggest (default: 10)
   --verbose            Show detailed suggestions
   --show-unchanged     Include unchanged files in comparison
+  --emit-proof[=path]  (score) Write sensei-audit.md proof artifact (default: <skill>/sensei-audit.md)
+  --no-repo-policy     (score) Ignore .sensei.json / AGENTS.md repo-local policy
   --help, -h           Show this help message
 
 Examples:
@@ -90,6 +94,12 @@ export function parseArgs(args: string[]): { command: string; paths: string[]; o
       options.showTotal = false;
     } else if (arg === '--show-unchanged') {
       options.showUnchanged = true;
+    } else if (arg === '--emit-proof') {
+      options.emitProof = true;
+    } else if (arg.startsWith('--emit-proof=')) {
+      options.emitProof = arg.slice(13);
+    } else if (arg === '--no-repo-policy') {
+      options.noRepoPolicy = true;
     } else if (arg.startsWith('--format=')) {
       options.format = arg.slice(9);
     } else if (arg.startsWith('--sort=')) {
@@ -163,11 +173,33 @@ export function main(args = process.argv.slice(2)): void {
         process.exit(1);
       }
       const result = scoreSkill(skillDir);
+      const policy = options.noRepoPolicy
+        ? { shortDescriptionsPreferred: false, source: null, evidence: null }
+        : detectRepoPolicy(rootDir);
+
+      let proofPath: string | undefined;
+      if (options.emitProof) {
+        const explicit = typeof options.emitProof === 'string' ? options.emitProof : undefined;
+        proofPath = writeProof({
+          skillDir,
+          result,
+          policy,
+          outputPath: explicit ? resolvePathFromRoot(rootDir, explicit) : defaultProofPath(skillDir)
+        });
+      }
+
       if (options.format === 'json') {
-        console.log(JSON.stringify(result, null, 2));
+        console.log(JSON.stringify({ ...result, repoPolicy: policy, proofPath }, null, 2));
       } else {
         console.log(`\n📊 Skill Score: ${result.skillPath}`);
-        console.log(`   Complexity: ${result.complexity} | Tokens: ${result.tokenCount} | Modules: ${result.moduleCount}\n`);
+        console.log(`   Complexity: ${result.complexity} | Tokens: ${result.tokenCount} | Modules: ${result.moduleCount}`);
+        if (policy.shortDescriptionsPreferred) {
+          console.log(`   📐 Repo-local policy: short descriptions preferred (from ${policy.source})`);
+        }
+        if (proofPath) {
+          console.log(`   📝 Proof artifact: ${proofPath}`);
+        }
+        console.log('');
 
         if (result.specChecks.length > 0) {
           console.log('  ── Spec Compliance (agentskills.io) ──');

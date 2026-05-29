@@ -133,7 +133,7 @@ npm run tokens -- count {skills-dir}/{skill-name}/SKILL.md
 
 ### Step 2: SCORE
 Assess compliance by checking the frontmatter for:
-- Description length (>= 150 chars, ≤ 60 words)
+- Description length (>= 150 chars, ≤ 60 words; *length floor waived when target repo's `.sensei.json` or AGENTS.md prefers short trigger phrases*)
 - "WHEN:" trigger phrases (preferred) or "USE FOR:"
 - Routing clarity ("INVOKES:", "FOR SINGLE OPERATIONS:")
 - No "DO NOT USE FOR:" anti-triggers (risky in multi-skill environments)
@@ -144,7 +144,7 @@ See [references/scoring.md](references/scoring.md) for detailed criteria.
 If score >= Medium-High AND tests pass → go to SUMMARY step.
 
 ### Step 4: SCAFFOLD (if needed)
-If `{tests-dir}/{skill-name}/` doesn't exist, create test scaffolding using templates from [references/test-templates/](references/test-templates/).
+If `{tests-dir}/{skill-name}/` doesn't exist, create test scaffolding using templates from [references/test-templates/](references/test-templates/). **Before claiming any tooling file is missing, verify with `ls` or `git ls-files` — do not assume from filename alone.**
 
 ### Step 5: IMPROVE FRONTMATTER
 Enhance the SKILL.md description to include:

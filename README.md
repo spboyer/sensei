@@ -89,7 +89,7 @@ npx @spboyer/sensei score .
 npx @spboyer/sensei check --root . --config .token-limits.json --strict
 ```
 
-`--root` resolves paths; `--config` selects limits. Global install: `npm install --global @spboyer/sensei`.
+`--root` resolves paths; `--config` selects limits; `--emit-proof` writes `sensei-audit.md`; `.sensei.json` enables repo policy. Install globally via `npm i -g @spboyer/sensei`.
 
 #### GitHub Action
 

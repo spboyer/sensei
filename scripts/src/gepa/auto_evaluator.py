@@ -207,14 +207,42 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     return metadata, body
 
 
-def score_content_quality(skill_md_content: str, frontmatter: dict | None = None) -> tuple[float, dict]:
+def _repo_prefers_short_descriptions(skills_dir: Path | None) -> bool:
+    """Detect repo-local short-description policy via .sensei.json at repo root.
+
+    Walks up from skills_dir looking for .sensei.json with
+    {"descriptionStyle": "short-trigger"}. Returns False on any error.
+    """
+    if skills_dir is None:
+        return False
+    try:
+        cur = skills_dir.resolve()
+        for parent in [cur, *cur.parents]:
+            cfg = parent / ".sensei.json"
+            if cfg.exists():
+                data = json.loads(cfg.read_text())
+                return data.get("descriptionStyle") == "short-trigger"
+    except (OSError, ValueError, json.JSONDecodeError):
+        return False
+    return False
+
+
+def score_content_quality(
+    skill_md_content: str,
+    frontmatter: dict | None = None,
+    respect_repo_policy: bool = False,
+    skills_dir: Path | None = None,
+) -> tuple[float, dict]:
     """Score SKILL.md content quality. Pure Python, no LLM calls.
 
-    Returns (score, detail_scores).
+    Returns (score, detail_scores). When respect_repo_policy is True and the
+    target repo declares descriptionStyle: short-trigger, the <150-char
+    penalty is waived (issue #22).
     """
     scores = {}
     feedback = []
     content_lower = skill_md_content.lower()
+    short_ok = respect_repo_policy and _repo_prefers_short_descriptions(skills_dir)
 
     # Score the frontmatter description if available
     if frontmatter and frontmatter.get("description"):
@@ -226,8 +254,12 @@ def score_content_quality(skill_md_content: str, frontmatter: dict | None = None
     if 150 <= len(desc_text) <= 1024:
         scores["description_length"] = 1.0
     elif len(desc_text) < 150:
-        scores["description_length"] = len(desc_text) / 150
-        feedback.append(f"Description too short ({len(desc_text)} chars, need 150+)")
+        if short_ok:
+            scores["description_length"] = 1.0
+            feedback.append("description_length: waived by repo policy (short descriptions preferred)")
+        else:
+            scores["description_length"] = len(desc_text) / 150
+            feedback.append(f"Description too short ({len(desc_text)} chars, need 150+)")
     else:
         scores["description_length"] = min(1.0, 1024 / len(desc_text))
         feedback.append(f"Description too long ({len(desc_text)} chars, max 1024)")
@@ -358,6 +390,7 @@ def score_skill(
     skill_name: str,
     skills_dir: Path,
     tests_dir: Path,
+    respect_repo_policy: bool = False,
 ) -> dict:
     """Score a single skill's SKILL.md content quality + trigger accuracy."""
     skill_md = skills_dir / skill_name / "SKILL.md"
@@ -370,7 +403,9 @@ def score_skill(
 
     # Build evaluator and score
     harness = discover_test_harness(tests_dir, skill_name)
-    quality_score, quality_detail = score_content_quality(body, frontmatter)
+    quality_score, quality_detail = score_content_quality(
+        body, frontmatter, respect_repo_policy=respect_repo_policy, skills_dir=skills_dir
+    )
 
     should_count = len(harness["trigger_prompts"]["should_trigger"])
     should_not_count = len(harness["trigger_prompts"]["should_not_trigger"])
@@ -501,6 +536,11 @@ def main():
     score_p.add_argument("--skills-dir", default="skills")
     score_p.add_argument("--tests-dir", default="tests")
     score_p.add_argument("--json", action="store_true")
+    score_p.add_argument(
+        "--respect-repo-policy",
+        action="store_true",
+        help="Honor .sensei.json descriptionStyle:short-trigger (issue #22)",
+    )
 
     # score-all command
     all_p = subparsers.add_parser("score-all", help="Score all skills")
@@ -508,6 +548,11 @@ def main():
     all_p.add_argument("--tests-dir", default="tests")
     all_p.add_argument("--json", action="store_true")
     all_p.add_argument("--sort", choices=["score", "name"], default="score")
+    all_p.add_argument(
+        "--respect-repo-policy",
+        action="store_true",
+        help="Honor .sensei.json descriptionStyle:short-trigger (issue #22)",
+    )
 
     # optimize command
     opt_p = subparsers.add_parser("optimize", help="Optimize a skill with GEPA")
@@ -529,7 +574,10 @@ def main():
         sys.exit(1)
 
     if args.command == "score":
-        result = score_skill(args.skill, skills_dir, tests_dir)
+        result = score_skill(
+            args.skill, skills_dir, tests_dir,
+            respect_repo_policy=getattr(args, "respect_repo_policy", False),
+        )
         if "error" in result:
             has_errors = True
         if args.json:
@@ -541,7 +589,13 @@ def main():
         skills = sorted(
             d.name for d in skills_dir.iterdir() if d.is_dir() and not d.name.startswith(".")
         )
-        results = [score_skill(s, skills_dir, tests_dir) for s in skills]
+        results = [
+            score_skill(
+                s, skills_dir, tests_dir,
+                respect_repo_policy=getattr(args, "respect_repo_policy", False),
+            )
+            for s in skills
+        ]
         if args.sort == "score":
             results.sort(key=lambda r: r.get("quality_score", 0))
         if any("error" in r for r in results):
