@@ -115,7 +115,7 @@ Or disable the minimum-length advisory:
 { "advisoryOverrides": { "minDescriptionLength": false } }
 ```
 
-`sensei score` detects this (and short-description cues in `AGENTS.md`) and waives the description-length floor. Disable with `--no-repo-policy`.
+`sensei score` detects this (and short-description cues in `AGENTS.md`) and suppresses description-length advisories accordingly. Disable with `--no-repo-policy`.
 
 ## Proof Artifact
 

@@ -5,8 +5,8 @@
  * Issue: spboyer/sensei#22 (P3)
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { join, basename } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { join, basename, dirname } from 'node:path';
 import type { ScoringResult } from './tokens/commands/score.js';
 import type { RepoPolicy } from './repo-policy.js';
 
@@ -90,6 +90,7 @@ export function writeProof(opts: ProofOptions): string {
   lines.push('');
 
   const body = lines.join('\n');
+  mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, body, 'utf-8');
   return outPath;
 }
