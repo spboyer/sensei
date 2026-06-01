@@ -3,7 +3,7 @@
  * length recommendations (e.g. "150-char minimum").
  *
  * Sources, in priority order:
- *   1. `.sensei.json` / `.sensei.yml` with explicit `descriptionStyle` or
+ *   1. `.sensei.json` with explicit `descriptionStyle` or
  *      `advisoryOverrides.minDescriptionLength: false`
  *   2. Keyword scan of AGENTS.md, README.md, CONTRIBUTING.md,
  *      .github/copilot-instructions.md for short-trigger phrasing

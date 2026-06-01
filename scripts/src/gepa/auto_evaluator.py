@@ -211,7 +211,9 @@ def _repo_prefers_short_descriptions(skills_dir: Path | None) -> bool:
     """Detect repo-local short-description policy via .sensei.json at repo root.
 
     Walks up from skills_dir looking for .sensei.json with
-    {"descriptionStyle": "short-trigger"}. Returns False on any error.
+    {"descriptionStyle": "short-trigger"} or
+    {"advisoryOverrides": {"minDescriptionLength": false}}.
+    Returns False on any error.
     """
     if skills_dir is None:
         return False
@@ -221,7 +223,11 @@ def _repo_prefers_short_descriptions(skills_dir: Path | None) -> bool:
             cfg = parent / ".sensei.json"
             if cfg.exists():
                 data = json.loads(cfg.read_text())
-                return data.get("descriptionStyle") == "short-trigger"
+                if data.get("descriptionStyle") == "short-trigger":
+                    return True
+                overrides = data.get("advisoryOverrides") or {}
+                if overrides.get("minDescriptionLength") in (False, 0):
+                    return True
     except (OSError, ValueError, json.JSONDecodeError):
         return False
     return False

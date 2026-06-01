@@ -119,7 +119,7 @@ Or disable the minimum-length advisory:
 
 ## Proof Artifact
 
-`sensei score --emit-proof` writes `sensei-audit.md` next to the skill, summarizing the score, level, and detected repo policy. PR review bots and humans can link it from PR bodies. Override the path with `--emit-proof=path/to/file.md`. In the GitHub Action, set the `emit-proof` input to a path.
+`sensei score --emit-proof` writes `sensei-audit.md` next to the skill, summarizing the frontmatter, token/module counts, spec checks, and advisory checks. PR review bots and humans can link it from PR bodies. Override the path with `--emit-proof=path/to/file.md`. In the GitHub Action, set the `emit-proof` input to a path.
 
 ## Environment Variables
 
