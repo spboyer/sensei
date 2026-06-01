@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sensei</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Sensei</h1>
+      <span id="status" class="status status--idle">Idle</span>
+    </header>
+
+    <main>
+      <section id="view-idle" class="view" hidden>
+        <p class="empty">
+          No sensei runs yet. Start one from chat &mdash; <code>run sensei on &lt;skill&gt;</code> &mdash; and progress will stream here.
+        </p>
+      </section>
+
+      <section id="view-running" class="view" hidden>
+        <div class="run-meta">
+          <span>Run</span>
+          <code id="running-run-id"></code>
+        </div>
+        <ol id="steps-list" aria-live="polite"></ol>
+      </section>
+
+      <section id="view-report" class="view" hidden>
+        <div class="run-meta">
+          <span>Last run</span>
+          <code id="report-run-id"></code>
+        </div>
+        <article id="report-md"></article>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

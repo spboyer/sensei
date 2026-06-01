@@ -10,11 +10,22 @@ Sensei automates the improvement of [Agent Skills](https://support.anthropic.com
 - [Quick Start](#quick-start)
 - [Prerequisites](#prerequisites)
 - [How It Works](#how-it-works)
+- [Canvas](#canvas)
 - [Configuration](#configuration)
 - [Scoring Criteria](#scoring-criteria)
 - [Examples](#examples)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
+
+---
+
+## Canvas
+
+Sensei ships an optional [Copilot CLI canvas](.canvas/) that opens in the
+side panel during a run, streaming per-step progress and switching to a
+browsable report on completion. The agent feeds it via `sensei step` and
+`sensei report --finalize` — no RPC, crash-safe, no-op when no canvas is
+watching. See [references/canvas.md](references/canvas.md).
 
 ---
 

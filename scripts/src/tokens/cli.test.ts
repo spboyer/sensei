@@ -41,6 +41,38 @@ describe('parseArgs', () => {
     expect(() => parseArgs(['check', '--root'])).toThrow('Missing value for --root');
     expect(() => parseArgs(['check', '--config', '--strict'])).toThrow('Missing value for --config');
   });
+
+  it('parses canvas-related options for the step command', () => {
+    const parsed = parseArgs([
+      'step',
+      '--run-id=01ABC',
+      '--append',
+      '{"x":1}',
+      '--artifacts-dir=/tmp/a',
+    ]);
+    expect(parsed.command).toBe('step');
+    expect(parsed.options).toMatchObject({
+      runId: '01ABC',
+      append: '{"x":1}',
+      artifactsDir: '/tmp/a',
+    });
+  });
+
+  it('parses canvas-related options for the report command', () => {
+    const parsed = parseArgs([
+      'report',
+      '--finalize',
+      '--run-id',
+      '01XYZ',
+      '--input=-',
+    ]);
+    expect(parsed.command).toBe('report');
+    expect(parsed.options).toMatchObject({
+      finalize: true,
+      runId: '01XYZ',
+      input: '-',
+    });
+  });
 });
 
 describe('main help', () => {

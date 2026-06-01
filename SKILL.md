@@ -1,6 +1,9 @@
 ---
 name: sensei
 description: "**WORKFLOW SKILL** — Iteratively improve skill frontmatter compliance using the Ralph loop pattern. WHEN: \"run sensei\", \"sensei help\", \"improve skill\", \"fix frontmatter\", \"skill compliance\", \"frontmatter audit\", \"score skill\", \"check skill tokens\". INVOKES: token counting tools, test runners, git commands. FOR SINGLE OPERATIONS: use token CLI directly for counts/checks."
+metadata:
+  copilot:
+    canvas: true
 ---
 
 # Sensei
@@ -257,6 +260,39 @@ Ask how to proceed:
 ### Step 11: REPEAT or EXIT
 - If score < Medium-High AND iterations < 5 → go to Step 2
 - If iterations >= 5 → timeout, show summary, move to next skill
+
+After the run completes (all skills processed), finalize the canvas report:
+
+```bash
+echo '{"title":"sensei run","skills":[...],"notes":"..."}' \
+  | npx @spboyer/sensei report --finalize --run-id $RUN_ID --input -
+```
+
+## Canvas Integration (optional)
+
+When the [sensei canvas](.canvas/) is open, you can stream Ralph-loop progress
+to it so the user sees live updates in the side panel. This is **best-effort**
+— the canvas commands always succeed; if no canvas is watching the writes are
+just a no-op. Never branch the Ralph loop on canvas availability.
+
+**Generate a run id once at the start of a sensei invocation:**
+
+```bash
+RUN_ID=$(node -e 'console.log(Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2,10).toUpperCase())')
+```
+
+**After each numbered Ralph step, append a JSON record:**
+
+```bash
+npx @spboyer/sensei step --run-id "$RUN_ID" --append \
+  '{"step":"SCORE","skill":"pdf","score":"Medium","message":"+1 trigger"}'
+```
+
+Recommended fields: `step` (READ/SCORE/IMPROVE/...), `skill`, `score`,
+`tokens`, `message`. The `t` timestamp is auto-stamped if absent.
+
+**At the end of the run, finalize the report** (see Step 11 above). The
+canvas auto-switches to the report view when `report.md` appears.
 
 ## Scoring Quick Reference
 

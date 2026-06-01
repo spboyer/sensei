@@ -390,6 +390,68 @@ describe('checkAllowedFields', () => {
     const result = checkAllowedFields(fields);
     expect(result.status).toBe('ok');
   });
+
+  it('accepts canvas opt-in nested under metadata.copilot.canvas', () => {
+    // Sensei's own SKILL.md uses metadata.copilot.canvas to opt into the
+    // Copilot CLI canvas convention without introducing a top-level
+    // non-spec field. The scorer only checks top-level keys; metadata's
+    // inner shape is free-form per the spec.
+    const fields = {
+      name: 'x',
+      description: 'y',
+      metadata: { copilot: { canvas: true } },
+    };
+    const result = checkAllowedFields(fields);
+    expect(result.status).toBe('ok');
+  });
+
+  // M3 (flagged by cross-repo rubber-duck review): pin the full value
+  // space accepted under metadata.copilot.canvas so a future scorer
+  // change that constrains `metadata` fails loud against sensei's own
+  // opt-in. The Copilot CLI runtime's discovery parser accepts boolean,
+  // object, and array shapes with identical semantics; the scorer must
+  // not reject any of them.
+  it('accepts metadata.copilot.canvas as a boolean (M3)', () => {
+    const fields = {
+      name: 'x',
+      description: 'y',
+      metadata: { copilot: { canvas: true } },
+    };
+    expect(checkAllowedFields(fields).status).toBe('ok');
+  });
+
+  it('accepts metadata.copilot.canvas as an object (M3)', () => {
+    const fields = {
+      name: 'x',
+      description: 'y',
+      metadata: {
+        copilot: {
+          canvas: { entry: './.canvas/extension.mjs', id: 'report' },
+        },
+      },
+    };
+    expect(checkAllowedFields(fields).status).toBe('ok');
+  });
+
+  it('accepts metadata.copilot.canvas as an array (M3)', () => {
+    const fields = {
+      name: 'x',
+      description: 'y',
+      metadata: {
+        copilot: {
+          canvas: [{ id: 'progress' }, { id: 'report' }],
+        },
+      },
+    };
+    expect(checkAllowedFields(fields).status).toBe('ok');
+  });
+
+  it('warns on a top-level canvas field (use metadata.copilot.canvas instead)', () => {
+    const fields = { name: 'x', description: 'y', canvas: true };
+    const result = checkAllowedFields(fields);
+    expect(result.status).toBe('warning');
+    expect(result.message).toContain('canvas');
+  });
 });
 
 describe('checkNameCompliance', () => {

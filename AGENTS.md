@@ -20,6 +20,7 @@ sensei/
 │   ├── scoring.md        # Scoring algorithm details
 │   ├── mcp-integration.md # MCP tool integration patterns
 │   ├── loop.md           # Ralph loop workflow
+│   ├── canvas.md         # Copilot CLI canvas integration
 │   ├── examples.md       # Before/after transformations
 │   ├── configuration.md  # Project config patterns
 │   └── test-templates/   # Framework-specific test templates
@@ -27,6 +28,10 @@ sensei/
 │       ├── pytest.md     # pytest test template
 │       ├── waza.md       # Waza trigger test format
 │       └── ...
+├── .canvas/              # Copilot CLI canvas (side-panel UI; optional)
+│   ├── extension.mjs     # Provider: watches artifacts dir, serves iframe
+│   ├── index.html, app.js, styles.css
+│   └── package.json
 └── scripts/              # TypeScript token management tools
     ├── package.json      # Dependencies (tsx, vitest, typescript)
     ├── tsconfig.json
@@ -41,7 +46,10 @@ sensei/
         │       ├── check.ts  # Limit validation
         │       ├── suggest.ts # Optimization suggestions
         │       ├── compare.ts # Git-based comparison
-        │       └── score.ts  # Advisory scoring
+        │       ├── score.ts  # Advisory scoring
+        │       ├── artifacts.ts # Canvas artifact path resolution
+        │       ├── step.ts   # `sensei step` — append progress NDJSON
+        │       └── report.ts # `sensei report --finalize` — write report.md
         └── gepa/
             ├── auto_evaluator.py  # GEPA auto-evaluator CLI
             └── requirements.txt   # Python dependencies (gepa)
@@ -117,6 +125,9 @@ See `references/mcp-integration.md` for patterns.
 - Remove trigger or anti-trigger phrases without replacement
 - Omit INVOKES when skill calls MCP tools or other skills
 - Embed CLI commands without MCP option when MCP tools exist
+- Branch the Ralph loop on canvas availability. The canvas is an optional
+  UI surface; `sensei step` / `sensei report --finalize` are best-effort
+  writes that always succeed. Chat output is the primary surface.
 
 ## Testing Changes
 
