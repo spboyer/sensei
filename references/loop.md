@@ -4,7 +4,9 @@ Detailed workflow documentation for the iterative improvement cycle.
 
 ## Overview
 
-The Ralph loop implements iterative refinement - improving skills one step at a time until they reach compliance.
+The Ralph loop implements iterative refinement toward a Sensei advisory target.
+Portable-spec diagnostics remain separate from authoring advice; a passing static
+score does not establish observed activation or task quality.
 
 ## Loop Diagram
 
@@ -64,8 +66,8 @@ Load skill state:
 # Load SKILL.md
 cat {skills-dir}/{skill-name}/SKILL.md
 
-# Count baseline tokens
-python scripts/count_tokens.py {skills-dir}/{skill-name}/SKILL.md
+# Count baseline tokens (paths relative to target repo)
+npm run tokens -- count --root {target-repo} {skills-dir}/{skill-name}/SKILL.md
 
 # Check for existing tests
 ls {tests-dir}/{skill-name}/
@@ -73,7 +75,7 @@ ls {tests-dir}/{skill-name}/
 
 **Extract:**
 - Frontmatter (name, description, compatibility)
-- Current trigger/anti-trigger phrases
+- Intended scope, positive phrases, and near-miss boundaries
 - Token count baseline
 
 ### Step 2: SCORE
@@ -81,29 +83,25 @@ ls {tests-dir}/{skill-name}/
 Evaluate compliance:
 
 ```bash
-python scripts/score_skill.py {skills-dir}/{skill-name}/SKILL.md
+npm run tokens -- score --root {target-repo} {skills-dir}/{skill-name}
 ```
 
-**Output:**
+**Illustrative workflow summary (the CLI emits individual checks):**
 ```
 Skill: my-skill
 Score: Low
 Tokens: 142
 Issues:
-  - Description too short (85 chars, need 150+)
-  - No trigger phrases found
-  - No anti-triggers found
+  - Scope is vague; clarify intended use without padding
+  - Add realistic positive and near-miss cases
 ```
 
 ### Step 3: SCAFFOLD
 
 If tests don't exist, create them:
 
-```bash
-python scripts/scaffold_tests.py {skill-name} \
-  --tests-dir {tests-dir} \
-  --framework jest  # or pytest, prompts
-```
+Copy the appropriate [test template](test-templates/skill-init.md) for the target
+project's framework. There is no bundled `scaffold_tests.py` command.
 
 **Creates:**
 ```
@@ -118,32 +116,29 @@ Update SKILL.md description:
 
 1. **Analyze** - Read skill body to understand purpose
 2. **Identify triggers** - What phrases should activate this skill?
-3. **Identify anti-triggers** - What should NOT activate this skill?
+3. **Identify near-misses** - What similar requests are outside scope?
 4. **Write description** - Follow template:
 
 ```yaml
-description: |
-  [What the skill does - 1-2 sentences]
-  USE FOR: [phrase1], [phrase2], [phrase3], [phrase4], [phrase5].
-  DO NOT USE FOR: [scenario1] (use other-skill), [scenario2].
+description: "Extract PDF text and merge existing PDFs. WHEN: \"extract PDF text\", \"merge PDFs\"."
 ```
 
 **Constraints:**
 - Keep under 1024 characters
-- Include 5+ trigger phrases
-- Include 2+ anti-triggers with skill recommendations
+- Prefer concise positive intent/scope; no 150-character floor
+- Test boundaries in near-miss prompts, not mandatory negative frontmatter syntax
 
 ### Step 5: IMPROVE TESTS
 
 Update test prompts to match new frontmatter.
 
-**shouldTriggerPrompts (5+ required):**
+**shouldTriggerPrompts (start with 5+):**
 - Match "USE FOR:" phrases
 - Include natural language variations
 - Cover primary use cases
 
-**shouldNotTriggerPrompts (5+ required):**
-- Match "DO NOT USE FOR:" scenarios
+**shouldNotTriggerPrompts (start with 5+):**
+- Include close near-misses derived from intended scope
 - Include unrelated topics
 - Include other tools/platforms
 
@@ -180,7 +175,7 @@ Display comparison:
 ║  Score: Low                      Score: Medium-High              ║
 ║  Tokens: 142                     Tokens: 385                     ║
 ║  Triggers: 0                     Triggers: 5                     ║
-║  Anti-triggers: 0                Anti-triggers: 3                ║
+║  Near-miss tests: 0              Near-miss tests: 5              ║
 ║                                                                  ║
 ║  TOKEN STATUS: ✅ Under budget (385 < 500)                       ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -241,7 +236,7 @@ When processing multiple skills:
 1. Log specific failure
 2. Attempt fix (adjust prompts/frontmatter)
 3. Re-run (max 2 attempts)
-4. If still failing, commit partial progress
+4. If still failing, report the failure; do not claim completion or commit unasked
 
 ### Skill Not Found
 1. Check path exists
@@ -296,7 +291,8 @@ After a skill is deployed, monitor for these signals to guide further iteration.
 **Fixes:**
 - Make description more specific (narrow the domain)
 - Use distinctive `WHEN:` phrases with quoted terms unique to this skill
-- In small skill sets: adding "Do NOT use for" may help. In large sets (10+): prefer positive-only routing to avoid keyword contamination (see [scoring.md](scoring.md) check 4)
+- Evaluate concise scope wording against realistic positives and near-misses;
+  negative boundaries are context-sensitive, not a universal model rule
 
 ### Execution Issues
 

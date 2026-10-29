@@ -32,6 +32,14 @@ const examples = [
     <p class="mt-4 text-mid-gray text-lg max-w-2xl">
       Install it as a skill, run it with npx, wire it into CI, or import the parts you need.
     </p>
+    <p class="mt-4 text-mid-gray max-w-2xl">
+      A shared SKILL.md does not guarantee shared installation, invocation controls,
+      or permissions. See the
+      <a class="text-orange-accent" href="https://github.com/spboyer/sensei/blob/main/references/portability.md">host portability matrix</a>
+      for Claude Code extensions, OpenAI sidecars/API bundles, and Copilot locations.
+      Local personal skills are not automatically available in cloud sessions.
+      Static scoring is not observed activation or a security audit.
+    </p>
     <div class="mt-12">
       <div class="inline-flex items-center bg-dark-gray border border-mid-gray/20 font-mono text-base">
         <code id="qs-install-cmd" class="px-6 py-4 text-light-gray select-all">{installCommand}</code>

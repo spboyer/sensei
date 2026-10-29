@@ -7,12 +7,12 @@ const levels = [
   },
   {
     name: 'Medium',
-    criteria: 'Has triggers, missing anti-triggers',
+    criteria: 'Recognizable purpose, ambiguous routing',
     active: false,
   },
   {
     name: 'Medium-High',
-    criteria: 'Triggers + anti-triggers present',
+    criteria: 'Concise scope and distinctive positive use cases',
     active: true,
   },
   {
@@ -29,7 +29,10 @@ const levels = [
       Scoring Levels
     </h2>
     <p class="mt-4 text-mid-gray text-lg max-w-2xl">
-      Sensei targets Medium-High — the sweet spot between completeness and token efficiency.
+      Sensei targets Medium-High as an authoring rubric, not a computed CLI level
+      or specification requirement. The CLI separates portable diagnostics from
+      optional recommendations. License and version are optional; WHEN, prefixes,
+      60 words, and 500 tokens are Sensei conventions, not normative rules.
     </p>
     <div class="mt-16 grid grid-cols-1 md:grid-cols-4 gap-px bg-mid-gray/10">
       {levels.map((level, i) => (

@@ -508,7 +508,7 @@ describe('checkLicenseRecommendation', () => {
   it('warns when license is missing', () => {
     const result = checkLicenseRecommendation({ name: 'x', description: 'y' });
     expect(result.status).toBe('warning');
-    expect(result.message).toContain('strongly recommended');
+    expect(result.message).toContain('optional');
   });
 
   it('warns when license is empty string', () => {
@@ -527,7 +527,7 @@ describe('checkVersionRecommendation', () => {
   it('warns when metadata is missing', () => {
     const result = checkVersionRecommendation({ name: 'x', description: 'y' });
     expect(result.status).toBe('warning');
-    expect(result.message).toContain('strongly recommended');
+    expect(result.message).toContain('optional');
   });
 
   it('warns when metadata exists but has no version', () => {
@@ -549,7 +549,7 @@ describe('scoreSkillContent', () => {
   const skillContent = [
     '---',
     'name: memory-skill',
-    'description: Deploy and configure applications. WHEN: deploy app, configure app.',
+    'description: "Deploy and configure applications. WHEN: deploy app, configure app."',
     '---',
     '',
     '# Memory Skill',
@@ -565,7 +565,7 @@ describe('scoreSkillContent', () => {
     expect(result.skillPath).toBe('<memory>');
     expect(result.moduleCount).toBe(0);
     expect(result.tokenCount).toBeGreaterThan(0);
-    expect(result.checks).toHaveLength(9);
+    expect(result.checks).toHaveLength(11);
 
     const specNames = result.specChecks.map(c => c.name);
     expect(specNames).toContain('spec-frontmatter');
@@ -636,7 +636,7 @@ describe('scoreSkill', () => {
 
     expect(result.skillPath).toBe(tempDir);
     expect(result).toEqual(contentResult);
-    expect(result.checks).toHaveLength(9);
+    expect(result.checks).toHaveLength(11);
     expect(result.specChecks.length).toBeGreaterThan(0);
     expect(result.tokenCount).toBeGreaterThan(0);
     expect(result.moduleCount).toBe(2);

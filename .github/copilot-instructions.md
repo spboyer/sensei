@@ -20,14 +20,21 @@ This repository is **Sensei**, an Agent Skill that improves `SKILL.md` frontmatt
   ```
 
 - Prefer positive routing with `WHEN:` / `USE FOR:` trigger phrases.
-- Avoid `DO NOT USE FOR:` in descriptions because it can contaminate skill routing.
+- Default to concise positive scope; test negative boundaries with near-miss prompts.
 - Keep description fields under 1024 characters.
 - Use inline double-quoted descriptions, not folded YAML scalars.
 - Use skill type prefixes consistently: `**WORKFLOW SKILL**`, `**UTILITY SKILL**`, or `**ANALYSIS SKILL**`.
 
+These routing labels, type prefixes, inline description style, 150-character/60-word
+targets, and 500-token target are Sensei conventions, not portable-spec requirements.
+Do not pad useful short descriptions. The standard requires `name` and `description`;
+missing license/version is advisory only. Keep `specChecks` separate from optional
+`checks`, and distinguish static scoring/GEPA keyword fitness from observed host
+activation. See `references/portability.md` for host-specific limitations.
+
 ## Token and Scoring Expectations
 
-- Target `SKILL.md` at about 500 tokens; hard limit is 5000 tokens.
+- Target `SKILL.md` at about 500 tokens; enforce repository-configured check limits.
 - Keep `references/*.md` near 2000 tokens or less.
 - Target Medium-High or High advisory score:
   - Medium-High: trigger phrases with a concise description.

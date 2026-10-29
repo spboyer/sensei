@@ -8,6 +8,7 @@
 import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { estimateTokens } from './types.js';
+import { isAlias, isMap, isScalar, parseDocument } from 'yaml';
 
 /** Max skill name length per agentskills.io spec */
 const MAX_SKILL_NAME_LENGTH = 64;
@@ -42,22 +43,6 @@ function listFilesRecursive(dir: string): string[] {
   return results;
 }
 
-/** Strip simple YAML scalar quotes from frontmatter values. */
-function normalizeFrontmatterValue(value: string): string {
-  const trimmed = value.trim();
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
-    return trimmed.slice(1, -1);
-  }
-  return trimmed;
-}
-
-function isBlockScalarMarker(value: string): boolean {
-  return /^[|>][+-]?$/.test(value);
-}
-
 /** Result of a single advisory check */
 export interface AdvisoryCheck {
   readonly name: string;
@@ -72,43 +57,65 @@ export interface AdvisoryCheck {
 
 /** Parsed frontmatter fields */
 export interface ParsedFrontmatter {
+  readonly errors?: readonly string[];
   readonly fields: Record<string, unknown>;
   readonly name?: string;
   readonly description?: string;
   readonly compatibility?: string;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object') return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 /**
  * Parse YAML frontmatter from SKILL.md content.
- * Lightweight parser — extracts key-value pairs without a full YAML library.
+ * Null means absent/unclosed delimiters; invalid YAML carries errors.
  */
 export function parseFrontmatter(content: string): ParsedFrontmatter | null {
-  const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
-  if (!match) return null;
-
-  const fmContent = match[1];
-  const fields: Record<string, unknown> = {};
-
-  // Extract top-level keys (handles single-line and multi-line values)
-  const lines = fmContent.split('\n');
-  let currentKey: string | null = null;
-  let currentValue = '';
-
-  for (const line of lines) {
-    const keyMatch = line.match(/^(\w[\w-]*)\s*:\s*(.*)/);
-    if (keyMatch) {
-      if (currentKey) {
-        fields[currentKey] = normalizeFrontmatterValue(currentValue);
+  const match = content.match(/^---[ \t]*\r?\n([\s\S]*?)^---[ \t]*(?:\r?\n|$)/m);
+  if (!match || match.index !== 0) return null;
+  const doc = parseDocument(match[1], { uniqueKeys: true });
+  const errors = [...doc.errors, ...doc.warnings].map(error => error.message);
+  if (!isMap(doc.contents)) {
+    errors.push('Frontmatter must be a YAML mapping');
+  } else {
+    const fieldKeys = new Set<string>();
+    for (const pair of doc.contents.items) {
+      const key = isAlias(pair.key) ? pair.key.resolve(doc) : pair.key;
+      const value = isAlias(pair.value) ? pair.value.resolve(doc) : pair.value;
+      if (!isScalar(key) || typeof key.value !== 'string') {
+        errors.push('Frontmatter keys must be strings');
+      } else {
+        if (fieldKeys.has(key.value)) errors.push(`Frontmatter keys must be unique: ${key.value}`);
+        fieldKeys.add(key.value);
       }
-      currentKey = keyMatch[1];
-      const rawVal = keyMatch[2].trim();
-      currentValue = isBlockScalarMarker(rawVal) ? '' : rawVal;
-    } else if (currentKey && (line.startsWith('  ') || line.startsWith('\t'))) {
-      currentValue += (currentValue ? '\n' : '') + line.trim();
+      if (isScalar(key) && key.value === 'metadata' && isMap(value)) {
+        const metadataKeys = new Set<string>();
+        for (const entry of value.items) {
+          const metadataKey = isAlias(entry.key) ? entry.key.resolve(doc) : entry.key;
+          if (!isScalar(metadataKey) || typeof metadataKey.value !== 'string') {
+            errors.push('Metadata keys must be strings');
+          } else {
+            if (metadataKeys.has(metadataKey.value)) errors.push(`Metadata keys must be unique: ${metadataKey.value}`);
+            metadataKeys.add(metadataKey.value);
+          }
+        }
+      }
     }
   }
-  if (currentKey) {
-    fields[currentKey] = normalizeFrontmatterValue(currentValue);
+  if (errors.length > 0) return { fields: {}, errors };
+  let fields: unknown;
+  try {
+    fields = doc.toJS({ maxAliasCount: 100 });
+  } catch (error) {
+    if (!(error instanceof ReferenceError)) throw error;
+    return { fields: {}, errors: [`YAML alias resolution failed: ${error.message}`] };
+  }
+  if (!isRecord(fields)) {
+    return { fields: {}, errors: ['Frontmatter must be a YAML string-keyed mapping'] };
   }
 
   return {
@@ -143,8 +150,19 @@ export function checkFrontmatterStructure(content: string): AdvisoryCheck {
   }
 
   const missing: string[] = [];
-  if (!fm.name) missing.push('name');
-  if (!fm.description) missing.push('description');
+  if (fm.errors?.length) {
+    return {
+      name: 'spec-frontmatter',
+      status: 'warning',
+      message: `Cannot validate YAML frontmatter: ${fm.errors.join('; ')}`,
+      evidence: 'agentskills.io/specification: YAML mapping required'
+    };
+  }
+  for (const key of ['name', 'description']) {
+    if (!(key in fm.fields)) missing.push(key);
+    else if (typeof fm.fields[key] !== 'string') missing.push(`${key} (must be a string)`);
+    else if (!fm.fields[key].trim()) missing.push(`${key} (must be non-empty)`);
+  }
 
   if (missing.length > 0) {
     return {
@@ -180,7 +198,7 @@ export function checkAllowedFields(fields: Record<string, unknown>): AdvisoryChe
   return {
     name: 'spec-allowed-fields',
     status: 'ok',
-    message: 'All frontmatter fields are spec-compliant'
+    message: 'All field names belong to the portable specification (host behavior is outside this check)'
   };
 }
 
@@ -288,11 +306,11 @@ export function checkCompatibilityCompliance(compatibility: string | undefined):
     };
   }
 
-  if (compatibility.length > MAX_COMPATIBILITY_LENGTH) {
+  if (!compatibility.trim() || compatibility.length > MAX_COMPATIBILITY_LENGTH) {
     return {
       name: 'spec-compatibility',
       status: 'warning',
-      message: `Compatibility exceeds ${MAX_COMPATIBILITY_LENGTH} char limit (${compatibility.length})`,
+      message: `Compatibility must contain 1-${MAX_COMPATIBILITY_LENGTH} characters (${compatibility.length})`,
       evidence: 'agentskills.io spec: compatibility max 500 characters'
     };
   }
@@ -305,29 +323,27 @@ export function checkCompatibilityCompliance(compatibility: string | undefined):
 }
 
 /**
- * Spec Recommendation: Suggest adding a license field.
- * Not required by spec, but strongly recommended for discoverability and trust.
+ * Sensei suggestion, not a specification requirement.
  */
 export function checkLicenseRecommendation(fields: Record<string, unknown>): AdvisoryCheck {
   if ('license' in fields && typeof fields['license'] === 'string' && fields['license'].trim()) {
     return {
-      name: 'spec-license',
+      name: 'license-recommendation',
       status: 'optimal',
       message: `License specified: ${fields['license']}`,
     };
   }
 
   return {
-    name: 'spec-license',
+    name: 'license-recommendation',
     status: 'warning',
-    message: 'No license field — strongly recommended for discoverability and trust',
-    evidence: 'agentskills.io spec: optional license field'
+    message: 'Consider a license field when distributing the skill (optional)',
+    evidence: 'Sensei suggestion; the specification makes license optional'
   };
 }
 
 /**
- * Spec Recommendation: Suggest adding version metadata.
- * Not required by spec, but strongly recommended for tracking and compatibility.
+ * Sensei suggestion, not a standardized metadata key.
  */
 export function checkVersionRecommendation(fields: Record<string, unknown>): AdvisoryCheck {
   const metadata = fields['metadata'];
@@ -335,7 +351,7 @@ export function checkVersionRecommendation(fields: Record<string, unknown>): Adv
     const metaRecord = metadata as Record<string, unknown>;
     if ('version' in metaRecord && typeof metaRecord['version'] === 'string' && metaRecord['version'].trim()) {
       return {
-        name: 'spec-version',
+        name: 'version-recommendation',
         status: 'optimal',
         message: `Version specified: ${metaRecord['version']}`,
       };
@@ -343,10 +359,10 @@ export function checkVersionRecommendation(fields: Record<string, unknown>): Adv
   }
 
   return {
-    name: 'spec-version',
+    name: 'version-recommendation',
     status: 'warning',
-    message: 'No metadata.version field — strongly recommended for tracking and compatibility',
-    evidence: 'agentskills.io spec: optional metadata key-value pairs'
+    message: 'Consider metadata.version for release tracking (optional)',
+    evidence: 'Sensei suggestion; the specification does not require a version key'
   };
 }
 
@@ -624,8 +640,7 @@ const MAX_DESCRIPTION_WORDS = 60;
 
 /**
  * Check 16: Cross-Model Description Density
- * Checks description for patterns that cause unreliable invocation on
- * Claude Sonnet and similar models that use fast pattern matching.
+ * Sensei authoring heuristics; actual routing must be evaluated on the host.
  *
  * Sub-checks:
  * - Word count (>60 words = warning)
@@ -652,8 +667,8 @@ export function checkCrossModelDensity(description: string): AdvisoryCheck[] {
     checks.push({
       name: 'cross-model-word-count',
       status: 'warning',
-      message: `Description is ${wordCount} words (max ${MAX_DESCRIPTION_WORDS}). Dense descriptions dilute attention on Claude Sonnet — trim to ≤${MAX_DESCRIPTION_WORDS} words`,
-      evidence: 'Cross-model analysis: Sonnet selects by fast pattern matching on the first ~20 words'
+      message: `Description is ${wordCount} words (Sensei target: ${MAX_DESCRIPTION_WORDS}). Consider trimming while preserving intent and scope`,
+      evidence: 'Sensei heuristic, not a specification limit; evaluate routing on the target host'
     });
   } else {
     checks.push({
@@ -674,14 +689,14 @@ export function checkCrossModelDensity(description: string): AdvisoryCheck[] {
     checks.push({
       name: 'cross-model-anti-trigger',
       status: 'warning',
-      message: 'Anti-trigger clauses ("DO NOT USE FOR:") cause keyword contamination on Claude Sonnet — they introduce the very keywords that trigger wrong-skill activation. Remove and use positive routing with WHEN: instead',
-      evidence: 'Cross-model analysis: negation reasoning is weak on Sonnet; anti-triggers introduce competing keywords'
+      message: 'Negative routing clause found. Prefer concise positive scope by default; test exclusions as near-miss prompts',
+      evidence: 'Sensei heuristic; negative boundaries may help in some deployments and require host evaluation'
     });
   } else {
     checks.push({
       name: 'cross-model-anti-trigger',
       status: 'ok',
-      message: 'No anti-trigger contamination detected'
+      message: 'No negative routing clause found'
     });
   }
 
@@ -699,8 +714,8 @@ export function checkCrossModelDensity(description: string): AdvisoryCheck[] {
       checks.push({
         name: 'cross-model-lead-verb',
         status: 'warning',
-        message: `Lead sentence should start with unique action verb for fast pattern matching. Found: "${firstWord}"`,
-        evidence: 'Cross-model analysis: front-load the signal in the first ~20 words'
+        message: `Consider leading with a distinctive action and domain. Found: "${firstWord}"`,
+        evidence: 'Sensei readability heuristic, not a specification requirement'
       });
     } else {
       // Check the word after the prefix dash
@@ -715,7 +730,7 @@ export function checkCrossModelDensity(description: string): AdvisoryCheck[] {
           name: 'cross-model-lead-verb',
           status: 'warning',
           message: `After skill type prefix, lead with action verb. Found: "${prefixFirstWord}"`,
-          evidence: 'Cross-model analysis: front-load the signal in the first ~20 words'
+          evidence: 'Sensei readability heuristic, not a specification requirement'
         });
       } else {
         checks.push({
@@ -740,19 +755,19 @@ export function checkCrossModelDensity(description: string): AdvisoryCheck[] {
     checks.push({
       name: 'cross-model-trigger-format',
       status: 'optimal',
-      message: 'Uses WHEN: trigger format (preferred for cross-model compatibility)'
+      message: 'Uses WHEN: trigger format (Sensei convention)'
     });
   } else if (hasUseFor) {
     checks.push({
       name: 'cross-model-trigger-format',
       status: 'ok',
-      message: 'Uses USE FOR: trigger format (accepted, but WHEN: with quoted phrases is preferred for cross-model reliability)'
+      message: 'Uses USE FOR: trigger format (accepted Sensei convention)'
     });
   } else {
     checks.push({
       name: 'cross-model-trigger-format',
       status: 'warning',
-      message: 'No explicit trigger format (WHEN: or USE FOR:) found — add WHEN: with 3-5 distinctive quoted trigger phrases'
+      message: 'Consider explicit scope or WHEN: phrases; no special keyword is required by the specification'
     });
   }
 
@@ -790,8 +805,21 @@ export function scoreSkillContent(content: string, opts: ScoreSkillContentOption
 
   // Spec compliance checks (agentskills.io)
   const specChecks: AdvisoryCheck[] = [checkFrontmatterStructure(content)];
-  if (fm) {
+  if (fm && !fm.errors?.length) {
     specChecks.push(checkAllowedFields(fm.fields));
+    const invalidTypes = ['license', 'compatibility', 'allowed-tools']
+      .filter(key => key in fm.fields && typeof fm.fields[key] !== 'string');
+    const metadata = fm.fields.metadata;
+    if ('metadata' in fm.fields && (
+      !isRecord(metadata) ||
+      Object.values(metadata).some(value => typeof value !== 'string')
+    )) invalidTypes.push('metadata (must be a string-to-string mapping)');
+    specChecks.push({
+      name: 'spec-field-types',
+      status: invalidTypes.length ? 'warning' : 'ok',
+      message: invalidTypes.length ? `Invalid field types: ${invalidTypes.join(', ')}` : 'Optional field types are valid',
+      evidence: 'agentskills.io/specification: optional scalar fields and string-valued metadata'
+    });
     if (fm.name) {
       specChecks.push(checkNameCompliance(fm.name));
       if (opts.path) {
@@ -801,9 +829,11 @@ export function scoreSkillContent(content: string, opts: ScoreSkillContentOption
     if (fm.description !== undefined) {
       specChecks.push(checkDescriptionCompliance(fm.description));
     }
-    specChecks.push(checkCompatibilityCompliance(fm.compatibility));
-    specChecks.push(checkLicenseRecommendation(fm.fields));
-    specChecks.push(checkVersionRecommendation(fm.fields));
+    if (!('compatibility' in fm.fields) || typeof fm.fields.compatibility === 'string') {
+      specChecks.push(checkCompatibilityCompliance(fm.compatibility));
+    }
+    checks.push(checkLicenseRecommendation(fm.fields));
+    checks.push(checkVersionRecommendation(fm.fields));
   }
 
   return {

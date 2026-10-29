@@ -2,6 +2,25 @@
 
 Project setup patterns for using Sensei.
 
+## Workflow invocation
+
+These are requests to the skill, not token CLI flags:
+
+```text
+Run sensei on my-skill
+Run sensei on skill-a, skill-b
+Run sensei on all Low-adherence skills
+Run sensei on all skills
+Run sensei on my-skill --fast
+Run sensei on my-skill --gepa
+```
+
+Default target is Medium-High (advisory), with at most five iterations per skill.
+`--fast` skips tests and reports them as not run. `--gepa` replaces template
+editing with optional proxy-based optimization; it does not observe activation.
+For help, explain modes and show the token CLI commands below. Process batches
+sequentially and ask before commits or discarding changes.
+
 ## Directory Structure
 
 Sensei expects skills in a standard structure:
@@ -61,8 +80,12 @@ Sensei detects test frameworks by checking:
 
 | Setting | Default | Override Example |
 |---------|---------|------------------|
-| Soft limit | 500 | `--token-limit 800` |
-| Hard limit | 5000 | (not configurable) |
+| Workflow soft target | 500 | Specify a target in the workflow prompt |
+| Configured check limit | `.token-limits.json` | `--config=path/to/limits.json` |
+
+The 500-token target is advisory; the spec recommends under 5000 tokens, not a
+mandatory hard limit. `check --strict` enforces your configured thresholds, while
+`suggest` emits optional ideas. See [scoring](scoring.md).
 
 ## Scoring Target
 
@@ -121,15 +144,21 @@ Or disable the minimum-length advisory:
 
 `sensei score --emit-proof` writes `sensei-audit.md` next to the skill, summarizing the frontmatter, token/module counts, spec checks, and advisory checks. PR review bots and humans can link it from PR bodies. Override the path with `--emit-proof=path/to/file.md`. In the GitHub Action, set the `emit-proof` input to a path.
 
-## Environment Variables
+## Optional GEPA optimization
 
-Sensei scripts respect these environment variables:
+GEPA uses keyword/proxy fitness rather than observed host activation. From the
+Sensei checkout, with Python and uv available:
 
 ```bash
-SENSEI_SKILLS_DIR=custom/skills/
-SENSEI_TESTS_DIR=custom/tests/
-SENSEI_TOKEN_LIMIT=800
+uv run scripts/src/gepa/auto_evaluator.py score --skill my-skill --skills-dir skills --tests-dir tests
+uv run --with-requirements scripts/src/gepa/requirements.txt scripts/src/gepa/auto_evaluator.py optimize --skill my-skill --skills-dir skills --tests-dir tests
 ```
+
+Optimization requires model access and the optional GEPA version in the existing
+requirements file. If your index cannot supply it, optimization is unavailable.
+Score-only mode uses the standard library and does not make LLM calls.
+Use explicit paths: the token CLI does not implement `SENSEI_*` environment
+variables or `--token-limit`.
 
 ## Integration with CI
 
@@ -139,5 +168,9 @@ Run Sensei in CI to validate skill compliance:
 # .github/workflows/skill-lint.yml
 - name: Check skill compliance
   run: |
-    python sensei/scripts/score_skill.py skills/*/SKILL.md --min-score medium-high
+    npx @spboyer/sensei check --root . --config .token-limits.json --strict
 ```
+
+This enforces configured token limits, not an advisory score threshold.
+Use `npx @spboyer/sensei score skills/my-skill --format=json` for separate
+portable-spec diagnostics and optional recommendations.

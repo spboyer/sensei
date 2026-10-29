@@ -35,7 +35,7 @@ const shouldNotTriggerPrompts = [
   'What is the weather today?',
   'Help me write a poem',
   
-  // Related but different skills (from DO NOT USE FOR)
+  // Near-miss requests outside intended scope (no negative frontmatter required)
   'Prompt that should use other-skill instead',
   'Another scenario for different skill',
   
