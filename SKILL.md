@@ -7,6 +7,7 @@ description: "**WORKFLOW SKILL** - Iteratively improve skill frontmatter and rou
 
 Improve skills using the [Ralph loop](references/loop.md). For help, explain modes,
 defaults, and checks from [configuration](references/configuration.md).
+For source bundles and installation, see [distribution](references/distribution.md).
 
 1. **Read** the target `SKILL.md`, references, tests, and repo-local instructions.
    Verify tooling exists before claiming it is missing. Count baseline tokens:
