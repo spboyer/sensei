@@ -319,6 +319,7 @@ sensei: improve {skill-name} frontmatter
 
 ## Reference Documentation
 
+- [distribution.md](references/distribution.md) - Source bundles and pull-based skill distribution
 - [scoring.md](references/scoring.md) - Detailed scoring criteria and algorithm
 - [mcp-integration.md](references/mcp-integration.md) - MCP tool integration patterns
 - [loop.md](references/loop.md) - Ralph loop workflow details
