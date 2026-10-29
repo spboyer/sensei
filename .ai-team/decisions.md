@@ -136,3 +136,9 @@
 **By:** Shayne Boyer (via Copilot)
 **What:** Optimize model assignments for quality and speed per role. Cost is not an issue.
 **Why:** User request — team should use the best available models for each role's needs.
+
+### 2026-10-29: Current role-based model routing supersedes fixed assignments
+**By:** Rusty, per Shayne Boyer's current direction
+**What:** Default to Auto / inherited runtime routing by omitting model overrides. This respects Copilot Fusion when the host/user exposes and selects it; no Fusion model ID is defined here. Configure `gpt-6.1-sol` for lead/architecture and complex implementation, `claude-sonnet-5.5` for content/visual review and independent QA, and inherited routing for Scribe (`claude-haiku-5.5` only when explicitly chosen by the user). Apply preferences only where current tool support and runtime override instructions permit; omit other override fields unless explicitly requested/configured. Report unavailable explicit requirements instead of silently substituting models.
+**Why:** Shayne requested more recent, role-appropriate models and allowed Copilot Fusion as a sensible default. These are practical preferences using currently advertised IDs, not benchmark claims or promises of availability on every host.
+**Supersedes:** The fixed Opus 4.6 coder / GPT-5.3-Codex reviewer assignments in the 2026-02-18 model directive and all older model assignments, catalogs, cost-first defaults, complexity bumps, and silent fallback chains. The 2026-02-20 quality/speed priority remains; cost does not dictate routing. Historical decisions remain intact, and all unrelated governance (including review/fix requirements) is unchanged. Current policy lives in `.ai-team/team.md`, refined by agent charters and enforced by `.github/agents/squad.agent.md`.

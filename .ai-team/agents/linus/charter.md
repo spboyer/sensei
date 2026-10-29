@@ -43,8 +43,10 @@ If I need another team member's input, say so — the coordinator will bring the
 
 | Task | Preferred | Why |
 |------|-----------|-----|
-| Code generation, implementation | `gpt-5.3-codex` | Best agentic coder (77.3% Terminal-Bench, 25% faster than 5.2) |
-| Debugging, refactoring | `gpt-5.3-codex` | Multi-step workflow excellence, near-human desktop automation |
+| Complex implementation, debugging, refactoring | `gpt-6.1-sol` | Role preference for multi-file implementation and technical reasoning |
+| Routine component edits, small fixes | Inherit runtime default | Preserve the host/user routing choice for routine work |
+
+Apply the current model-routing policy in `.ai-team/team.md`. Use the explicit preference only when runtime instructions permit configured overrides; otherwise omit `model`.
 
 ## Voice
 

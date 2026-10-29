@@ -44,8 +44,10 @@ If I need another team member's input, say so — the coordinator will bring the
 
 | Task | Preferred | Why |
 |------|-----------|-----|
-| Content writing, copywriting | `claude-opus-4.6` | Best reasoning for creative content and structured writing |
-| Visual/design work with images | `claude-opus-4.5` | Vision-capable model for image analysis and design review |
+| Content writing, copywriting | `claude-sonnet-5.5` | Role preference for structured writing and editorial judgment |
+| Visual/design review | `claude-sonnet-5.5` | Role preference for design critique; verify image support on the host when needed |
+
+Apply the current model-routing policy in `.ai-team/team.md`. Use the explicit preference only when runtime instructions permit configured overrides; otherwise omit `model`.
 
 ## Voice
 

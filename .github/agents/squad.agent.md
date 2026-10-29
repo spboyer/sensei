@@ -272,7 +272,7 @@ After routing determines WHO handles work, select the response MODE based on tas
 **Lightweight Mode exemplars** (one agent, minimal prompt):
 - "Fix the typo in README" → Spawn one agent, no charter, no history read.
 - "Add a comment to line 42" → Small scoped edit, minimal context needed.
-- "What does this function do?" → `agent_type: "explore"` (Haiku model, fast).
+- "What does this function do?" → `agent_type: "explore"` (inherit runtime routing unless an override is explicitly authorized).
 - Follow-up edits after a Standard/Full response — context is fresh, skip ceremony.
 
 **Standard Mode exemplars** (one agent, full ceremony):
@@ -293,9 +293,10 @@ After routing determines WHO handles work, select the response MODE based on tas
 
 **Lightweight Spawn Template** (skip charter, history, and decisions reads — just the task):
 
+All spawn templates omit `model` by default. Add it only for an explicitly requested or configured, runtime-authorized override under **Per-Agent Model Selection**. This applies equally to explore, Scribe, facilitator, and Lead spawns; do not infer a model from the template.
+
 ```
 agent_type: "general-purpose"
-model: "{resolved_model}"
 mode: "background"
 description: "{emoji} {Name}: {brief task summary}"
 prompt: |
@@ -330,7 +331,6 @@ For read-only queries in Lightweight mode, use the explore agent for speed:
 
 ```
 agent_type: "explore"
-model: "{resolved_model}"
 description: "{emoji} {Name}: {brief query}"
 prompt: |
   You are {Name}, the {Role}. Answer this question about the codebase:
@@ -340,96 +340,16 @@ prompt: |
 
 ### Per-Agent Model Selection
 
-Before spawning an agent, determine which model to use. Check these layers in order — first match wins:
+Use the current **Model Routing** policy in `.ai-team/team.md` and the matching task preference in the agent's charter. The 2026-10-29 user direction supersedes older fixed model assignments; do not revive historical defaults from decisions or agent history.
 
-**Layer 1 — User Override:** Did the user specify a model? ("use opus", "save costs", "use gpt-5.2-codex for this"). If yes, use that model. Session-wide directives ("always use haiku") persist until contradicted.
+1. **Runtime constraints first.** Inspect the actual tool schema and override instructions. Only set `model`, `reasoning_effort`, or `context_tier` when explicitly requested or configured and permitted by that runtime. Do not copy parent settings or infer overrides from model availability alone.
+2. **Current user direction, then configured role preference.** A current explicit user selection takes precedence. Otherwise, apply the charter's matching preference only when runtime instructions allow this configuration to authorize an override. The team's role preferences are `gpt-6.1-sol` for lead/architecture and complex implementation, and `claude-sonnet-5.5` for content/visual review and independent QA. Scribe inherits unless the user explicitly chooses `claude-haiku-5.5`. Routine work without an explicit preference inherits.
+3. **Default: inherit.** Omit `model` rather than choosing an unrelated model or applying cost/complexity tier bumps. App sessions may expose `auto`, but do not pass it to a tool that does not support it. Inheritance respects **Copilot Fusion** when the host/user exposes and selects it; never invent a Fusion model ID or claim Fusion is selected without evidence.
+4. **Availability is not authorization.** Verify an explicit ID is supported by the current tool and account. For image tasks, also verify host/model image support. If an explicit selection is unavailable or cannot be honored on the surface, report the limitation; never silently retry another model or drop the override to bypass the requirement. Use another route only when authorized.
 
-**Layer 2 — Charter Preference:** Does the agent's charter have a `## Model` section with `Preferred` set to a specific model (not `auto`)? If yes, use that model.
+All templates below omit `model` for inherited routing. Add the field only after the checks above authorize a specific override. No model catalog or fallback chain in this file overrides charter preferences or the user's session selection.
 
-**Layer 3 — Task-Aware Auto-Selection:** Use the governing principle: **cost first, unless code is being written.** Match the agent's task to determine output type, then select accordingly:
-
-| Task Output | Model | Tier | Rule |
-|-------------|-------|------|------|
-| Writing code (implementation, refactoring, test code, bug fixes) | `claude-sonnet-4.5` | Standard | Quality and accuracy matter for code. Use standard tier. |
-| Writing prompts or agent designs (structured text that functions like code) | `claude-sonnet-4.5` | Standard | Prompts are executable — treat like code. |
-| NOT writing code (docs, planning, triage, logs, changelogs, mechanical ops) | `claude-haiku-4.5` | Fast | Cost first. Haiku handles non-code tasks. |
-| Visual/design work requiring image analysis | `claude-opus-4.5` | Premium | Vision capability required. Overrides cost rule. |
-
-**Role-to-model mapping** (applying cost-first principle):
-
-| Role | Default Model | Why | Override When |
-|------|--------------|-----|---------------|
-| Core Dev / Backend / Frontend | `claude-sonnet-4.5` | Writes code — quality first | Heavy code gen → `gpt-5.2-codex` |
-| Tester / QA | `claude-sonnet-4.5` | Writes test code — quality first | Simple test scaffolding → `claude-haiku-4.5` |
-| Lead / Architect | auto (per-task) | Mixed: code review needs quality, planning needs cost | Architecture proposals → premium; triage/planning → haiku |
-| Prompt Engineer | auto (per-task) | Mixed: prompt design is like code, research is not | Prompt architecture → sonnet; research/analysis → haiku |
-| Copilot SDK Expert | `claude-sonnet-4.5` | Technical analysis that often touches code | Pure research → `claude-haiku-4.5` |
-| Designer / Visual | `claude-opus-4.5` | Vision-capable model required | — (never downgrade — vision is non-negotiable) |
-| DevRel / Writer | `claude-haiku-4.5` | Docs and writing — not code | — |
-| Scribe / Logger | `claude-haiku-4.5` | Mechanical file ops — cheapest possible | — (never bump Scribe) |
-| Git / Release | `claude-haiku-4.5` | Mechanical ops — changelogs, tags, version bumps | — (never bump mechanical ops) |
-
-**Task complexity adjustments** (apply at most ONE — no cascading):
-- **Bump UP to premium:** architecture proposals, reviewer gates, security audits, multi-agent coordination (output feeds 3+ agents)
-- **Bump DOWN to fast/cheap:** typo fixes, renames, boilerplate, scaffolding, changelogs, version bumps
-- **Switch to code specialist (`gpt-5.2-codex`):** large multi-file refactors, complex implementation from spec, heavy code generation (500+ lines)
-- **Switch to analytical diversity (`gemini-3-pro-preview`):** code reviews where a second perspective helps, security reviews, architecture reviews after a rejection
-
-**Layer 4 — Default:** If nothing else matched, use `claude-haiku-4.5`. Cost wins when in doubt, unless code is being produced.
-
-**Fallback chains — when a model is unavailable:**
-
-If a spawn fails because the selected model is unavailable (plan restriction, org policy, rate limit, deprecation, or any other reason), silently retry with the next model in the chain. Do NOT tell the user about fallback attempts. Maximum 3 retries before jumping to the nuclear fallback.
-
-```
-Premium:  claude-opus-4.6 → claude-opus-4.6-fast → claude-opus-4.5 → claude-sonnet-4.5 → (omit model param)
-Standard: claude-sonnet-4.5 → gpt-5.2-codex → claude-sonnet-4 → gpt-5.2 → (omit model param)
-Fast:     claude-haiku-4.5 → gpt-5.1-codex-mini → gpt-4.1 → gpt-5-mini → (omit model param)
-```
-
-`(omit model param)` = call the `task` tool WITHOUT the `model` parameter. The platform uses its built-in default. This is the nuclear fallback — it always works.
-
-**Fallback rules:**
-- If the user specified a provider ("use Claude"), fall back within that provider only before hitting nuclear
-- Never fall back UP in tier — a fast/cheap task should not land on a premium model
-- Log fallbacks to the orchestration log for debugging, but never surface to the user unless asked
-
-**Passing the model to spawns:**
-
-Pass the resolved model as the `model` parameter on every `task` tool call:
-
-```
-agent_type: "general-purpose"
-model: "{resolved_model}"
-mode: "background"
-description: "{emoji} {Name}: {brief task summary}"
-prompt: |
-  ...
-```
-
-Only set `model` when it differs from the platform default (`claude-sonnet-4.5`). If the resolved model IS `claude-sonnet-4.5`, you MAY omit the `model` parameter — the platform uses it as default.
-
-If you've exhausted the fallback chain and reached nuclear fallback, omit the `model` parameter entirely.
-
-**Spawn output format — show the model choice:**
-
-When spawning, include the model in your acknowledgment:
-
-```
-🔧 Fenster (claude-sonnet-4.5) — refactoring auth module
-🎨 Redfoot (claude-opus-4.5 · vision) — designing color system
-📋 Scribe (claude-haiku-4.5 · fast) — logging session
-⚡ Keaton (claude-opus-4.6 · bumped for architecture) — reviewing proposal
-📝 McManus (claude-haiku-4.5 · fast) — updating docs
-```
-
-Include tier annotation only when the model was bumped or a specialist was chosen. Default-tier spawns just show the model name.
-
-**Valid models (current platform catalog):**
-
-Premium: `claude-opus-4.6`, `claude-opus-4.6-fast`, `claude-opus-4.5`
-Standard: `claude-sonnet-4.5`, `claude-sonnet-4`, `gpt-5.2-codex`, `gpt-5.2`, `gpt-5.1-codex-max`, `gpt-5.1-codex`, `gpt-5.1`, `gpt-5`, `gemini-3-pro-preview`
-Fast/Cheap: `claude-haiku-4.5`, `gpt-5.1-codex-mini`, `gpt-5-mini`, `gpt-4.1`
+In spawn acknowledgments, show the explicit ID when set; otherwise say **inherited runtime default**. Do not guess which underlying model Auto or Fusion selected.
 
 ### Client Compatibility
 
@@ -439,7 +359,7 @@ Squad runs on multiple Copilot surfaces. The coordinator MUST detect its platfor
 
 Before spawning agents, determine the platform by checking available tools:
 
-1. **CLI mode** — `task` tool is available → full spawning control. Use `task` with `agent_type`, `mode`, `model`, `description`, `prompt` parameters. Collect results via `read_agent`.
+1. **CLI mode** — `task` tool is available → use its actual schema for spawning. Set optional `model` only under **Per-Agent Model Selection**; do not assume every runtime exposes the same parameters. Collect results via `read_agent` when supported.
 
 2. **VS Code mode** — `runSubagent` or `agent` tool is available → conditional behavior. Use `runSubagent` with the task prompt. Drop `agent_type`, `mode`, and `model` parameters. Multiple subagents in one turn run concurrently (equivalent to background mode). Results return automatically — no `read_agent` needed.
 
@@ -453,7 +373,7 @@ When in VS Code mode, the coordinator changes behavior in these ways:
 
 - **Spawning tool:** Use `runSubagent` instead of `task`. The prompt is the only required parameter — pass the full agent prompt (charter, identity, task, hygiene, response order) exactly as you would on CLI.
 - **Parallelism:** Spawn ALL concurrent agents in a SINGLE turn. They run in parallel automatically. This replaces `mode: "background"` + `read_agent` polling.
-- **Model selection:** Accept the session model. Do NOT attempt per-spawn model selection or fallback chains — they only work on CLI. In Phase 1, all subagents use whatever model the user selected in VS Code's model picker.
+- **Model selection:** Accept the session selection when per-spawn overrides are unsupported. Do not attempt fallback chains or encode model choices in prompts as a workaround. Disclose an unmet explicit model requirement rather than claiming the override took effect.
 - **Scribe:** Cannot fire-and-forget. Batch Scribe as the LAST subagent in any parallel group. Scribe is light work (file ops only), so the blocking is tolerable.
 - **Launch table:** Skip it. Results arrive with the response, not separately. By the time the coordinator speaks, the work is already done.
 - **`read_agent`:** Skip entirely. Results return automatically when subagents complete.
@@ -466,7 +386,7 @@ When in VS Code mode, the coordinator changes behavior in these ways:
 | Feature | CLI | VS Code | Degradation |
 |---------|-----|---------|-------------|
 | Parallel fan-out | `mode: "background"` + `read_agent` | Multiple subagents in one turn | None — equivalent concurrency |
-| Model selection | Per-spawn `model` param (4-layer hierarchy) | Session model only (Phase 1) | Accept session model, log intent |
+| Model selection | Optional authorized `model` override if supported | Session selection when overrides are unsupported | Inherit; disclose unmet explicit requirements |
 | Scribe fire-and-forget | Background, never read | Sync, must wait | Batch with last parallel group |
 | Launch table UX | Show table → results later | Skip table → results with response | UX only — results are correct |
 | SQL tool | Available | Not available | Avoid SQL in cross-platform code paths |
@@ -684,7 +604,6 @@ Each entry records: agent routed, why chosen, mode (background/sync), files auth
 
 ```
 agent_type: "general-purpose"
-model: "{resolved_model}"
 mode: "background"
 description: "{emoji} {Name}: {brief task summary}"
 prompt: |
@@ -816,7 +735,6 @@ After each batch of agent work:
 5. **Spawn Scribe** (when triggered by step 4 — `mode: "background"`, never wait for Scribe):
 ```
 agent_type: "general-purpose"
-model: "claude-haiku-4.5"
 mode: "background"
 description: "📋 Scribe: Log session & merge decisions"
 prompt: |
@@ -956,7 +874,6 @@ Ceremonies are structured team meetings where agents align before or after work.
 
 ```
 agent_type: "general-purpose"
-model: "{resolved_model}"
 description: "{facilitator_emoji} {Facilitator}: {ceremony name} — {task summary}"
 prompt: |
   You are {Facilitator}, the {Role} on this project.
@@ -1670,11 +1587,10 @@ Squad can ingest a Product Requirements Document (PRD) and use it as the source 
 | **Work items** | {count, after decomposition} |
 ```
 
-3. **Decompose into work items.** Spawn the Lead agent (sync) with the PRD content. Use the Lead's charter model, with complexity bump to premium for architectural decomposition:
+3. **Decompose into work items.** Spawn the Lead agent (sync) with the PRD content. Apply **Per-Agent Model Selection** to the Lead's matching charter preference; no automatic complexity bump:
 
 ```
 agent_type: "general-purpose"
-model: "{resolved_model}"
 description: "{lead_emoji} {Lead}: Decompose PRD into work items"
 prompt: |
   You are {Lead}, the Lead on this project.
