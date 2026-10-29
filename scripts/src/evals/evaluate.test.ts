@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { linkSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -68,6 +68,15 @@ describe('behavioral adapter evaluation', () => {
     expect(report.baseline.activationRate).toBe(0.5);
     expect(report.deltas.assertionPassRate).toBe(1);
     expect(report.runs.find((r) => r.variant === 'baseline')?.skill).toBe(join(root, 'prior.md'));
+  });
+
+  it.each(['symlink', 'hardlink'])('rejects a %s alias of the candidate before execution', (kind) => {
+    const { path, root, manifest, save } = setup();
+    const alias = join(root, 'alias.md');
+    if (kind === 'symlink') symlinkSync('SKILL.md', alias);
+    else linkSync(join(root, 'SKILL.md'), alias);
+    save({ ...manifest, baseline: { kind: 'prior-version', skill: 'alias.md' } });
+    expect(() => evaluate(path, root)).toThrow('prior-version baseline must use a different skill file');
   });
 
   it.each(['quality-failure', 'wrong-routing'])('fails candidate expectations: %s', (mode) => {

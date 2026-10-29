@@ -109,7 +109,13 @@ function loadManifest(path: string, root: string): Manifest {
     throw new Error('without-skill baseline must omit skill');
   }
   const baselineSkill = baseline.kind === 'prior-version' ? file(baseline.skill) : null;
-  if (baselineSkill === skill) throw new Error('prior-version baseline must use a different skill file');
+  if (baselineSkill !== null) {
+    const candidateStat = statSync(skill);
+    const baselineStat = statSync(baselineSkill);
+    if (candidateStat.dev === baselineStat.dev && candidateStat.ino === baselineStat.ino) {
+      throw new Error('prior-version baseline must use a different skill file');
+    }
+  }
   const repetitions = integer(raw.repetitions, 'repetitions', 100);
   const timeoutMs = integer(raw.timeoutMs ?? 30_000, 'timeoutMs', 120_000);
   if (!Array.isArray(raw.cases) || !raw.cases.length) throw new Error('cases must be a nonempty array');

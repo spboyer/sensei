@@ -47,7 +47,8 @@ least one nonempty assertion. `repetitions` is required (1–100).
 
 For comparison against a previous version, use
 `"baseline": { "kind": "prior-version", "skill": "baseline/SKILL.md" }`.
-Both skill paths must exist as files, differ for prior-version mode, and remain
+Both skill paths must exist as files, identify distinct files for prior-version
+mode (symlink and hard-link aliases are rejected), and remain
 inside `--root` (default: current directory). Manifest paths resolve from
 `--root`; skill paths resolve from the manifest directory. Adapter argv and its
 working directory are relative to the manifest directory; executables also use
