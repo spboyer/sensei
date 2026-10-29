@@ -43,9 +43,11 @@ are this repository's distribution convention.
 ```bash
 mkdir -p skills/skill-name/references tests/skill-name
 touch skills/skill-name/SKILL.md tests/skill-name/prompts.md
-npm run tokens -- score skills/skill-name
-npm run tokens -- check skills/skill-name/SKILL.md
+npm run tokens -- score --root <target-repo> skills/skill-name
+npm run tokens -- check --root <target-repo> skills/skill-name/SKILL.md
 ```
+
+If running from inside the target repo, omit `--root`.
 
 Choose [Jest](jest.md), [pytest](pytest.md), or [manual prompts](prompts.md)
 according to the target project. Those templates are starting points, not proof

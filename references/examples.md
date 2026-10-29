@@ -69,6 +69,14 @@ Keyword tests alone do not prove that the host activated the skill.
 | Long list of overlapping domains | State the workflow's distinctive purpose |
 | Host control in portable frontmatter | Separate host-specific configuration; see [portability](portability.md) |
 
-Validate with `npm run tokens -- score <skill-dir>` and
-`npm run tokens -- check <skill-dir>/SKILL.md` from the Sensei checkout.
+When Sensei is installed separately from the target project, run from the Sensei
+checkout and pass the target root plus paths relative to it:
+
+```bash
+npm run tokens -- score --root <target-repo> <skill-path>
+npm run tokens -- check --root <target-repo> <skill-path>/SKILL.md
+```
+
+For example, use `--root ../my-project .github/skills/pdf-processor` when the
+target repo is `../my-project`. `count` accepts the same `--root` option.
 Do not describe a static score as runtime or security validation.

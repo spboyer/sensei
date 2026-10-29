@@ -97,7 +97,9 @@ The CLI uses a character-based token estimate, not an exact tokenizer.
 exceeded configured limits fail. `suggest` emits optional optimization ideas.
 Keep those warnings separate from optional `score` recommendations.
 Repo-local `.sensei.json` / AGENTS.md policy remains authoritative for local
-description style; use `--no-repo-policy` only intentionally.
+description style; use `--no-repo-policy` only intentionally. When running from
+a Sensei checkout against a separate target repository, add
+`--root <target-repo>` and pass positional paths relative to that root.
 
 ## Evidence limits
 

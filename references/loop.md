@@ -66,8 +66,8 @@ Load skill state:
 # Load SKILL.md
 cat {skills-dir}/{skill-name}/SKILL.md
 
-# Count baseline tokens
-npm run tokens -- count {skills-dir}/{skill-name}/SKILL.md
+# Count baseline tokens (paths relative to target repo)
+npm run tokens -- count --root {target-repo} {skills-dir}/{skill-name}/SKILL.md
 
 # Check for existing tests
 ls {tests-dir}/{skill-name}/
@@ -83,7 +83,7 @@ ls {tests-dir}/{skill-name}/
 Evaluate compliance:
 
 ```bash
-npm run tokens -- score {skills-dir}/{skill-name}
+npm run tokens -- score --root {target-repo} {skills-dir}/{skill-name}
 ```
 
 **Illustrative workflow summary (the CLI emits individual checks):**
