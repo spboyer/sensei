@@ -10,8 +10,10 @@ defaults, and checks from [configuration](references/configuration.md).
 
 1. **Read** the target `SKILL.md`, references, tests, and repo-local instructions.
    Verify tooling exists before claiming it is missing. Count baseline tokens:
-   `npm run tokens -- count <path>/SKILL.md` from the Sensei checkout.
-2. **Score** with `npm run tokens -- score <path>`. Separate portable-spec
+   From the Sensei checkout, pass the target repository root and a path relative
+   to it: `npm run tokens -- count --root <target-repo> <skill-path>/SKILL.md`.
+2. **Score** with `npm run tokens -- score --root <target-repo> <skill-path>`.
+   Separate portable-spec
    diagnostics from [Sensei recommendations](references/scoring.md).
    Preserve `.sensei.json` and AGENTS.md short-description policy. A 150-character
    floor, 60-word target, type prefix, `WHEN:`, and 500-token target are heuristics,
@@ -26,7 +28,8 @@ defaults, and checks from [configuration](references/configuration.md).
 5. **Verify** with the target project's test runner; `--fast` skips tests but must
    report them as not run. GEPA mode uses optional keyword/proxy fitness, not
    observed host activation; follow [configuration](references/configuration.md).
-6. **Check budgets** with `npm run tokens -- check <path>/SKILL.md`.
+6. **Check budgets** with
+   `npm run tokens -- check --root <target-repo> <skill-path>/SKILL.md`.
    Report configured token-limit warnings separately from optional optimization
    suggestions. For MCP-aware skills, follow [MCP integration](references/mcp-integration.md).
 7. **Summarize** changes, diagnostics, tests, token deltas, and remaining suggestions.
