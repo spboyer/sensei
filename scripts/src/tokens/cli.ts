@@ -32,7 +32,7 @@ Commands:
   check [paths...]     Check files against token limits
   suggest [paths...]   Get optimization suggestions
   compare [refs...]    Compare tokens between git refs
-  score [path]         Score a skill directory against SkillsBench criteria
+  score [path]         Check portable frontmatter and suggest authoring improvements
 
 Options:
   --format=<type>      Output format: json | table (default: table)
@@ -193,6 +193,7 @@ export function main(args = process.argv.slice(2)): void {
       } else {
         console.log(`\n📊 Skill Score: ${result.skillPath}`);
         console.log(`   Complexity: ${result.complexity} | Tokens: ${result.tokenCount} | Modules: ${result.moduleCount}`);
+        console.log('   Static checks only; recommendations do not establish host activation or security.');
         if (policy.shortDescriptionsPreferred) {
           console.log(`   📐 Repo-local policy: short descriptions preferred (from ${policy.source})`);
         }
@@ -202,7 +203,7 @@ export function main(args = process.argv.slice(2)): void {
         console.log('');
 
         if (result.specChecks.length > 0) {
-          console.log('  ── Spec Compliance (agentskills.io) ──');
+          console.log('  ── Spec Compliance (agentskills.io portable frontmatter) ──');
           for (const check of result.specChecks) {
             const icon = check.status === 'ok' ? '✅' : check.status === 'optimal' ? '🌟' : '⚠️';
             console.log(`  ${icon} ${check.name}: ${check.message}`);
@@ -213,7 +214,7 @@ export function main(args = process.argv.slice(2)): void {
           console.log('');
         }
 
-        console.log('  ── Advisory Checks (Sensei) ──');
+        console.log('  ── Advisory Checks (Sensei optional recommendations) ──');
         for (const check of result.checks) {
           const icon = check.status === 'ok' ? '✅' : check.status === 'optimal' ? '🌟' : '⚠️';
           console.log(`  ${icon} ${check.name}: ${check.message}`);

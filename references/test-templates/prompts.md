@@ -62,7 +62,7 @@ These prompts should NOT activate the {skill-name} skill:
 ## Notes
 
 - Trigger phrases based on: USE FOR section of SKILL.md
-- Anti-triggers based on: DO NOT USE FOR section of SKILL.md
+- Near-misses based on intended scope and adjacent workflows; no negative frontmatter required
 - Routing based on: INVOKES and FOR SINGLE OPERATIONS sections
 - Last updated: {date}
 ```

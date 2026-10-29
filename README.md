@@ -2,7 +2,15 @@
 
 > "A true master teaches not by telling, but by refining." - The Skill Sensei
 
-Sensei automates the improvement of [Agent Skills](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) frontmatter compliance using the [Ralph loop pattern](references/loop.md) - iteratively improving skills until they reach Medium-High compliance with all tests passing.
+Sensei validates portable [Agent Skills](https://agentskills.io/specification.md) frontmatter and suggests authoring improvements using the [Ralph loop pattern](references/loop.md). Medium-High is a Sensei advisory target, not a specification compliance level.
+
+**Specification versus advice:** `score` keeps portable diagnostics in `specChecks`
+and optional Sensei recommendations in `checks`, including license/version suggestions.
+The standard requires only `name` and `description`; 150 characters, 60 words,
+`WHEN:`, type prefixes, and the 500-token target are heuristics, not normative rules.
+Static scores and proof artifacts are neither observed activation nor security audits.
+See [scoring](references/scoring.md) and [host portability](references/portability.md)
+for constraints, runtime limitations, and the separately owned Copilot extension work in [#5](https://github.com/spboyer/sensei/pull/5).
 
 ## Table of Contents
 
@@ -25,8 +33,8 @@ Sensei automates the improvement of [Agent Skills](https://support.anthropic.com
 Skills without proper frontmatter lead to **skill collision** - agents invoking the wrong skill for a given prompt. Common issues include:
 
 - **No triggers** - Agent doesn't know when to activate the skill
-- **No anti-triggers** - Agent doesn't know when NOT to use the skill
-- **Brief descriptions** - Not enough context for accurate matching
+- **Ambiguous scope** - Similar skills compete for the same request
+- **Vague descriptions** - Length alone does not establish useful context
 - **Token bloat** - Oversized skills waste context window
 
 ### The Solution
@@ -34,7 +42,7 @@ Skills without proper frontmatter lead to **skill collision** - agents invoking 
 Sensei implements the "Ralph Wiggum" technique:
 1. **Read** - Load the skill's current state and token count
 2. **Score** - Evaluate frontmatter compliance
-3. **Improve** - Add triggers, anti-triggers, compatibility
+3. **Improve** - Clarify positive scope and test close near-misses
 4. **Verify** - Run tests to ensure changes work
 5. **Check Tokens** - Analyze token usage, gather suggestions
 6. **Summary** - Display before/after with suggestions
@@ -117,18 +125,26 @@ const frontmatter = parseFrontmatter(renderedSkillMarkdown);
 checkNameCompliance(frontmatter?.name ?? '');
 ```
 
-`path` is metadata; `moduleCount` defaults to `0`.
+`path` is metadata; `moduleCount` defaults to `0`. `parseFrontmatter` returns
+`null` for absent/unclosed delimiters, and optional `errors` for invalid delimited
+YAML. Nested metadata and scalar types are preserved; inspect diagnostics before
+using typed convenience fields.
 
 ---
 
 ### GEPA Commands
 
 ```bash
-python scripts/src/gepa/auto_evaluator.py score --skill my-skill
-python scripts/src/gepa/auto_evaluator.py optimize --skill my-skill
+uv run scripts/src/gepa/auto_evaluator.py score --skill my-skill --skills-dir skills --tests-dir tests
+uv run --with-requirements scripts/src/gepa/requirements.txt scripts/src/gepa/auto_evaluator.py optimize --skill my-skill --skills-dir skills --tests-dir tests
 ```
 
-### Flags
+Score-only mode needs no GEPA installation. Optimization requires the optional
+version in `scripts/src/gepa/requirements.txt` and model access; if that version
+is unavailable from your package index, optimization cannot run. GEPA uses
+keyword/proxy fitness; it does not observe whether a host loaded a skill.
+
+### Workflow prompt flags (not token CLI options)
 
 | Flag | Description |
 |------|-------------|
@@ -158,7 +174,7 @@ python scripts/src/gepa/auto_evaluator.py optimize --skill my-skill
 
 3. **Test Framework** - Jest, pytest, or similar for trigger tests
 
-4. **Python 3.10+** and **GEPA** - For evolutionary optimization (`pip install gepa`)
+4. **Python 3.10+**, **uv**, and **GEPA** - Optional proxy-based optimization
 
 ### Installation
 
@@ -170,7 +186,8 @@ git clone https://github.com/spboyer/sensei.git "$HOME/.copilot/skills/sensei"
 cd ~/.copilot/skills/sensei/scripts && npm install
 ```
 
-The skill is now available in Copilot CLI. Invoke with:
+This is the personal Copilot CLI location, not a guarantee of cloud availability.
+Check the [surface/location matrix](references/portability.md). Invoke with:
 ```
 Run sensei on my-skill-name
 ```
@@ -208,86 +225,18 @@ npx @spboyer/sensei check .
 
 ### The Ralph Loop
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  START: User invokes "Run sensei on {skill-name}"       │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  1. READ: Load skills/{skill-name}/SKILL.md             │
-│           Load tests/{skill-name}/ (if exists)          │
-│           Count tokens (baseline for comparison)        │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  2. SCORE: Run rule-based compliance check              │
-│     • Check description length (> 150 chars?)           │
-│     • Check for trigger phrases ("USE FOR:")            │
-│     • Check for anti-triggers ("DO NOT USE FOR:")       │
-│     • Check for compatibility field                     │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-              ┌───────────────┐
-              │ Score >= M-H  │──YES──▶ COMPLETE ✓
-              │ AND tests pass│        (next skill)
-              └───────┬───────┘
-                      │ NO
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  3. SCAFFOLD: If tests/{skill-name}/ missing:           │
-│     Create tests from references/test-templates/        │
-│     Creates prompts.md and framework-specific tests     │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  4. IMPROVE FRONTMATTER:                                │
-│     • Add "USE FOR:" with trigger phrases               │
-│     • Add "DO NOT USE FOR:" with anti-triggers          │
-│     • Add compatibility if applicable                   │
-│     • Keep description under 1024 chars                 │
-│     • OR with --gepa: GEPA evolutionary optimization    │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  5. IMPROVE TESTS:                                      │
-│     • Update shouldTriggerPrompts (5+ prompts)          │
-│     • Update shouldNotTriggerPrompts (5+ prompts)       │
-│     • Match prompts to new frontmatter triggers         │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  6. VERIFY: Run tests for the skill                     │
-│     • If tests fail → fix and retry                     │
-│     • If tests pass → continue                          │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  7. CHECK TOKENS:                                       │
-│     npm run tokens count {skill}/SKILL.md               │
-│     Verify under 500 token soft limit                   │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  8. SUMMARY: Display before/after comparison            │
-│     • Score change (Low → Medium-High)                  │
-│     • Token delta (+/- tokens)                          │
-│     • Unimplemented suggestions                         │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│  9. PROMPT USER: Choose action                          │
-│     [C] Commit changes                                  │
-│     [I] Create GitHub issue with suggestions            │
-│     [S] Skip (discard changes)                          │
-└─────────────────────┬───────────────────────────────────┘
-                      ▼
-              ┌───────────────┐
-              │ Iteration < 5 │──YES──▶ Go to step 2
-              └───────┬───────┘
-                      │ NO
-                      ▼
-               TIMEOUT (move to next skill)
-```
+Read the skill and tests, count baseline tokens, then validate YAML and portable
+fields with `npm run tokens -- score <skill-dir>`. Review optional authoring
+suggestions separately. Scaffold missing tests, clarify positive scope, and test
+realistic prompts plus close near-misses. GEPA mode optionally proposes changes
+using proxy fitness, not observed activation.
+
+Run the target project's tests and `npm run tokens -- check <skill-dir>/SKILL.md`.
+Configured token warnings are separate from optimization suggestions. Summarize
+changes, test evidence, token deltas, and remaining recommendations. Ask whether
+to commit, create an issue, or skip without discarding edits unasked. Repeat until
+the advisory target and tests pass, or report a timeout after five iterations.
+See the [detailed loop](references/loop.md) for framework-specific guidance.
 
 ### Batch Processing
 
@@ -306,9 +255,9 @@ When running on multiple skills:
 | Skills directory | `skills/` or `.github/skills/` | Where SKILL.md files live |
 | Tests directory | `tests/` | Where test files live |
 | Max iterations | 5 | Per-skill iteration limit before moving on |
-| Target score | Medium-High | Minimum compliance level |
+| Target score | Medium-High | Advisory workflow target |
 | Token soft limit | 500 | SKILL.md target token count |
-| Token hard limit | 5000 | SKILL.md maximum token count |
+| Token check limit | `.token-limits.json` | Configurable local threshold; spec recommends <5000 |
 | User prompt | After each skill | Commit, Create Issue, or Skip |
 | Continue on failure | Yes | Process remaining skills if one fails |
 
@@ -325,12 +274,15 @@ Run sensei on my-skill with skills in src/ai/skills/ and tests in spec/
 
 ### Adherence Levels
 
+This is the workflow's authoring rubric, not a computed CLI level. The CLI
+reports individual static checks. Do not pad descriptions to hit a minimum length.
+
 | Level | Description | Criteria |
 |-------|-------------|----------|
-| **Low** | Basic description | No explicit triggers, often < 150 chars |
-| **Medium** | Has trigger keywords | Description > 150 chars, implicit or explicit trigger phrases, >60 words |
+| **Low** | Vague description | Purpose or scope unclear |
+| **Medium** | Has trigger keywords | Purpose recognizable, routing ambiguous or noisy |
 | **Medium-High** | Has WHEN: or USE FOR: | "WHEN:" (preferred) or "USE FOR:" with ≤60 words |
-| **High** | Full compliance | Medium-High + routing clarity (INVOKES/FOR SINGLE OPERATIONS) |
+| **High** | Routing clarity | Medium-High + useful routing guidance (INVOKES/FOR SINGLE OPERATIONS) |
 
 ### Rule-Based Checks
 
@@ -340,16 +292,16 @@ Run sensei on my-skill with skills in src/ai/skills/ and tests in spec/
    - ≤ 64 characters
 
 2. **Description length**
-   - Minimum: 150 characters (effective)
+   - No specification minimum beyond non-empty; do not pad short useful descriptions
    - Maximum: 1024 characters (spec limit)
 
 3. **Trigger phrases**
    - Contains "WHEN:", "USE FOR:", or "Use this skill when"
    - Lists specific keywords and phrases
 
-4. **Anti-triggers** (optional, context-dependent)
-   - "DO NOT USE FOR:" — useful for small skill sets (1-5 skills)
-   - ⚠️ Risky in multi-skill environments (10+ skills) — causes keyword contamination
+4. **Scope boundaries** (evaluate on the target host)
+   - Prefer concise positive routing by default
+   - Test negative boundaries as near-miss prompts; no mandatory exclusion syntax
 
 5. **Routing clarity** (for High score)
    - Skill type prefix: `**WORKFLOW SKILL**`, `**UTILITY SKILL**`, or `**ANALYSIS SKILL**`
@@ -358,8 +310,8 @@ Run sensei on my-skill with skills in src/ai/skills/ and tests in spec/
 
 ### Target: Medium-High
 
-To reach Medium-High, a skill must have:
-- ✅ Description > 150 characters
+For this advisory target, aim for:
+- ✅ Clear intent and scope without padding
 - ✅ Explicit trigger phrases ("WHEN:" preferred, or "USE FOR:")
 - ✅ Description ≤ 60 words
 - ✅ SKILL.md < 500 tokens (soft limit, monitored)
@@ -415,7 +367,7 @@ description: 'Process PDF files for various tasks'
 **Problems:**
 - Only 37 characters
 - No trigger phrases
-- No anti-triggers
+- Scope is not specific enough to distinguish nearby tasks
 - Agent doesn't know when to activate
 
 ### After: Medium-High Adherence
@@ -437,14 +389,7 @@ description: "Extract, rotate, merge, and split PDF files. WHEN: \"extract PDF t
 ```yaml
 ---
 name: azure-deploy
-description: |
-  **WORKFLOW SKILL** - Orchestrates deployment through preparation, validation,
-  and execution phases for Azure applications.
-  USE FOR: "deploy to Azure", "azd up", "push to Azure", "publish to Azure".
-  DO NOT USE FOR: preparing new apps (use azure-prepare), validating before
-  deploy (use azure-validate), Azure Functions specifically (use azure-functions).
-  INVOKES: azure-azd MCP (up, deploy, provision), azure-deploy MCP (plan_get).
-  FOR SINGLE OPERATIONS: Use azure-azd MCP directly for single azd commands.
+description: "**WORKFLOW SKILL** - Deploy prepared Azure applications. WHEN: \"deploy to Azure\", \"azd up\", \"publish to Azure\". INVOKES: Azure deployment tools. FOR SINGLE OPERATIONS: use the deployment CLI directly."
 ---
 ```
 
@@ -485,10 +430,12 @@ const shouldNotTriggerPrompts = [
 ## Troubleshooting
 
 ### Tests Failing After Improvement
-Ensure `shouldTriggerPrompts` match "USE FOR:" phrases and `shouldNotTriggerPrompts` match "DO NOT USE FOR:" scenarios.
+Use realistic in-scope prompts and close near-misses derived from intended scope.
+Do not merely mirror literal keywords or add negative frontmatter syntax to satisfy tests.
 
 ### Skill Not Reaching Target Score
-Common causes: description > 1024 chars, anti-triggers not using "DO NOT USE FOR:" format, or conflicting triggers with other skills.
+Separate spec failures (such as description >1024 characters) from optional
+recommendations. Investigate overlapping scope with real host observations.
 
 ### Rolling Back Changes
 ```bash

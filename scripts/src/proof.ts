@@ -45,6 +45,7 @@ export function writeProof(opts: ProofOptions): string {
   lines.push(`# Sensei Audit — ${skillName}`);
   lines.push('');
   lines.push(`_Generated ${new Date().toISOString()}_`);
+  lines.push('Static frontmatter checks and optional suggestions; not observed activation, task-quality evidence, or a security audit.');
   lines.push('');
 
   if (policy && policy.shortDescriptionsPreferred) {

@@ -1,159 +1,54 @@
-# Skill Init Template
+# Skill initialization template
 
-Template for initializing a new skill with proper frontmatter structure.
-
-## SKILL.md Template
-
-### Medium-High Adherence (Minimum Target)
+Start with the portable minimum. Replace placeholders before validation.
 
 ```yaml
 ---
-name: {skill-name}
-description: |
-  {Brief description of what the skill does - 1-2 sentences}.
-  USE FOR: "{trigger-1}", "{trigger-2}", "{trigger-3}", "{trigger-4}", "{trigger-5}".
-  DO NOT USE FOR: {anti-trigger-1} (use {other-skill-1}), {anti-trigger-2} (use {other-skill-2}).
+name: skill-name
+description: "Extract the intended artifact or perform the specific workflow. Use when the request matches this scope."
 ---
 
-# {Skill Title}
+# Skill title
 
-{Skill instructions go here}
+Follow the operational steps here. Load detailed references only as needed.
 ```
 
-### High Adherence (With Routing Clarity)
+## Optional Sensei routing conventions
+
+For a workflow with meaningful tool relationships:
 
 ```yaml
 ---
-name: {skill-name}
-description: |
-  **{SKILL-TYPE} SKILL** - {Brief description of what the skill does - 1-2 sentences}.
-  USE FOR: "{trigger-1}", "{trigger-2}", "{trigger-3}", "{trigger-4}", "{trigger-5}".
-  DO NOT USE FOR: {anti-trigger-1} (use {other-skill-1}), {anti-trigger-2} (use {other-skill-2}).
-  INVOKES: {mcp-tool-1} ({commands}), {mcp-tool-2} ({commands}).
-  FOR SINGLE OPERATIONS: Use {mcp-tool} directly for {single-operation-type}.
+name: skill-name
+description: "**WORKFLOW SKILL** - Deploy prepared applications. WHEN: \"deploy app\", \"publish release\". INVOKES: deployment CLI. FOR SINGLE OPERATIONS: use the CLI directly."
 ---
-
-# {Skill Title}
-
-{Skill instructions go here}
 ```
 
-## Skill Types
+Use `**UTILITY SKILL**` for a single-purpose helper or `**ANALYSIS SKILL**` for
+read-only analysis. Prefixes and routing labels are conventions, not spec fields.
+Descriptions may use YAML block scalars, but inline double-quoted descriptions
+are this repository's distribution convention.
 
-Choose the appropriate prefix:
+## Scaffold checklist
 
-| Type | Prefix | When to Use |
-|------|--------|-------------|
-| Workflow | `**WORKFLOW SKILL**` | Multi-step orchestration, decisions, code generation |
-| Utility | `**UTILITY SKILL**` | Single-purpose helper, transformation, validation |
-| Analysis | `**ANALYSIS SKILL**` | Read-only analysis, reporting, diagnostics |
+- Name matches the directory and portable naming constraints.
+- Description states intent/scope, is non-empty, and fits 1024 characters.
+- Optional metadata has string values; quote versions.
+- Positive routing is concise; do not pad to 150 characters or require exclusions.
+- Move detail into references as needed; 500 tokens is a soft authoring target.
+- Add realistic positive prompts, paraphrases, and near-miss cases.
+- Observe activation where possible; report unavailable evidence, not a pass.
+- Compare output quality with a no-skill or previous-version baseline.
 
-## Directory Structure
-
-```
-skills/{skill-name}/
-├── SKILL.md              # Core skill file (required)
-└── references/           # Optional detailed docs
-    ├── examples.md
-    ├── configuration.md
-    └── troubleshooting.md
-
-tests/{skill-name}/
-├── triggers.test.ts      # or test_triggers.py
-├── routing.test.ts       # for High adherence skills
-└── prompts.md
-```
-
-## Checklist
-
-### Medium-High Adherence
-- [ ] Name is lowercase with hyphens only
-- [ ] Description > 150 characters
-- [ ] Has "USE FOR:" with 5+ trigger phrases
-- [ ] Has "DO NOT USE FOR:" with alternatives
-- [ ] SKILL.md < 500 tokens (soft limit)
-- [ ] Test file created with trigger/anti-trigger prompts
-
-### High Adherence (add to above)
-- [ ] Has skill type prefix (`**WORKFLOW SKILL**`, etc.)
-- [ ] Has "INVOKES:" listing MCP tools used
-- [ ] Has "FOR SINGLE OPERATIONS:" bypass guidance
-- [ ] Routing test file created
-
-## Quick Init Commands
-
-### Create skill structure
 ```bash
-mkdir -p skills/{skill-name}/references tests/{skill-name}
-touch skills/{skill-name}/SKILL.md
-touch tests/{skill-name}/prompts.md
+mkdir -p skills/skill-name/references tests/skill-name
+touch skills/skill-name/SKILL.md tests/skill-name/prompts.md
+npm run tokens -- score skills/skill-name
+npm run tokens -- check skills/skill-name/SKILL.md
 ```
 
-### Validate after creation
-```bash
-npm run tokens -- count skills/{skill-name}/SKILL.md
-npm run tokens -- check skills/{skill-name}/
-```
-
-## Examples by Type
-
-### Workflow Skill Init
-
-```yaml
----
-name: azure-deploy
-description: |
-  **WORKFLOW SKILL** - Orchestrates deployment through preparation, validation,
-  and execution phases for Azure applications.
-  USE FOR: "deploy to Azure", "azd up", "push to Azure", "publish to Azure",
-  "ship to production", "release to Azure".
-  DO NOT USE FOR: preparing new apps (use azure-prepare), validating before
-  deploy (use azure-validate), Azure Functions specifically (use azure-functions).
-  INVOKES: azure-azd MCP (up, deploy, provision), azure-deploy MCP (plan_get).
-  FOR SINGLE OPERATIONS: Use azure-azd MCP directly for single azd commands.
----
-```
-
-### Utility Skill Init
-
-```yaml
----
-name: token-counter
-description: |
-  **UTILITY SKILL** - Count tokens in markdown files and validate against limits.
-  USE FOR: "count tokens", "check token limit", "token budget", "how many tokens",
-  "validate skill size", "check file tokens".
-  DO NOT USE FOR: improving skills (use sensei), creating skills (use skill-creator),
-  editing markdown content (use markdown-editor).
-  INVOKES: tiktoken library, file system operations.
-  FOR SINGLE OPERATIONS: Run `npm run tokens count <file>` directly.
----
-```
-
-### Analysis Skill Init
-
-```yaml
----
-name: cost-analyzer
-description: |
-  **ANALYSIS SKILL** - Analyze Azure resource costs and identify optimization opportunities.
-  USE FOR: "analyze costs", "cost report", "spending analysis", "find expensive resources",
-  "optimize Azure costs", "reduce spending".
-  DO NOT USE FOR: provisioning resources (use azure-deploy), setting budgets (use azure-portal),
-  real-time monitoring (use azure-monitor).
-  INVOKES: azure-cost MCP (get_costs), azure-advisor MCP (get_recommendations).
-  FOR SINGLE OPERATIONS: Use azure-cost MCP directly for simple cost queries.
----
-```
-
-## Template Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `{skill-name}` | Lowercase name with hyphens | `azure-deploy` |
-| `{SKILL-TYPE}` | WORKFLOW, UTILITY, or ANALYSIS | `WORKFLOW` |
-| `{trigger-N}` | Phrases from USE FOR | `"deploy to Azure"` |
-| `{anti-trigger-N}` | Scenarios from DO NOT USE FOR | `preparing new apps` |
-| `{other-skill-N}` | Alternative skill to use | `azure-prepare` |
-| `{mcp-tool-N}` | MCP tool from INVOKES | `azure-azd` |
-| `{commands}` | Tool commands used | `up, deploy, provision` |
+Choose [Jest](jest.md), [pytest](pytest.md), or [manual prompts](prompts.md)
+according to the target project. Those templates are starting points, not proof
+of real host behavior. Record negative boundaries from intended scope without
+requiring negative frontmatter syntax. See [portability](../portability.md) before
+adding host-specific invocation controls.
