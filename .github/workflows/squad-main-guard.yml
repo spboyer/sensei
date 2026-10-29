@@ -12,13 +12,22 @@ permissions:
 jobs:
   guard:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+
+      - name: Test protected branch path policy
+        run: node --test .github/scripts/squad-main-guard.test.mjs
 
       - name: Check for forbidden paths
         uses: actions/github-script@v7
         with:
           script: |
+            const { pathToFileURL } = require('node:url');
+            const { isForbiddenTeamChange } = await import(pathToFileURL(
+              `${process.env.GITHUB_WORKSPACE}/.github/scripts/squad-main-guard.mjs`
+            ).href);
+
             // Fetch all files changed in this PR (paginated)
             const files = [];
             let page = 1;
@@ -35,18 +44,7 @@ jobs:
               page++;
             }
 
-            // Check each file against forbidden path rules
-            // Allow removals — deleting forbidden files from protected branches is fine
-            const forbidden = files
-              .filter(f => f.status !== 'removed')
-              .map(f => f.filename)
-              .filter(f => {
-                // .ai-team/** — ALL team state files, zero exceptions
-                if (f === '.ai-team' || f.startsWith('.ai-team/')) return true;
-                // team-docs/** — ALL internal team docs, zero exceptions
-                if (f.startsWith('team-docs/')) return true;
-                return false;
-              });
+            const forbidden = files.filter(isForbiddenTeamChange).map(f => f.filename);
 
             if (forbidden.length === 0) {
               core.info('✅ No forbidden paths found in PR — all clear.');
@@ -55,11 +53,13 @@ jobs:
 
             // Build a clear, actionable error message
             const lines = [
-              '## 🚫 Forbidden files detected in PR to main',
+              '## 🚫 Forbidden files detected in PR to a protected branch',
               '',
-              'The following files must NOT be merged into `main`.',
-              '`.ai-team/` is runtime team state — it belongs on dev branches only.',
-              '`team-docs/` is internal team content — it belongs on dev branches only.',
+              'The following files must NOT be merged into `main` or `preview`.',
+              'Only reviewed `.ai-team/team.md`, `.ai-team/decisions.md`, and',
+              '`.ai-team/agents/<one-level-agent>/charter.md` are allowed team policy files.',
+              'All other `.ai-team/` state and all `team-docs` content remain blocked.',
+              'Removals are allowed; renamed files are checked by their destination.',
               '',
               '### Forbidden files found:',
               '',
@@ -67,21 +67,8 @@ jobs:
               '',
               '### How to fix:',
               '',
-              '```bash',
-              '# Remove tracked .ai-team/ files (keeps local copies):',
-              'git rm --cached -r .ai-team/',
-              '',
-              '# Remove tracked team-docs/ files:',
-              'git rm --cached -r team-docs/',
-              '',
-              '# Commit the removal and push:',
-              'git commit -m "chore: remove forbidden paths from PR"',
-              'git push',
-              '```',
-              '',
-              '> ⚠️ `.ai-team/` is committed on `dev` and feature branches by design.',
-              '> The guard workflow is the enforcement mechanism that keeps these files off `main` and `preview`.',
-              '> `git rm --cached` untracks them from this PR without deleting your local copies.',
+              'Exclude the listed runtime/internal files from this PR, or remove them if cleanup is intended.',
+              'Keep reviewed curated policy files; do not untrack the entire `.ai-team/` directory.',
             ];
 
             core.setFailed(lines.join('\n'));

@@ -46,9 +46,11 @@ If I need another team member's input, say so — the coordinator will bring the
 
 | Task | Preferred | Why |
 |------|-----------|-----|
-| Test design, edge case analysis | `claude-opus-4.6` | Premium reasoning catches 4× fewer logic bugs than standard tier |
-| Heavy test code generation | `gpt-5.3-codex` | Best throughput for multi-file test suites |
-| Security review | `gpt-5.3-codex` | 77.6% on security CTFs, best vulnerability detection |
+| Test design, edge cases, independent QA and review | `claude-sonnet-5.5` | A separate model perspective from implementation; no guarantee of defect detection |
+| Complex test implementation | `gpt-6.1-sol` | Role preference for multi-file test code; retain independent QA afterward |
+| Routine build and link checks | Inherit runtime default | Preserve the host/user routing choice for mechanical checks |
+
+Apply the current model-routing policy in `.ai-team/team.md`. Use the explicit preference only when runtime instructions permit configured overrides; otherwise omit `model`.
 
 ## Voice
 

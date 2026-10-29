@@ -44,9 +44,10 @@ If I need another team member's input, say so — the coordinator will bring the
 
 | Task | Preferred | Why |
 |------|-----------|-----|
-| Architecture, code review, decisions | `claude-opus-4.6` | Deepest reasoning (80.8% SWE-bench, 65.4% Terminal-Bench) |
-| Triage, planning, quick assessments | `claude-opus-4.6-fast` | Same quality, 2.5× faster |
-| Code review (second opinion) | `gemini-3-pro-preview` | Analytical diversity — catches different bug classes than Claude |
+| Architecture, complex decisions, code review | `gpt-6.1-sol` | Role preference for complex reasoning and technical trade-offs |
+| Triage, planning, quick assessments | Inherit runtime default | Preserve the host/user routing choice for routine work |
+
+Apply the current model-routing policy in `.ai-team/team.md`. Use the explicit preference only when runtime instructions permit configured overrides; otherwise omit `model`.
 
 ## Voice
 
