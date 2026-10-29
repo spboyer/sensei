@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "adapter": ["node", "adapter.mjs"],
+  "skill": "../../../../SKILL.md",
+  "baseline": { "kind": "without-skill" },
+  "repetitions": 2,
+  "timeoutMs": 5000,
+  "cases": [
+    {
+      "id": "trigger",
+      "prompt": "Improve this skill's frontmatter routing",
+      "shouldActivate": true,
+      "assertions": [{ "id": "completion", "contains": "Fixture task completed" }]
+    },
+    {
+      "id": "near-miss",
+      "prompt": "Explain what frontmatter means without changing files",
+      "shouldActivate": false,
+      "assertions": [{ "id": "completion", "contains": "Fixture task completed" }]
+    }
+  ]
+}
