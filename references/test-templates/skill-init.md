@@ -41,13 +41,16 @@ are this repository's distribution convention.
 - Compare output quality with a no-skill or previous-version baseline.
 
 ```bash
-mkdir -p skills/skill-name/references tests/skill-name
-touch skills/skill-name/SKILL.md tests/skill-name/prompts.md
-npm run tokens -- score --root <target-repo> skills/skill-name
-npm run tokens -- check --root <target-repo> skills/skill-name/SKILL.md
+target_root="/path/to/target-repo"
+mkdir -p "$target_root/skills/skill-name/references" "$target_root/tests/skill-name"
+touch "$target_root/skills/skill-name/SKILL.md" "$target_root/tests/skill-name/prompts.md"
+# Fill SKILL.md using the template above before validation.
+npm run tokens -- score --root "$target_root" skills/skill-name
+npm run tokens -- check --root "$target_root" skills/skill-name/SKILL.md
 ```
 
-If running from inside the target repo, omit `--root`.
+Run these commands from the Sensei checkout and set `target_root` to the target
+repository's absolute path.
 
 Choose [Jest](jest.md), [pytest](pytest.md), or [manual prompts](prompts.md)
 according to the target project. Those templates are starting points, not proof

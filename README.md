@@ -189,7 +189,7 @@ keyword/proxy fitness; it does not observe whether a host loaded a skill.
 
 ### Installation
 
-#### Option 1: Install as Copilot CLI Skill (Recommended)
+#### Option 1: [Copilot CLI skill and source bundles](references/distribution.md)
 
 ```bash
 mkdir -p "$HOME/.copilot/skills"

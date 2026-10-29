@@ -28,6 +28,15 @@ After every substantial work session:
 4. **Propagate cross-agent updates** to affected agent history files
 5. **Commit `.ai-team/` changes** using Windows-compatible git commands
 
+## Model
+
+| Task | Preferred | Why |
+|------|-----------|-----|
+| Logging, memory updates, decision merging | Inherit runtime default | Omit `model`; respect the host/user default, including Copilot Fusion when selected and exposed |
+| Routine logging with an explicitly chosen lightweight model | `claude-haiku-5.5` | Optional only when the user explicitly chooses it and the runtime supports it |
+
+Apply the current model-routing policy in `.ai-team/team.md`. Never hardcode a Scribe override in spawn templates.
+
 ## Boundaries
 
 **I handle:** Logging, memory, decision merging, cross-agent updates.
