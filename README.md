@@ -162,7 +162,7 @@ python scripts/src/gepa/auto_evaluator.py optimize --skill my-skill
 
 ### Installation
 
-#### Option 1: Install as Copilot CLI Skill (Recommended)
+#### Option 1: [Copilot CLI skill and source bundles](references/distribution.md)
 
 ```bash
 mkdir -p "$HOME/.copilot/skills"
@@ -170,7 +170,7 @@ git clone https://github.com/spboyer/sensei.git "$HOME/.copilot/skills/sensei"
 cd ~/.copilot/skills/sensei/scripts && npm install
 ```
 
-The skill is now available in Copilot CLI. Invoke with:
+Invoke with:
 ```
 Run sensei on my-skill-name
 ```
