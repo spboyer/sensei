@@ -19,5 +19,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "yaml": "^2.9.0"
   }
 }

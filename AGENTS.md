@@ -63,8 +63,16 @@ description: "**WORKFLOW SKILL** — What the skill does. WHEN: \"trigger 1\", \
 Instructions loaded only after skill triggers.
 ```
 
-> ⚠️ "DO NOT USE FOR:" is actively discouraged — causes keyword contamination on Claude Sonnet.
-> Use inline double-quoted strings for descriptions (not `>-` folded scalars — incompatible with skills.sh).
+> Prefer concise positive routing by default. Test negative boundaries as near-miss
+> prompts; no exclusion syntax or universal claim about model internals is required.
+> Use inline double-quoted strings for this repository's distribution convention.
+
+The inline style is a repository distribution convention; block scalars are valid
+YAML. Only `name` and `description` are required by the portable standard. Prefixes,
+150-character/60-word targets, `WHEN:`, and 500 tokens are Sensei heuristics, not
+normative requirements. Do not pad useful descriptions. Keep `specChecks`
+separate from optional `checks`; missing license/version is advisory only.
+See [portability](references/portability.md) for host extensions and runtime limits.
 
 ### Skill Type Prefixes
 
@@ -114,7 +122,7 @@ See `references/mcp-integration.md` for patterns.
 
 - Add README-style content to SKILL.md (use README.md instead)
 - Exceed 1024 characters in the description field
-- Remove trigger or anti-trigger phrases without replacement
+- Remove meaningful scope boundaries without preserving them in instructions or evaluations
 - Omit INVOKES when skill calls MCP tools or other skills
 - Embed CLI commands without MCP option when MCP tools exist
 
@@ -143,10 +151,10 @@ npm run tokens -- score .
 cd scripts && npm test
 
 # GEPA: Score a skill (no LLM calls)
-python scripts/src/gepa/auto_evaluator.py score --skill my-skill --skills-dir skills --tests-dir tests
+uv run scripts/src/gepa/auto_evaluator.py score --skill my-skill --skills-dir skills --tests-dir tests
 
 # GEPA: Score all skills
-python scripts/src/gepa/auto_evaluator.py score-all --skills-dir skills --tests-dir tests
+uv run scripts/src/gepa/auto_evaluator.py score-all --skills-dir skills --tests-dir tests
 ```
 
 ## Token CLI Reference
@@ -210,5 +218,5 @@ Examples:
 - Node.js 18+ (for token management scripts)
 - npm (for running scripts)
 - Python 3.10+ (for GEPA auto-evaluator, optional)
-- gepa package (for GEPA optimization, `pip install gepa`)
+- gepa package (optional proxy optimization; use `uv run --with-requirements scripts/src/gepa/requirements.txt`)
 - No runtime dependencies for the skill itself
