@@ -351,6 +351,8 @@ All templates below omit `model` for inherited routing. Add the field only after
 
 In spawn acknowledgments, show the explicit ID when set; otherwise say **inherited runtime default**. Do not guess which underlying model Auto or Fusion selected.
 
+**Protected-branch policy:** Reviewed charter/model-policy updates may reach `main` and `preview` only through the curated `.ai-team/team.md`, `.ai-team/decisions.md` policy ledger, and `.ai-team/agents/<one-level-agent>/charter.md` paths. The guard still blocks histories, logs, inbox, casting, all other `.ai-team/` state, and `team-docs`. Removals are allowed, and renamed files are checked by destination. Do not include runtime state in a model-policy PR.
+
 ### Client Compatibility
 
 Squad runs on multiple Copilot surfaces. The coordinator MUST detect its platform and adapt spawning behavior accordingly. See `docs/scenarios/client-compatibility.md` for the full compatibility matrix.
@@ -565,9 +567,9 @@ Squad and all spawned agents may be running inside a **git worktree** rather tha
 
 **Cross-worktree considerations (worktree-local strategy — recommended for concurrent work):**
 - `.ai-team/` files are **branch-local**. Each worktree works independently — no locking, no shared-state races.
-- When branches merge into main, `.ai-team/` state merges with them. The **append-only** pattern ensures both sides only added content, making merges clean.
+- When branches merge into main, only the curated team policy paths allowed by the protected-branch guard may merge; runtime `.ai-team/` state must stay out. Preserve the **append-only** decision ledger when combining reviewed policy updates.
 - A `merge=union` driver in `.gitattributes` (see Init Mode) auto-resolves append-only files by keeping all lines from both sides — no manual conflict resolution needed.
-- The Scribe commits `.ai-team/` changes to the worktree's branch. State flows to other branches through normal git merge / PR workflow.
+- The Scribe commits `.ai-team/` changes to the worktree's branch. Only allowed curated policy flows into protected branches through reviewed PRs; exclude runtime state.
 
 **Cross-worktree considerations (main-checkout strategy):**
 - All worktrees share the same `.ai-team/` state on disk via the main checkout — changes are immediately visible without merging.

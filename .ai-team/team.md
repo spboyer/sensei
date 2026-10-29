@@ -39,6 +39,8 @@ Before setting `model`, verify that the current tool supports the ID and that ru
 
 The 2026-10-29 decision supersedes older fixed model assignments; unrelated governance remains unchanged.
 
+**Reviewed policy updates:** The protected-branch guard allows only `.ai-team/team.md`, `.ai-team/decisions.md` (the authoritative policy ledger), and `.ai-team/agents/<one-level-agent>/charter.md` as curated team files in PRs to `main` or `preview`. Histories, logs, decision inbox, casting, all other team state, and `team-docs` remain blocked. Removals are allowed; renames are checked by destination. This narrow exception supports reviewed charter/model-policy updates, not runtime-state merges.
+
 ## Project Context
 
 - **Owner:** Shayne Boyer (spboyer@live.com)
@@ -46,4 +48,4 @@ The 2026-10-29 decision supersedes older fixed model assignments; unrelated gove
 - **Description:** Build a clean, Danish-style GitHub Pages marketing site for Sensei at spboyer.github.io/sensei with black/gray/orange palette.
 - **Created:** 2026-02-09
 - **Repository:** spboyer/sensei
-- **Worktree strategy:** worktree-local — Squad state lives on main, gh-pages work uses a git worktree
+- **Worktree strategy:** worktree-local — curated Squad policy lives on main; runtime state stays out of protected-branch PRs; gh-pages work uses a git worktree
