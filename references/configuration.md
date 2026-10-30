@@ -132,17 +132,39 @@ If the target repo prefers short trigger-phrase descriptions, drop a `.sensei.js
 { "descriptionStyle": "short-trigger" }
 ```
 
-Or disable the minimum-length advisory:
+Or express the same preference with the supported policy override:
 
 ```json
 { "advisoryOverrides": { "minDescriptionLength": false } }
 ```
 
-`sensei score` detects this (and short-description cues in `AGENTS.md`) and suppresses description-length advisories accordingly. Disable with `--no-repo-policy`.
+`sensei score` reports this policy (and short-description cues in `AGENTS.md`)
+in CLI output and proof artifacts. The current portable scorer has no
+150-character minimum; the authoring loop should preserve useful short descriptions.
+Disable policy detection with `--no-repo-policy`.
 
 ## Proof Artifact
 
 `sensei score --emit-proof` writes `sensei-audit.md` next to the skill, summarizing the frontmatter, token/module counts, spec checks, and advisory checks. PR review bots and humans can link it from PR bodies. Override the path with `--emit-proof=path/to/file.md`. In the GitHub Action, set the `emit-proof` input to a path.
+
+Newly merged flags may not be in published packages. The composite Action runs
+npm (`package-version: latest` by default), not its checkout's CLI. Check both the
+Action ref and package version; use current checkout commands for unreleased
+behavior. See [release status](../README.md#distribution-and-release-status).
+
+## Optional behavioral evaluation
+
+From a current checkout with script dependencies installed:
+
+```bash
+npm run tokens -- eval manifest.json --root=/path/to/project --format=json
+```
+
+Supply a trusted host adapter, repeated positive/near-miss cases, literal output
+assertions, and a without-skill or prior-version baseline. Missing activation
+evidence cannot pass. Adapters run local code with inherited credentials and
+own trace authenticity and session isolation. See the
+[manifest, protocol, and smoke test](evaluation.md). GEPA fitness is separate.
 
 ## Optional GEPA optimization
 

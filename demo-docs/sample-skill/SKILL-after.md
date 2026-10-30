@@ -1,14 +1,12 @@
 ---
-name: file-utils
-description: |
-  **UTILITY SKILL** - Perform common file system operations including reading, writing, copying, and listing files.
-  USE FOR: "read file contents", "write to file", "list files in directory", "copy file", "delete file", "check if file exists", "get file size".
-  DO NOT USE FOR: searching file contents (use grep/search tools), editing code (use code editor), working with git (use git skill), bulk file operations (use shell directly).
+name: sample-skill
+description: "**UTILITY SKILL** - Read, write, copy, delete, and list local files. WHEN: \"read file contents\", \"copy a file\", \"list a directory\"."
 ---
 
-# File Utils
+# Sample Skill
 
-Handles common file system operations with safety checks.
+Use available file tools for the requested local operation. Confirm the target
+path and intended result before acting; report tool failures explicitly.
 
 ## Operations
 
@@ -24,5 +22,5 @@ Handles common file system operations with safety checks.
 ## Safety
 
 - Confirms before destructive operations
-- Respects .gitignore patterns
-- Won't overwrite without explicit flag
+- Ask before overwriting existing content
+- Preserve unrelated files and respect repository access restrictions

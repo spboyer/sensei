@@ -16,6 +16,7 @@ for constraints, runtime limitations, and the separately owned Copilot extension
 
 - [Overview](#overview)
 - [Quick Start](#quick-start)
+- [Distribution and Release Status](#distribution-and-release-status)
 - [Prerequisites](#prerequisites)
 - [How It Works](#how-it-works)
 - [Configuration](#configuration)
@@ -90,6 +91,9 @@ Score-only mode runs without LLM calls.
 
 ### External Integration Modes
 
+Published packages and Action tags may lag `main`; see [release status](#distribution-and-release-status)
+before using newly merged features.
+
 #### CLI / npx
 
 ```bash
@@ -135,9 +139,10 @@ using typed convenience fields.
 ### Optional Behavioral Evaluation
 
 ```bash
-npx @spboyer/sensei eval manifest.json --format=json
+npm run tokens -- eval manifest.json --root=/path/to/project --format=json
 ```
 
+Run from a current Sensei checkout with script dependencies installed.
 Compare repeated host observations and output assertions against a baseline.
 Unavailable evidence cannot pass; GEPA keyword fitness is not observed activation.
 No provider or Python dependency is added. See the
@@ -166,6 +171,20 @@ keyword/proxy fitness; it does not observe whether a host loaded a skill.
 > ⚠️ **Note:** Using `--fast` speeds up the loop significantly but may miss issues. Consider running full tests before final commit.
 
 ---
+
+## Distribution and Release Status
+
+As of 2026-10-30, npm `latest` is **1.5.0** and the newest GitHub release is
+**v1.5.1**. The YAML/spec refresh, proof/policy updates, source bundles, and
+behavioral evaluator are on `main`; do not assume those releases contain them.
+For current behavior, clone this repository and run `npm ci --prefix scripts`,
+then `npm run tokens -- <command>`. Use `npm run build` for the compiled CLI/library.
+
+[Commit-pinned source bundles](references/distribution.md) contain
+`sensei.tar.gz`, `source.json`, and `SHA256SUMS`, retained for 30 days.
+They exclude installed dependencies and compiled output, require authenticated
+artifact downloads, and do not update downstream dotfiles automatically.
+Checksums/provenance are not signed attestations.
 
 ## Prerequisites
 
@@ -298,7 +317,7 @@ reports individual static checks. Do not pad descriptions to hit a minimum lengt
 ### Rule-Based Checks
 
 1. **Name validation**
-   - Lowercase + hyphens only
+   - Lowercase ASCII letters, digits, and hyphens; no leading/trailing or consecutive hyphens
    - Matches directory name
    - ≤ 64 characters
 
@@ -337,20 +356,15 @@ To reach High, add routing clarity:
 
 ### MCP Integration Checks
 
-When a skill's description contains `INVOKES:`, Sensei performs additional checks based on the [MCP Integration Patterns](references/mcp-integration.md):
+For skills that invoke MCP tools, review this authoring checklist from
+[MCP Integration Patterns](references/mcp-integration.md). It is not a computed CLI sub-score:
 
 | Check | Purpose |
 |-------|---------|
 | **MCP Tools Used table** | Documents tool dependencies in skill body |
 | **Prerequisites section** | Lists required tools and permissions |
 | **CLI fallback pattern** | Provides fallback when MCP unavailable |
-| **Name collision detection** | Warns when skill name matches MCP tool |
-
-**MCP Integration Score (0-4 points):**
-- 4/4 = Excellent MCP integration
-- 3/4 = Good (minor gaps)
-- 2/4 = Fair (needs improvement)
-- 0-1/4 = Poor (missing key patterns)
+| **Name collision review** | Compare skill names with actual installed tool names |
 
 See [references/mcp-integration.md](references/mcp-integration.md) for detailed patterns.
 
@@ -376,7 +390,6 @@ description: 'Process PDF files for various tasks'
 ```
 
 **Problems:**
-- Only 37 characters
 - No trigger phrases
 - Scope is not specific enough to distinguish nearby tasks
 - Agent doesn't know when to activate
@@ -488,6 +501,9 @@ Open an issue with skill name, starting state, and `git log --oneline -10`.
 ## References
 
 - [Ralph Loop Pattern](references/loop.md) - Sensei's iterative improvement workflow
+- [Distribution](references/distribution.md) - Commit-pinned source bundles
+- [Behavioral Evaluation](references/evaluation.md) - Trusted adapters and observed evidence
+- [Host Portability](references/portability.md) - Installation and runtime differences
 - [Anthropic Skills Documentation](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) - Writing guidance
 - [MCP Integration Patterns](references/mcp-integration.md) - MCP integration best practices
 - [Waza Trigger Test Template](references/test-templates/waza.md) - Skill trigger accuracy testing

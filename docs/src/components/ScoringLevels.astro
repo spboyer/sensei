@@ -2,7 +2,7 @@
 const levels = [
   {
     name: 'Low',
-    criteria: 'No triggers, short description',
+    criteria: 'Vague scope or no distinctive use cases',
     active: false,
   },
   {
@@ -17,7 +17,7 @@ const levels = [
   },
   {
     name: 'High',
-    criteria: 'Full routing clarity with INVOKES',
+    criteria: 'Useful tool relationships and bypass guidance',
     active: false,
   },
 ];
@@ -30,8 +30,9 @@ const levels = [
     </h2>
     <p class="mt-4 text-mid-gray text-lg max-w-2xl">
       Sensei targets Medium-High as an authoring rubric, not a computed CLI level
-      or specification requirement. The CLI separates portable diagnostics from
-      optional recommendations. License and version are optional; WHEN, prefixes,
+      or specification requirement. The CLI separates portable diagnostics in
+      <code>specChecks</code> from optional recommendations in <code>checks</code>.
+      License and version are optional; WHEN, prefixes,
       60 words, and 500 tokens are Sensei conventions, not normative rules.
     </p>
     <div class="mt-16 grid grid-cols-1 md:grid-cols-4 gap-px bg-mid-gray/10">

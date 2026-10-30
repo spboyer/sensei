@@ -1,112 +1,38 @@
-# Your AI Skill Has a Quality Score — Do You Know What It Is?
+# Better Skill Frontmatter Starts with Clear Scope
 
 *By Shayne Boyer*
 
-*Your agent picks the wrong skill. You debug for 30 minutes. The code was fine. The frontmatter wasn't.*
+*Updated 2026-10-30 to reflect the merged YAML, distribution, and evaluation work.*
 
----
+Your agent selects a neighboring skill. Was the description ambiguous? Was the
+skill installed on that surface? Did the host expose a trace of what it loaded?
+Those are different questions, and a frontmatter score cannot answer all of them.
 
-You just watched your agent call `image-extractor` when the user asked to merge two PDFs. You checked the logs. You checked the prompt. You checked the skill code. Everything looked right.
+[Sensei](https://github.com/spboyer/sensei) helps validate portable Agent Skills
+frontmatter and refine authoring guidance using the
+[Ralph loop](../../references/loop.md). Its optional evaluator can compare
+adapter-reported host observations and task assertions against a baseline.
 
-Thirty minutes later, you found it: your `pdf-processor` skill's description was `"Process PDF files for various tasks"` — 37 characters, zero trigger phrases, zero anti-triggers. The agent had nothing to work with. It guessed. It guessed wrong.
+## Specification Is Not Style
 
-This isn't a bug. It's a **frontmatter quality problem**. And it's hiding in almost every skill you've shipped.
+The [Agent Skills specification](https://agentskills.io/specification) requires
+`name` and `description`. Sensei checks YAML structure, required fields, names,
+directory matching, field types, and portable limits. It uses a maintained YAML
+parser with explicit diagnostics for malformed documents, duplicate keys, and
+invalid or excessive aliases.
 
-Here's what makes it dangerous: it compounds. With 3 skills, you might get lucky. With 15, collisions start surfacing weekly. With 50, every vague description is a landmine — each skill without explicit triggers and anti-triggers is a potential collision with *every other skill*. The failure rate doesn't grow linearly. It grows combinatorially.
+Reports distinguish portable `specChecks` from optional authoring `checks`.
+License and version suggestions remain advisory. Host-specific fields may work
+on their intended host while producing a strict portable-allowlist warning.
 
-The worst part? You'll never find it in your code. You'll grep, you'll trace, you'll add logging. The answer was always in the YAML.
+The Medium-High target is a human-facing authoring rubric, not a computed CLI
+grade. `WHEN:`, type prefixes, a 60-word description target, and roughly 500
+tokens in `SKILL.md` are Sensei conventions, not portable format requirements.
+There is no reason to pad a useful short description to 150 characters.
 
-## The Invisible Thing: Skill Collision
+## From Vague to Specific
 
-There's a name for what keeps happening to you. **Skill collision.**
-
-It's when two or more skills have overlapping descriptions, missing boundaries, and no explicit routing signals — so the agent picks one at random. Or picks the wrong one confidently. Or picks yours when it should have picked someone else's.
-
-This isn't anecdotal. GitHub's analysis of 2,500+ repositories found that most agent instruction files fail because they're too vague. Generic descriptions like "You are a helpful coding assistant" don't constrain behavior — specific personas with explicit boundaries do. The same principle applies to skill frontmatter: if your description doesn't draw a line, the agent won't find one.
-
-It gets worse at scale. Research on LLM tool selection has identified a "lost-in-the-middle" problem — models exhibit positional bias, favoring tools near the top or bottom of a list and overlooking those in the middle. As your skill count grows, vague descriptions compound with positional bias. The agent isn't just guessing *what* to pick — it's guessing *from where in the list* to pick.
-
-That's why explicit trigger phrases and anti-triggers exist. They give the model concrete keywords to match against instead of relying on position or vibes.
-
-Skill collision is the routing bug you can't grep for.
-
-## Why Now
-
-Every agent platform is adding skill support. GitHub Copilot, Claude, custom agent frameworks — skills are becoming the standard unit of AI capability. The ecosystem went from dozens of skills to thousands in months.
-
-But here's the gap: **the tooling didn't keep up.**
-
-And the quality problem is measurable. Recent research on community-contributed agent skills found that roughly 26% contain vulnerabilities — unclear permissions, undocumented dependencies, missing boundary constraints. Skills drift as codebases evolve: tools get removed, APIs change, but the SKILL.md still references them. Nobody updates the frontmatter. The skill keeps firing — just incorrectly.
-
-We have linters for code. Formatters for style. Type checkers for correctness. But skill frontmatter — the metadata that determines whether your skill gets invoked correctly or causes a routing failure — has zero quality tooling. Nothing checks your descriptions. Nothing validates your triggers. Nothing catches the collision before your user hits it.
-
-That gap is why you're debugging frontmatter at 2am instead of shipping features.
-
-[Sensei](https://github.com/spboyer/sensei) fills it. It's the first linter for skill quality.
-
-## What Sensei Does
-
-Sensei is an open-source skill that audits and improves AI agent skill frontmatter — the YAML metadata that tells agents when to activate a skill, when *not* to, and how to route between overlapping capabilities.
-
-Think of it as a **linter for your skill's routing layer**. One command. It reads your `SKILL.md`, scores it from Low to High, identifies what's missing, improves it iteratively, runs tests to verify the changes, and checks token budgets — all automated. No guessing.
-
-It's informed by multiple skill specification approaches — including [Anthropic's custom skills format](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) — and works with any AI agent that uses structured skill definitions.
-
-## The Checks That Matter
-
-Sensei runs 10 compliance checks across three categories. Here's what it's looking for and why each one matters.
-
-**Identity** — Is your skill recognizable?
-
-**Name format** — Catches uppercase, underscores, names > 64 chars — anything that breaks conventions.
-
-**Description length** — Too short (< 150 chars) means the agent is guessing. Too long (> 1024 chars) bloats the context window.
-
-**Token budget** — SKILL.md under 500 tokens (soft) / 5,000 (hard). References under 1,000 each.
-
-**Routing** — Does the agent know when to use your skill *and when not to*?
-
-**Trigger phrases** — Missing `USE FOR:` — the agent has no explicit activation criteria.
-
-**Anti-triggers** — Missing `DO NOT USE FOR:` — the single biggest source of skill collision.
-
-**Routing clarity** — No `INVOKES:` or `FOR SINGLE OPERATIONS:` — the agent can't distinguish your skill from the raw tools it wraps.
-
-**Integration** — If your skill calls MCP tools, is it documented?
-
-**MCP Tools Used table** — Catches undocumented tool dependencies.
-
-**Prerequisites section** — Catches missing setup requirements.
-
-**CLI fallback pattern** — Catches no fallback when MCP is unavailable.
-
-**Name collision** — Catches skill name matching an MCP tool name — guaranteed routing confusion.
-
-These checks feed into a four-level score:
-
-**Low** — Agent is guessing. No triggers, brief description.
-
-**Medium** — Has triggers but no anti-triggers. Collisions likely.
-
-**Medium-High** — Has `USE FOR:` AND `DO NOT USE FOR:`. Agent routes reliably. *This is the target.*
-
-**High** — Full routing clarity. Skill type prefix, `INVOKES:`, bypass guidance.
-
-## You've Been Here
-
-**Scenario 1: The document processing suite.** You're building 5 skills — `pdf-processor`, `document-creator`, `image-extractor`, `ocr-processor`, `file-converter`. They all deal with documents. They all have one-line descriptions. The agent picks `pdf-processor` when the user asks to create a new document from scratch. Why? Because "process PDF files for various tasks" technically *could* mean creation. Without a `DO NOT USE FOR: creating new PDFs (use document-creator)` anti-trigger, the agent has no boundary.
-
-**Scenario 2: The MCP tool shadow.** You wrote a `deploy` skill that wraps deployment MCP tools into a multi-step workflow. But when a user says "deploy my app," the agent calls the raw MCP tool directly instead of your skill — because the skill name matches the tool name and there's no `FOR SINGLE OPERATIONS:` guidance telling the agent when to use the tool directly vs. when to use your workflow.
-
-**Scenario 3: The scale wall.** Your team had 4 skills. Everything worked. You added 8 more. Now nothing routes correctly. Nobody's descriptions are long enough. Nobody added anti-triggers. Every skill is colliding with every other skill because none of them drew boundaries. You're spending more time debugging routing than writing skill logic.
-
-**Scenario 4: The ghost instruction.** Three months ago, your skill invoked a `format-output` tool. That tool got deprecated and removed. But the SKILL.md still references it in the `INVOKES:` line. Now when the agent activates your skill, it tries to call a tool that doesn't exist — and fails silently, or worse, hallucinates a response. The frontmatter drifted. Nobody noticed because nobody audits frontmatter.
-
-Sensei catches all four. Before your users do.
-
-## Before and After
-
-Here's what this looks like in practice. Your `pdf-processor` starts like this:
+Both of these examples can meet the portable format:
 
 ```yaml
 ---
@@ -115,96 +41,95 @@ description: 'Process PDF files for various tasks'
 ---
 ```
 
-37 characters. Score: **Low.** The agent has no idea when to use this vs. `document-creator` or `image-extractor`. It guesses.
-
-After Sensei runs, it looks like this:
-
 ```yaml
 ---
 name: pdf-processor
-description: |
-  **UTILITY SKILL** - Process PDF files including text extraction, rotation, and merging.
-  USE FOR: "extract PDF text", "rotate PDF", "merge PDFs", "split PDF",
-  "PDF to text", "combine PDF files".
-  DO NOT USE FOR: creating new PDFs (use document-creator), extracting
-  images (use image-extractor), or OCR on scanned documents (use ocr-processor).
-  INVOKES: pdf-tools MCP for extraction, file-system for I/O.
-  FOR SINGLE OPERATIONS: Use pdf-tools MCP directly for simple extractions.
+description: "Extract PDF text, rotate pages, and merge existing PDFs. WHEN: \"extract PDF text\", \"rotate PDF pages\", \"merge PDFs\"."
 ---
 ```
 
-Score: **High.** Clear purpose. Explicit triggers. Anti-triggers drawing boundaries with every related skill. Routing clarity for MCP tool integration. The agent doesn't guess anymore.
+The second description makes the intended work clearer. It does not prove that
+every host will select the skill correctly. Default to concise positive scope;
+test negative boundaries with realistic near-miss requests rather than requiring
+`DO NOT USE FOR:` syntax.
 
-## Most Linters Find Problems. Sensei Fixes Them.
+For skills that orchestrate tools, document prerequisites, tool relationships,
+and bypass/fallback guidance. That is an
+[authoring checklist](../../references/mcp-integration.md), not a computed MCP
+sub-score or a permission grant.
 
-This is the part that changes everything.
+## Refine, Review, Repeat
 
-Sensei doesn't hand you a list of violations and walk away. It uses the [Ralph loop pattern](../../references/loop.md) — an iterative improvement cycle that reads, scores, fixes, tests, and verifies until your skill reaches compliance. Automatically.
+In a host where Sensei is installed, request:
 
-Here's how the loop works: Sensei reads your SKILL.md and scores it. If it's below Medium-High, it scaffolds tests from templates, improves the frontmatter by adding triggers, anti-triggers, and routing clarity, then runs those tests to make sure the changes actually work. It checks your token budget. It shows you a before/after comparison. Then it asks: commit, create an issue, or skip?
-
-If the score still isn't there, it loops again. Up to 5 iterations, refining each pass.
-
-```
+```text
 Run sensei on my-skill-name
 ```
 
-One command. Nine steps. READ → SCORE → SCAFFOLD → IMPROVE → VERIFY → CHECK TOKENS → SUMMARY → PROMPT → REPEAT. You get a skill that went from Low to Medium-High without manually editing a single line of YAML.
+The loop reads the skill, runs static scoring, scaffolds missing tests only after
+checking the disk, improves scope, runs tests, and checks token usage. It then
+summarizes the diff and asks whether to commit, create an issue, or skip.
+Skip does not discard edits; `--fast` skips tests and must report them as not run.
 
-This isn't "here's what's wrong, go fix it." This is "here's what was wrong, I fixed it, here's the proof, do you want to ship it?"
+Repo-local `.sensei.json` and `AGENTS.md` guide description style.
+`score --emit-proof` can write a static audit for review. Token `check --strict`
+enforces configured limits; `suggest` produces optional optimization ideas.
+None of these is a security audit or observed activation trace.
 
-## Why This Works
+## Measure Behavior Separately
 
-Three principles make Sensei's approach effective where manual review fails.
+[Optional behavioral evaluation](../../references/evaluation.md) uses a trusted
+host adapter, repeated positive and near-miss tasks, and a without-skill or
+prior-version baseline. It separates activation evidence, routing expectations,
+literal output assertions, unavailable evidence, and descriptive baseline deltas.
 
-**Triggers AND anti-triggers are a pair, not a feature.** Triggers alone tell the agent when to activate. That's necessary but not sufficient. Without anti-triggers, two skills with overlapping domains will both claim the same prompt. This matters at a technical level: LLMs don't just read skill descriptions — they pattern-match against them. Vague descriptions force the model to rely on position in the prompt and semantic guessing, which is where the "lost-in-the-middle" bias kicks in. Explicit trigger keywords give the model concrete match criteria. Anti-triggers give it concrete *rejection* criteria. Together, they replace guessing with routing. This is why Medium (triggers only) isn't the target. Medium-High (both) is.
+Adapters execute local code with inherited environment and credentials, not in
+a sandbox. They own session isolation, host configuration, authentic complete
+traces, and descendant/remote job cancellation. Sensei validates response
+structure, not trace authenticity. Missing observations cannot pass.
 
-**Token budgets prevent skill bloat.** Every skill gets loaded into the agent's context window. A 3,000-token SKILL.md crowds out everything else — other skills, user context, conversation history. Sensei enforces a 500-token soft limit on SKILL.md and pushes detailed documentation into references. This isn't arbitrary. It's the difference between a skill that coexists with 20 others and a skill that starves them of context.
+The bundled fixture emits synthetic traces and fixed output to test the
+protocol. It is not a live model benchmark. GEPA optimization is another
+optional path, using keyword/proxy fitness rather than observed activation.
+Even an evaluator pass does not establish improvement over the baseline.
 
-**Iterative improvement beats one-shot fixing.** A single pass might add triggers but miss anti-triggers. Or add anti-triggers that conflict with the triggers. The Ralph loop catches these by re-scoring after every improvement, running tests against the new frontmatter, and looping until the score stabilizes. Each iteration builds on the last. The result is frontmatter that's been validated against its own test suite, not just formatted correctly.
-
-## Getting Started
+## Install the Right Surface and Version
 
 ```bash
 npx skills add spboyer/sensei
 ```
 
-That's it. Or clone it manually:
+Check the [host/location matrix](../../references/portability.md): a shared
+`SKILL.md` does not standardize installation, account sync, permissions, or
+cloud availability.
+
+Newly merged features may not yet be published to npm. From a current checkout:
 
 ```bash
-git clone https://github.com/spboyer/sensei.git ~/.copilot/skills/sensei
-cd ~/.copilot/skills/sensei/scripts && npm install
+npm ci --prefix scripts
+npm run tokens -- score skills/my-skill --root=/path/to/project
+npm run tokens -- eval manifest.json --root=/path/to/project --format=json
 ```
 
-Then run it:
+Positional paths resolve inside `--root`; the scoring example expects
+`/path/to/project/skills/my-skill/SKILL.md`.
 
-```
-Run sensei on my-skill-name              # Single skill
-Run sensei on my-skill-name --fast       # Skip tests
-Run sensei on skill-a, skill-b, skill-c  # Multiple skills
-Run sensei on all skills                 # Everything
-```
+See the [README release status](../../README.md#distribution-and-release-status)
+before substituting release-tag or npm commands. The composite Action invokes
+npm, not the CLI from its own checkout.
 
-## The Skill Ecosystem Needs Quality Tooling. Help Us Build It.
+For pull-based distribution, [commit-pinned bundles](../../references/distribution.md)
+contain source, provenance, and checksums, retained as Actions artifacts for 30
+days. They exclude installed dependencies/compiled CLI and require authenticated
+downloads. Checksums are not signed attestations; downstream dotfiles updates
+remain independent, reviewable changes.
 
-Skills are the next layer of the AI stack. Every major agent platform is betting on them. But right now, skill quality is a manual process — if it's a process at all. Most teams ship skills with one-line descriptions and hope for the best.
+## Help Improve the Evidence
 
-In multi-agent systems, the stakes are higher. Research from Patronus AI shows that unclear skill responsibilities lead to misclassified tasks, cascading errors, and increased hallucination. Ambiguous routing doesn't just slow things down — it compounds across agents.
+Sensei is MIT licensed. Useful contributions include YAML regressions, realistic
+near-miss cases, host adapters with auditable traces, and documentation that
+clearly separates conventions from requirements.
 
-That's not going to work at scale.
-
-Sensei is [MIT licensed](https://github.com/spboyer/sensei) and open source. It's the beginning of a quality layer for the skill ecosystem — and it needs people who've felt the pain of skill collision to help shape it.
-
-- 🔧 **Build with us** — Contributors who ship skills and want better tooling
-- 📝 **Shape the standard** — Feedback on scoring criteria, compliance checks, what we're missing
-- 🧪 **Extend the coverage** — Test framework integrations for Jest, pytest, Waza, and beyond
-
-If you've ever burned 30 minutes debugging a routing failure that turned out to be a 37-character description, you already know why this matters.
-
-**Run Sensei. See your score. Fix it before your users find it.**
+Refine the instructions. Preserve useful scope. Measure behavior on your host.
 
 → [github.com/spboyer/sensei](https://github.com/spboyer/sensei)
-
----
-
-*Sensei — "A true master teaches not by telling, but by refining." 🥋*

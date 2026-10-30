@@ -1,9 +1,9 @@
 ---
-name: file-utils
+name: sample-skill
 description: 'Utility for working with files'
 ---
 
-# File Utils
+# Sample Skill
 
 This skill helps with file operations.
 

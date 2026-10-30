@@ -55,7 +55,7 @@ The `SKILL.md` file follows Anthropic's skill specification:
 
 ```yaml
 ---
-name: skill-name          # lowercase, hyphens only
+name: skill-name          # lowercase ASCII letters, digits, hyphens
 description: "**WORKFLOW SKILL** — What the skill does. WHEN: \"trigger 1\", \"trigger 2\", \"trigger 3\". INVOKES: tools/MCP servers used. FOR SINGLE OPERATIONS: when to bypass."
 ---
 
@@ -89,16 +89,18 @@ See [portability](references/portability.md) for host extensions and runtime lim
 | SKILL.md | 500 tokens | 5000 tokens |
 | references/*.md | 2000 tokens | — |
 
-### Scoring Levels
+### Authoring Rubric
 
-- **Low**: No triggers, short description
-- **Medium**: Has triggers, >60 words or missing quoted phrases
-- **Medium-High**: Has WHEN: (preferred) or USE FOR: with ≤60 words ← TARGET
-- **High**: Medium-High + routing clarity (INVOKES/FOR SINGLE OPERATIONS)
+- **Low**: Vague scope or no distinctive use cases
+- **Medium**: Recognizable purpose, ambiguous routing
+- **Medium-High**: Concise scope and distinctive positive use cases ← TARGET
+- **High**: Medium-High + useful tool relationships and bypass guidance
+
+These are workflow targets, not computed CLI levels.
 
 ### MCP Integration (when INVOKES present)
 
-Skills that invoke MCP tools get additional checks:
+Review skills that invoke MCP tools using this authoring checklist (not a CLI sub-score):
 - **MCP Tools Used table** - Documents tool dependencies
 - **Prerequisites section** - Lists required tools
 - **CLI fallback pattern** - Fallback when MCP unavailable

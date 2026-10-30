@@ -1,129 +1,84 @@
 # Sensei Demo - Interactive Copilot CLI Guide
 
-> Follow these steps in Copilot CLI for a hands-on demo
+## Setup
 
----
-
-## Setup (Before Demo)
+Use a full checkout; source bundles deliberately exclude demo materials.
+From a current Sensei checkout:
 
 ```bash
-# 1. Install Sensei (if not already)
-git clone https://github.com/spboyer/sensei.git ~/.copilot/skills/sensei
-cd ~/.copilot/skills/sensei/scripts && npm install
-
-# 2. Reset the sample skill to "bad" state
-cd ~/.copilot/skills/sensei
+npm ci --prefix scripts
 ./demo-docs/run-demo.sh --reset
 ```
 
----
+Reset overwrites the sample `SKILL.md`. Save edits first. Install Sensei for your
+chosen [Copilot surface](../references/portability.md); a local personal clone
+does not automatically provision cloud sessions.
 
-## Demo Steps
+## 1. Show the problem
 
-### Step 1: Show the Problem
+Ask Copilot:
 
-**You say:**
-> Show me the contents of demo-docs/sample-skill/SKILL.md
+```text
+Show me demo-docs/sample-skill/SKILL.md
+```
 
-**Expected:** Copilot shows the "bad" skill with brief description
+The short description is vague, not invalid just because it is short.
+Ask which tasks belong to this skill and which competing workflows are nearby.
 
-**Point out:**
-- "Only 32 characters in description"
-- "No triggers - agent doesn't know when to activate"
-- "No anti-triggers - will collide with similar skills"
+## 2. Separate specification and advice
 
----
+```bash
+npm run tokens -- score demo-docs/sample-skill --format=json
+npm run tokens -- count demo-docs/sample-skill/SKILL.md
+```
 
-### Step 2: Check Token Count
+Point out `specChecks` versus optional `checks`. The CLI does not compute a
+Low-to-High level. Missing license/version are advisory. Token counts are
+estimates; `check --strict` enforces configured limits, not the 500-token target.
 
-**You say:**
-> Count tokens in demo-docs/sample-skill/SKILL.md
+## 3. Run the authoring loop
 
-**Expected:** Low token count (~50 tokens)
+```text
+Run sensei on sample-skill in demo-docs/sample-skill --fast
+```
 
-**Point out:**
-- "Token budget is fine, but content is insufficient"
+Expect read, score, improve, token check, summary, then a commit/issue/skip
+decision. Tests are skipped with `--fast`; report them as not run.
+Clarify positive scope rather than padding to 150 characters or requiring
+`DO NOT USE FOR:`. Repo-local `.sensei.json` / `AGENTS.md` guide style.
+Choose Skip to avoid committing; it does not discard edits.
 
----
+## 4. Compare with the fixed fixture
 
-### Step 3: Run Sensei
+```text
+Compare demo-docs/sample-skill/SKILL.md with demo-docs/sample-skill/SKILL-after.md
+```
 
-**You say:**
-> Run sensei on file-utils --fast
+The after fixture uses an inline quoted description and three distinctive
+`WHEN:` phrases. It illustrates the Medium-High authoring target; it is not
+proof that a host selected the skill or that task quality improved.
 
-**Expected:** Sensei executes the Ralph loop
+## 5. Show evidence options
 
-**Watch for:**
-1. **READ** - Loads the skill
-2. **SCORE** - Shows "Low" adherence
-3. **IMPROVE** - Adds USE FOR and DO NOT USE FOR
-4. **TOKENS** - Verifies budget
-5. **SUMMARY** - Before/after comparison
-6. **PROMPT** - Asks: Commit, Create Issue, or Skip?
+```bash
+npm run tokens -- score demo-docs/sample-skill --emit-proof
+```
 
-**Choose:** Skip (for demo purposes)
+The generated `demo-docs/sample-skill/sensei-audit.md` is a static audit.
+Do not present it as a trace or security review. Remove the generated demo
+artifact when finished.
 
----
+For behavioral evaluation, follow the [adapter contract](../references/evaluation.md)
+and supply realistic positive/near-miss tasks, repeated runs, and a without-skill
+or prior-version baseline. Only run trusted adapters: they execute local code
+with inherited environment/credentials. Missing activation evidence cannot pass.
 
-### Step 4: Show the Improved Version
+## Wrap up
 
-**You say:**
-> Show me demo-docs/sample-skill/SKILL-after.md
+Demonstrate batch or GEPA prompt modes only if needed. GEPA optimization is
+optional and uses proxy fitness, not observed activation.
+Check [release status](../README.md#distribution-and-release-status) before
+replacing checkout commands with npm commands for recently merged features.
 
-**Expected:** The improved skill with full frontmatter
-
-**Point out:**
-- "Skill type prefix: **UTILITY SKILL**"
-- "7 trigger phrases under USE FOR"
-- "4 anti-triggers under DO NOT USE FOR"
-- "Score: Medium-High"
-
----
-
-### Step 5: Compare Before/After
-
-**You say:**
-> Compare the token counts of demo-docs/sample-skill/SKILL.md and demo-docs/sample-skill/SKILL-after.md
-
-**Expected:** Side-by-side token comparison
-
----
-
-### Step 6: Explain Options
-
-**You say:**
-> What other ways can I run sensei?
-
-**Expected:** Sensei help output showing:
-- Single skill: `Run sensei on my-skill`
-- Fast mode: `Run sensei on my-skill --fast`
-- Multiple: `Run sensei on skill-a, skill-b`
-- By score: `Run sensei on all Low-adherence skills`
-- All: `Run sensei on all skills`
-
----
-
-## Wrap Up
-
-**You say:**
-> Thanks! Let me know if you have questions about Sensei.
-
-**Key takeaways:**
-1. Sensei automates frontmatter improvement
-2. Target score is Medium-High (USE FOR + DO NOT USE FOR)
-3. You approve all changes before commit
-4. Use `--fast` to skip tests for quick iteration
-
----
-
-## Troubleshooting
-
-**If Sensei doesn't trigger:**
-- Make sure the skill is installed in `~/.copilot/skills/sensei`
-- Say exactly: "Run sensei on file-utils"
-
-**If token count fails:**
-- Run `cd ~/.copilot/skills/sensei/scripts && npm install`
-
-**If you want to restart:**
-- Run `./demo-docs/run-demo.sh --reset`
+If the skill does not load, verify installation on the current host/surface.
+If source commands fail for missing dependencies, restore with `npm ci --prefix scripts`.

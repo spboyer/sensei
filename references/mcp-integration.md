@@ -10,7 +10,12 @@ Skills orchestrate the **how**. MCP Tools execute the **what**.
 SKILL orchestrates → MCP executes → SKILL interprets → User output
 ```
 
-## Required Sections for MCP-Integrated Skills
+## Authoring Checklist for MCP-Integrated Skills
+
+This is workflow guidance, not a computed CLI sub-score or a portable-spec
+requirement. Tool names below are illustrative: discover the actual server
+schema and verify permissions before use. Do not install tools, connect services,
+or expand access merely because a skill lists them.
 
 When a skill's description includes `INVOKES:` referencing MCP tools, add these sections:
 
@@ -37,14 +42,14 @@ List required tools and permissions:
 
 - **Required MCP tools:** `azure-xxx`, `azure-yyy`
 - **Required permissions:** Contributor role on subscription
-- **Enable MCP:** Run `/mcp add azure` if not enabled
+- **Setup:** Verify the server is configured and authenticated on the target host
 ```
 
 ### 3. CLI Fallback Pattern
 
 Document what to do when MCP is unavailable:
 
-```markdown
+````markdown
 **MCP Server (Preferred):**
 Use `azure-keyvault` MCP with command `keyvault_secret_get`.
 
@@ -52,7 +57,7 @@ Use `azure-keyvault` MCP with command `keyvault_secret_get`.
 ```bash
 az keyvault secret show --vault-name $VAULT --name $SECRET
 ```
-```
+````
 
 ## Skill-Tool Routing Clarity
 
@@ -68,7 +73,8 @@ FOR SINGLE OPERATIONS: Use `azure-azd` MCP directly for single azd commands.
 
 ### Collision Detection
 
-Sensei checks for these known MCP tool names:
+During authoring review, compare skill names with actual installed tool names.
+Illustrative overlap candidates include:
 
 | MCP Tool | Potential Skill Collision |
 |----------|--------------------------|
@@ -80,16 +86,18 @@ Sensei checks for these known MCP tool names:
 
 **Resolution:** Ensure skill description explicitly states when to use skill vs MCP tool.
 
-## Scoring Impact
+## Review Checklist
 
-Skills with `INVOKES:` in description get additional checks:
+For skills that invoke tools, review these items manually. The static CLI does
+not validate installed MCP servers, compute a 0-4 integration score, or assign
+a High grade.
 
 | Check | Impact |
 |-------|--------|
-| Has MCP Tools Used table | Required for High score |
+| Has MCP Tools Used table | Documents actual dependencies |
 | Has Prerequisites section | Recommended |
 | Has CLI fallback | Recommended |
-| No name collision (or resolved) | Required for High score |
+| Clear skill/tool routing | Test on the intended host |
 
 ## Anti-Patterns
 

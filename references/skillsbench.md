@@ -16,21 +16,28 @@
 
 ## Design Principles for Skill Authors
 
-1. **Keep it focused.** 2–3 reference modules max. Beyond that, diminishing returns (F5).
-2. **Token budget matters.** Moderate-length beats comprehensive. Detailed and compact both work; exhaustive documentation hurts (F6).
+These are dataset-level observations, not per-skill guarantees. Sensei's
+pattern-based advisories do not reproduce the benchmark or measure host routing.
+See [scoring](scoring.md) and [behavioral evaluation](evaluation.md).
+
+1. **Keep it focused.** Review whether every reference adds value. F5 is not a universal maximum of three reference files.
+2. **Token budget matters.** F6 motivates concise instructions, not deleting necessary detail to hit a score.
 3. **Procedural, not declarative.** Write HOW-TO guidance — steps, decision trees, error handling. Not descriptions of what a tool is.
 4. **Avoid over-specification.** Guide a *class* of tasks, not solve specific instances. Solution leakage degrades generalization.
 
 ## Self-Generation Warning
 
-Models cannot reliably self-author Skills they benefit from consuming (F3: -1.3pp average).
+Self-generated skills had a -1.3pp average in this study (F3). That result does
+not establish what every model or task will do.
 
 **Failure modes:**
 - Imprecise procedures — models generate vague instructions that omit critical edge cases
 - Failure to recognize specialized knowledge gaps — models don't know what they don't know
 - Tendency toward comprehensive documentation — exactly the format that hurts (F6)
 
-**Implication:** Human curation is essential. This validates Sensei's approach — automated *scoring* of human-authored skills, not automated *generation*.
+**Implication:** Review generated suggestions and evaluate outcomes. Sensei can
+propose edits (optionally with GEPA proxy optimization), but static scores do not
+establish that those edits help a host.
 
 ## Domain Context
 
@@ -42,7 +49,9 @@ Models cannot reliably self-author Skills they benefit from consuming (F3: -1.3p
 - SWE: +4.5pp — coding patterns saturate training data
 - Math: +6.0pp — reasoning well-represented in pretraining
 
-**Implication for Sensei:** Skill *quality* matters MORE for well-known domains. When pretraining already covers the basics, a skill must add precise procedural value or it's noise. Sloppy frontmatter in SWE skills doesn't just fail to help — it can actively confuse routing.
+**Implication for Sensei:** Preserve task-relevant procedural value and compare
+against a baseline. Domain averages do not establish that an individual skill
+helps, hurts, or changes routing.
 
 ## Anti-Patterns from Paper
 
