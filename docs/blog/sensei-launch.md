@@ -107,9 +107,12 @@ Newly merged features may not yet be published to npm. From a current checkout:
 
 ```bash
 npm ci --prefix scripts
-npm run tokens -- score /path/to/skills/my-skill
+npm run tokens -- score skills/my-skill --root=/path/to/project
 npm run tokens -- eval manifest.json --root=/path/to/project --format=json
 ```
+
+Positional paths resolve inside `--root`; the scoring example expects
+`/path/to/project/skills/my-skill/SKILL.md`.
 
 See the [README release status](../../README.md#distribution-and-release-status)
 before substituting release-tag or npm commands. The composite Action invokes
