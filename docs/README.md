@@ -2,7 +2,8 @@
 
 Marketing and documentation site for [Sensei](https://spboyer.github.io/sensei/).
 
-Built with Astro 5.x and Tailwind CSS v4. Single-page, zero client JS, static output.
+Built with Astro 5.x and Tailwind CSS v4. Single-page static output with small
+client-side clipboard handlers; no client framework.
 
 ## Project Structure
 
@@ -15,9 +16,10 @@ docs/
 │   ├── components/
 │   │   ├── Hero.astro         # Tagline, install command, copy-to-clipboard
 │   │   ├── Problem.astro      # "Why skills fail" pain point
-│   │   ├── HowItWorks.astro   # Three-step workflow explanation
-│   │   ├── BeforeAfter.astro  # Low→High YAML transformation (manual syntax highlight)
-│   │   ├── ScoringLevels.astro # Low / Medium / Medium-High / High breakdown
+│   │   ├── HowItWorks.astro   # Six-step Ralph loop
+│   │   ├── BeforeAfter.astro  # Vague-to-specific YAML transformation
+│   │   ├── ScoringLevels.astro # Advisory rubric, distinct from spec checks
+│   │   ├── Evaluation.astro   # Optional trusted-adapter evaluation
 │   │   ├── QuickStart.astro   # Install + run commands, copy-to-clipboard
 │   │   └── Footer.astro       # Links, copyright
 │   ├── layouts/
@@ -37,7 +39,7 @@ Run from the `docs/` directory:
 | :---------------- | :-------------------------------------------------- |
 | `npm install`     | Install dependencies                                |
 | `npm run dev`     | Local dev server at `localhost:4321/sensei/`         |
-| `npm run build`   | Production build to `dist/` (static HTML, no JS)    |
+| `npm run build`   | Production build to `dist/` (HTML + clipboard JS)   |
 | `npm run preview` | Preview the production build locally before deploy  |
 
 ## Deployment
@@ -83,14 +85,23 @@ Each component is self-contained — own data, markup, inline scripts. No shared
 | :--------------- | :----------------------------------------------- |
 | `Hero`           | Headline, subline, install command with clipboard |
 | `Problem`        | Names the pain — skill collision, vague triggers  |
-| `HowItWorks`     | Three-step scan → score → fix flow               |
-| `BeforeAfter`    | Side-by-side YAML: Low score → High score         |
-| `ScoringLevels`  | Four-tier breakdown with criteria per level       |
-| `QuickStart`     | Install + run block with clipboard, repo link     |
+| `HowItWorks`     | Read → score → improve → verify → check → summary |
+| `BeforeAfter`    | Side-by-side YAML: clearer positive scope         |
+| `ScoringLevels`  | Authoring rubric; not a computed CLI level        |
+| `Evaluation`    | Observations, baselines, assertions, adapter trust |
+| `QuickStart`     | Skill/npm/source usage, bundles, policy, API links |
 | `Footer`         | Navigation links, license, copyright              |
 
 ## Notes
 
+- Keep the page aligned with the [root README](../README.md) and
+  [changelog](../CHANGELOG.md). Merged features may not yet be in npm or release
+  tags; current-source commands must say so.
+- Portable `specChecks`, optional `checks`, GEPA proxy fitness, and observed
+  behavioral results are different evidence. Do not promise routing or security.
+- Source bundles are described in [distribution](../references/distribution.md);
+  host installation limits in [portability](../references/portability.md);
+  adapter prerequisites in [evaluation](../references/evaluation.md).
 - Tailwind v4 uses `@tailwindcss/vite` — not `@astrojs/tailwind`. Theme lives in CSS, not a JS config file.
-- All external links use `target="_blank" rel="noopener noreferrer"`.
+- External links opened in a new tab use `rel="noopener noreferrer"`.
 - Copy-to-clipboard uses `navigator.clipboard` with unique element IDs (avoids collisions between Hero and QuickStart).

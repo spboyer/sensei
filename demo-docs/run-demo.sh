@@ -5,7 +5,7 @@
 # Usage: ./run-demo.sh [--reset]
 #   --reset  Restore sample skill to "bad" state before demo
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SENSEI_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -38,15 +38,15 @@ pause() {
 }
 
 # Reset sample skill if requested
-if [[ "$1" == "--reset" ]]; then
+if [[ "${1:-}" == "--reset" ]]; then
     print_header "RESETTING SAMPLE SKILL"
     cat > "$SAMPLE_SKILL" << 'EOF'
 ---
-name: file-utils
+name: sample-skill
 description: 'Utility for working with files'
 ---
 
-# File Utils
+# Sample Skill
 
 This skill helps with file operations.
 
@@ -68,7 +68,7 @@ fi
 print_header "SENSEI DEMO - Skill Frontmatter Compliance"
 
 echo "This demo shows how Sensei improves skill frontmatter"
-echo "to prevent skill collision and improve agent accuracy."
+echo "using fixed before/after fixtures, not a live host evaluation."
 pause
 
 # Step 1: Show the problem
@@ -80,18 +80,18 @@ grep -A1 "^description:" "$SAMPLE_SKILL" || cat "$SAMPLE_SKILL" | head -10
 echo ""
 
 print_step "Problems with this skill:"
-echo "  • Only ~30 characters in description"
-echo "  • No trigger phrases (USE FOR)"
-echo "  • No anti-triggers (DO NOT USE FOR)"
-echo "  • Agent doesn't know when to activate it"
+echo "  • Vague purpose and ambiguous scope"
+echo "  • No distinctive positive use cases"
+echo "  • Short descriptions are not automatically invalid"
 pause
 
 # Step 2: Check tokens
 print_header "2. CHECK CURRENT STATE"
 
-print_step "Running token count..."
+print_step "Running static checks and token counts..."
 cd "$SENSEI_ROOT"
-npm run tokens -- count "$SAMPLE_SKILL" 2>/dev/null | grep -v "^>" | grep -v "^$" | tail -5
+npm run tokens -- score "$SCRIPT_DIR/sample-skill"
+npm run tokens -- count "$SAMPLE_SKILL" "$SAMPLE_AFTER"
 pause
 
 # Step 3: Show the solution
@@ -105,9 +105,9 @@ echo ""
 
 print_step "Improvements:"
 echo "  • Clear description with skill type prefix"
-echo "  • 7 trigger phrases (USE FOR)"
-echo "  • 4 anti-triggers (DO NOT USE FOR)"
-echo "  • Agent knows exactly when to use/not use"
+echo "  • Three distinctive WHEN phrases"
+echo "  • Positive scope; no mandatory negative clause"
+echo "  • Host activation still requires observed evidence"
 pause
 
 # Step 4: Compare
@@ -115,16 +115,14 @@ print_header "4. BEFORE vs AFTER"
 
 BEFORE_CHARS=$(wc -c < "$SAMPLE_SKILL" | tr -d ' ')
 AFTER_CHARS=$(wc -c < "$SAMPLE_AFTER" | tr -d ' ')
-BEFORE_TRIGGERS=$(grep -c "USE FOR\|TRIGGERS" "$SAMPLE_SKILL" 2>/dev/null || echo "0")
-AFTER_TRIGGERS=$(grep -o '"[^"]*"' "$SAMPLE_AFTER" 2>/dev/null | wc -l | tr -d ' ')
 
 echo "┌─────────────────┬──────────┬──────────┐"
 echo "│ Metric          │  Before  │  After   │"
 echo "├─────────────────┼──────────┼──────────┤"
-printf "│ %-15s │ %8s │ %8s │\n" "Characters" "$BEFORE_CHARS" "$AFTER_CHARS"
-printf "│ %-15s │ %8s │ %8s │\n" "Triggers" "$BEFORE_TRIGGERS" "$AFTER_TRIGGERS"
-printf "│ %-15s │ %8s │ %8s │\n" "Score" "Low" "Med-High"
+printf "│ %-15s │ %8s │ %8s │\n" "File bytes" "$BEFORE_CHARS" "$AFTER_CHARS"
 echo "└─────────────────┴──────────┴──────────┘"
+echo "Medium-High is an authoring target, not a computed CLI level."
+echo "Static checks and GEPA proxy fitness do not prove host activation."
 pause
 
 # Step 5: How to use
@@ -132,13 +130,13 @@ print_header "5. HOW TO USE SENSEI"
 
 echo "In Copilot CLI, say:"
 echo ""
-echo -e "  ${GREEN}Run sensei on <skill-name>${NC}"
-echo -e "  ${GREEN}Run sensei on <skill-name> --fast${NC}  (skip tests)"
+echo -e "  ${GREEN}Run sensei on sample-skill in demo-docs/sample-skill${NC}"
+echo -e "  ${GREEN}Run sensei on sample-skill in demo-docs/sample-skill --fast${NC}  (skip tests)"
 echo -e "  ${GREEN}Run sensei on all Low-adherence skills${NC}"
 echo ""
 echo "Sensei will:"
 echo "  1. Read your skill"
-echo "  2. Score compliance"
+echo "  2. Separate portable diagnostics from optional advice"
 echo "  3. Improve frontmatter"
 echo "  4. Check token budget"
 echo "  5. Ask: Commit, Create Issue, or Skip?"
@@ -149,5 +147,5 @@ print_header "DEMO COMPLETE"
 echo "Install Sensei:"
 echo -e "  ${BLUE}git clone https://github.com/spboyer/sensei.git ~/.copilot/skills/sensei${NC}"
 echo ""
-echo "Questions? See README.md or run 'sensei help' in Copilot CLI."
+echo "See README.md for release status, host setup, and optional evaluation."
 echo ""

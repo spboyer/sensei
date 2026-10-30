@@ -14,8 +14,8 @@ const examples = [
     description: 'Run token validation in any project',
   },
   {
-    command: 'npx @spboyer/sensei score . --emit-proof',
-    description: 'Write sensei-audit.md proof artifact alongside scoring',
+    command: 'npm run tokens -- score . --root=/path/to/project --emit-proof',
+    description: 'Current source: report repo policy and write a static audit artifact',
   },
   {
     command: "import { parseFrontmatter } from '@spboyer/sensei/parse';",
@@ -31,6 +31,14 @@ const examples = [
     </h2>
     <p class="mt-4 text-mid-gray text-lg max-w-2xl">
       Install it as a skill, run it with npx, wire it into CI, or import the parts you need.
+    </p>
+    <p class="mt-4 text-mid-gray max-w-2xl">
+      For newly merged YAML validation, proof/policy, and evaluation features,
+      clone the current source and run <code>npm ci --prefix scripts</code>.
+      Source commands below run from that checkout; <code>--root</code> selects your project.
+      Published npm and Action tags may lag
+      <a class="text-orange-accent" href="https://github.com/spboyer/sensei/blob/main/README.md#distribution-and-release-status">release status</a>.
+      The Action runs npm, not the CLI from its own checkout.
     </p>
     <p class="mt-4 text-mid-gray max-w-2xl">
       A shared SKILL.md does not guarantee shared installation, invocation controls,
@@ -55,12 +63,23 @@ const examples = [
     <div class="mt-16 space-y-4">
       {examples.map((ex) => (
         <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
-          <code class="bg-dark-gray px-5 py-3 font-mono text-sm text-light-gray flex-shrink-0">
+          <code class="bg-dark-gray px-5 py-3 font-mono text-sm text-light-gray min-w-0 overflow-x-auto">
             {ex.command}
           </code>
           <span class="text-sm text-mid-gray">{ex.description}</span>
         </div>
       ))}
+    </div>
+    <div class="mt-12 text-mid-gray max-w-2xl">
+      <h3 class="text-lg font-semibold text-light-gray">Commit-pinned source bundles</h3>
+      <p class="mt-2 leading-relaxed">
+        Actions artifacts include <code>sensei.tar.gz</code>, <code>source.json</code>,
+        and <code>SHA256SUMS</code> for an exact source commit, retained for 30 days.
+        They require authenticated downloads, contain no installed dependencies or compiled CLI,
+        and do not automatically update downstream dotfiles.
+        Checksums are not signed attestations. See the
+        <a class="text-orange-accent" href="https://github.com/spboyer/sensei/blob/main/references/distribution.md">bundle contract</a>.
+      </p>
     </div>
     <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-px bg-mid-gray/10">
       <div class="bg-dark-gray p-6">

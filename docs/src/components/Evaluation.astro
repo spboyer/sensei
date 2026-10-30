@@ -8,7 +8,11 @@
       should-trigger and near-miss cases, with a without-skill or prior-version baseline.
       No mandatory provider, paid API, or Python dependency.
     </p>
-    <pre class="mt-8 bg-dark-gray p-6 overflow-x-auto text-light-gray"><code>npx @spboyer/sensei eval manifest.json --format=json</code></pre>
+    <pre class="mt-8 bg-dark-gray p-6 overflow-x-auto text-light-gray"><code>npm run tokens -- eval manifest.json --root=/path/to/project --format=json</code></pre>
+    <p class="mt-4 text-sm text-mid-gray">
+      Run from a current Sensei source checkout with script dependencies installed.
+      Merged evaluator changes are not yet in the published npm release.
+    </p>
     <p class="mt-6 text-mid-gray leading-relaxed">
       Reports separate observed activation, output assertions, unavailable evidence,
       and descriptive baseline deltas. Missing observations cannot pass.

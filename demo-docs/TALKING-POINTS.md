@@ -1,111 +1,73 @@
 # Sensei Demo - Talking Points
 
-> **Duration:** 5 minutes | **Audience:** All levels
+Duration: 5 minutes. Use the [interactive guide](INTERACTIVE-GUIDE.md) for setup.
 
----
+## The problem (30 seconds)
 
-## 1. THE PROBLEM (30 seconds)
+Show `demo-docs/sample-skill/SKILL.md`.
 
-**[Show `demo-docs/sample-skill/SKILL.md`]**
+> "Utility for working with files" is valid YAML, but it does not distinguish
+> this workflow from nearby tools. Length alone does not establish useful scope.
 
-> "Here's a typical skill that causes problems..."
+Do not claim a missing negative clause causes collisions or that a static
+checker observes how a model selected a skill.
 
-```yaml
-description: 'Utility for working with files'
-```
+## The solution (30 seconds)
 
-**Key points:**
-- Only 32 characters - agent has no context
-- No trigger phrases - when should it activate?
-- No anti-triggers - collides with grep, git, code editor
-- Result: **skill collision** - wrong skill gets invoked
+> Sensei validates portable frontmatter, suggests optional authoring improvements,
+> and runs an iterative read-score-improve-verify loop.
 
----
+The standard requires `name` and `description`. `WHEN:`, type prefixes, and the
+Medium-High target are conventions, not specification requirements.
+Configured token limits are separate from optimization advice.
 
-## 2. THE SOLUTION (30 seconds)
+## Live demo (3 minutes)
 
-**[Show Sensei README or SKILL.md header]**
+Show actual CLI output:
 
-> "Sensei automates frontmatter improvement using the Ralph loop..."
-
-**Key points:**
-- Iterative refinement until compliance
-- Adds USE FOR triggers
-- Adds DO NOT USE FOR anti-triggers
-- Checks token budget
-- Target: Medium-High adherence
-
----
-
-## 3. LIVE DEMO (3 minutes)
-
-**[In Copilot CLI]**
-
-### 3a. Check current state
-```
-Show me the contents of demo-docs/sample-skill/SKILL.md
-```
-
-> "Notice the brief description, no triggers..."
-
-### 3b. Run Sensei
-```
-Run sensei on file-utils --fast
-```
-
-> "Sensei reads the skill, scores it as Low, then improves it..."
-
-**What happens:**
-1. READ - Loads the skill
-2. SCORE - Evaluates as "Low" 
-3. IMPROVE - Adds triggers and anti-triggers
-4. TOKENS - Checks budget
-5. SUMMARY - Shows before/after
-6. PROMPT - Asks what to do
-
-### 3c. Show the result
-
-> "Now we have clear triggers and anti-triggers..."
-
----
-
-## 4. THE RESULT (1 minute)
-
-**[Show before/after comparison]**
-
-| Metric | Before | After |
-|--------|--------|-------|
-| Description | 32 chars | ~400 chars |
-| Triggers | 0 | 7 |
-| Anti-triggers | 0 | 4 |
-| Score | Low | Medium-High |
-
-**Key benefits:**
-- Agent knows exactly when to use this skill
-- Agent knows when NOT to use it
-- Reduces skill collision
-- Improves user experience
-
----
-
-## CLOSING
-
-> "Sensei helps you write better skills by enforcing compliance automatically. Install it, run it on your skills, and eliminate skill collision."
-
-**Call to action:**
 ```bash
-git clone https://github.com/spboyer/sensei.git ~/.copilot/skills/sensei
+npm run tokens -- score demo-docs/sample-skill --format=json
+npm run tokens -- count demo-docs/sample-skill/SKILL.md
 ```
 
----
+Explain `specChecks` versus `checks`. Then ask Copilot:
 
-## Q&A Prep
+```text
+Run sensei on sample-skill in demo-docs/sample-skill --fast
+```
 
-**Q: What's the Ralph loop?**
-A: Read → Score → Improve → Verify → Repeat until target score reached.
+Describe the edits as clearer positive scope. `--fast` means tests were not run.
+Review the diff and choose Skip to avoid a commit, preserving edits.
+Compare with `SKILL-after.md`, a fixed fixture rather than a live evaluation.
 
-**Q: What's Medium-High adherence?**
-A: Has explicit USE FOR triggers AND DO NOT USE FOR anti-triggers.
+## Evidence and result (1 minute)
 
-**Q: Does it modify my code?**
-A: Only the SKILL.md frontmatter. You approve all changes before commit.
+| Evidence | What it establishes |
+|----------|---------------------|
+| `score` / `--emit-proof` | Static frontmatter diagnostics and advice |
+| Token count/check | Estimated size and configured budget status |
+| GEPA score | Keyword/proxy fitness, not observed host activation |
+| Optional `eval` | Adapter-reported traces, literal assertions, baseline comparison |
+
+The evaluator needs a trusted adapter and realistic repeated positive/near-miss
+cases. Missing observations cannot pass; synthetic fixtures test plumbing only.
+Passing does not establish improved quality over the baseline or a security audit.
+
+## Closing
+
+> Refine the instructions, preserve useful scope, and evaluate on your target host.
+
+Point to the [README](../README.md), [release status](../README.md#distribution-and-release-status),
+[distribution contract](../references/distribution.md), and
+[behavioral evaluator](../references/evaluation.md).
+
+## Q&A
+
+**Why Medium-High?** It is a useful human-facing authoring target for concise
+scope and distinctive use cases, not a computed CLI grade.
+
+**Does Sensei change code?** The workflow may edit skill instructions and tests.
+Review the diff and approve commits explicitly.
+
+**Does a local install reach the cloud?** Not automatically; check the
+[host/location matrix](../references/portability.md).
