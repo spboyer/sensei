@@ -132,6 +132,17 @@ using typed convenience fields.
 
 ---
 
+### Optional Behavioral Evaluation
+
+```bash
+npx @spboyer/sensei eval manifest.json --format=json
+```
+
+Compare repeated host observations and output assertions against a baseline.
+Unavailable evidence cannot pass; GEPA keyword fitness is not observed activation.
+No provider or Python dependency is added. See the
+[trusted adapter contract, exit codes, and protocol smoke test](references/evaluation.md).
+
 ### GEPA Commands
 
 ```bash

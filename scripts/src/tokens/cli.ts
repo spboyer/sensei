@@ -18,6 +18,7 @@ import { getErrorMessage } from './commands/types.js';
 import { resolvePathFromRoot, resolveRootDir } from './commands/utils.js';
 import { detectRepoPolicy } from '../repo-policy.js';
 import { writeProof, defaultProofPath } from '../proof.js';
+import { reportEvalError, runEval } from '../evals/evaluate.js';
 
 function printHelp(): void {
   console.log(`
@@ -33,6 +34,7 @@ Commands:
   suggest [paths...]   Get optimization suggestions
   compare [refs...]    Compare tokens between git refs
   score [path]         Check portable frontmatter and suggest authoring improvements
+  eval <manifest>      Run opt-in behavioral evaluation via an external adapter
 
 Options:
   --format=<type>      Output format: json | table (default: table)
@@ -48,6 +50,7 @@ Options:
   --show-unchanged     Include unchanged files in comparison
   --emit-proof[=path]  (score) Write sensei-audit.md proof artifact (default: <skill>/sensei-audit.md)
   --no-repo-policy     (score) Ignore .sensei.json / AGENTS.md repo-local policy
+                       eval supports --format=json|table and --root only
   --help, -h           Show this help message
 
 Examples:
@@ -118,6 +121,8 @@ export function parseArgs(args: string[]): { command: string; paths: string[]; o
       options.config = arg.slice(9);
     } else if (!arg.startsWith('-')) {
       paths.push(arg);
+    } else if (command === 'eval') {
+      options[arg] = true;
     } else {
       console.error(`Unknown option: ${arg}`);
       process.exit(1);
@@ -136,7 +141,15 @@ function readOptionValue(args: string[], index: number, optionName: string): str
 }
 
 export function main(args = process.argv.slice(2)): void {
-  const { command, paths, options } = parseArgs(args);
+  let parsed: ReturnType<typeof parseArgs>;
+  try {
+    parsed = parseArgs(args);
+  } catch (error) {
+    if (args[0] !== 'eval') throw error;
+    reportEvalError(error, args.includes('--format=json'));
+    return;
+  }
+  const { command, paths, options } = parsed;
 
   if (options.help || command === 'help') {
     printHelp();
@@ -144,6 +157,10 @@ export function main(args = process.argv.slice(2)): void {
   }
 
   switch (command) {
+    case 'eval':
+      runEval(paths, options);
+      break;
+
     case 'count':
       count(paths, options);
       break;

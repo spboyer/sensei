@@ -1,0 +1,24 @@
+<section id="evaluation" class="py-24 md:py-32 px-6">
+  <div class="max-w-4xl mx-auto">
+    <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-light-gray">
+      Beyond static scoring
+    </h2>
+    <p class="mt-4 text-mid-gray text-lg max-w-2xl">
+      Opt-in behavioral evaluation runs a trusted host adapter on repeated
+      should-trigger and near-miss cases, with a without-skill or prior-version baseline.
+      No mandatory provider, paid API, or Python dependency.
+    </p>
+    <pre class="mt-8 bg-dark-gray p-6 overflow-x-auto text-light-gray"><code>npx @spboyer/sensei eval manifest.json --format=json</code></pre>
+    <p class="mt-6 text-mid-gray leading-relaxed">
+      Reports separate observed activation, output assertions, unavailable evidence,
+      and descriptive baseline deltas. Missing observations cannot pass.
+      GEPA keyword fitness and frontmatter scores do not prove host activation.
+      Adapters are responsible for authentic traces and isolated sessions;
+      fixture runs demonstrate the protocol, not live model performance.
+    </p>
+    <a class="inline-block mt-6 text-orange-accent hover:underline"
+      href="https://github.com/spboyer/sensei/blob/main/references/evaluation.md">
+      Adapter contract, exit codes, and protocol smoke test
+    </a>
+  </div>
+</section>
