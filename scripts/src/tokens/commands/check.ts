@@ -4,7 +4,7 @@
 
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { relative } from 'node:path';
-import { loadConfig, getLimitForFile, findMarkdownFiles, resolvePathFromRoot, resolveRootDir } from './utils.js';
+import { createLimitResolver, loadConfig, findMarkdownFiles, resolvePathFromRoot, resolveRootDir } from './utils.js';
 import {
   estimateTokens,
   normalizePath,
@@ -29,12 +29,16 @@ const DEFAULT_OPTIONS: CheckOptions = {
 /**
  * Checks a single file against its token limit.
  */
-function checkFile(filePath: string, rootDir: string, config: ReturnType<typeof loadConfig>): ValidationResult | null {
+function checkFile(
+  filePath: string,
+  rootDir: string,
+  resolveLimit: ReturnType<typeof createLimitResolver>
+): ValidationResult | null {
   try {
     const content = readFileSync(filePath, 'utf-8');
     const relativePath = normalizePath(relative(rootDir, filePath));
     const tokens = estimateTokens(content);
-    const { limit, pattern } = getLimitForFile(relativePath, config, rootDir);
+    const { limit, pattern } = resolveLimit(relativePath);
     
     return {
       file: relativePath,
@@ -136,8 +140,9 @@ export function check(paths: string[], options: CheckOptions = {}): void {
     }
   }
   
+  const resolveLimit = createLimitResolver(config);
   const results = filesToProcess
-    .map(file => checkFile(file, rootDir, config))
+    .map(file => checkFile(file, rootDir, resolveLimit))
     .filter((r): r is ValidationResult => r !== null);
   
   // Sort by exceeded first, then by path
