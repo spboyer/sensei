@@ -3,8 +3,9 @@
  */
 
 import { execFileSync, execSync, spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { relative } from 'node:path';
+import { closeSync, mkdtempSync, openSync, readFileSync, readSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, relative } from 'node:path';
 import { findMarkdownFiles } from './utils.js';
 import {
   estimateTokens,
@@ -46,22 +47,64 @@ function getFilesFromRef(ref: string): Map<string, FileTokens> {
       timeout: GIT_OPERATION_TIMEOUT,
       stdio: ['pipe', 'pipe', 'pipe']
     }).trim();
-    const listing = execFileSync('git', ['ls-tree', '-r', '-z', '-l', tree], {
-      encoding: 'utf-8',
-      maxBuffer: MAX_GIT_BUFFER_SIZE,
-      timeout: GIT_OPERATION_TIMEOUT,
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-    const blobs = listing
-      .split('\0')
-      .filter(Boolean)
-      .map(parseGitBlob)
-      .filter((blob): blob is GitBlob => blob !== null && isMarkdownFile(blob.path));
-
-    return readGitBlobs(blobs);
+    return readGitBlobs(listGitBlobs(tree));
   } catch {
     return new Map();
   }
+}
+
+function listGitBlobs(tree: string): GitBlob[] {
+  const tempDir = mkdtempSync(join(tmpdir(), 'sensei-git-tree-'));
+  const listingPath = join(tempDir, 'listing');
+  let listingFd: number | undefined;
+
+  try {
+    listingFd = openSync(listingPath, 'w');
+    const result = spawnSync('git', ['ls-tree', '-r', '-z', '-l', tree], {
+      timeout: GIT_OPERATION_TIMEOUT,
+      stdio: ['ignore', listingFd, 'pipe']
+    });
+    closeSync(listingFd);
+    listingFd = undefined;
+    if (result.status !== 0 || result.error) {
+      throw result.error ?? new Error('Unable to list Git tree');
+    }
+
+    return readGitBlobListing(listingPath);
+  } finally {
+    if (listingFd !== undefined) closeSync(listingFd);
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+function readGitBlobListing(listingPath: string): GitBlob[] {
+  const blobs: GitBlob[] = [];
+  const buffer = Buffer.allocUnsafe(64 * 1024);
+  const fd = openSync(listingPath, 'r');
+  let pending = Buffer.alloc(0);
+
+  try {
+    let bytesRead: number;
+    do {
+      bytesRead = readSync(fd, buffer, 0, buffer.length, null);
+      const data = pending.length === 0
+        ? buffer.subarray(0, bytesRead)
+        : Buffer.concat([pending, buffer.subarray(0, bytesRead)]);
+      let start = 0;
+      let end = data.indexOf(0, start);
+      while (end >= 0) {
+        const blob = parseGitBlob(data.subarray(start, end).toString('utf8'));
+        if (blob !== null && isMarkdownFile(blob.path)) blobs.push(blob);
+        start = end + 1;
+        end = data.indexOf(0, start);
+      }
+      pending = Buffer.from(data.subarray(start));
+    } while (bytesRead > 0);
+  } finally {
+    closeSync(fd);
+  }
+
+  return blobs;
 }
 
 function parseGitBlob(entry: string): GitBlob | null {
@@ -115,8 +158,8 @@ function readGitBlobs(blobs: GitBlob[]): Map<string, FileTokens> {
   }
 
   return new Map(blobs.flatMap(blob => {
-    const content = contents.get(blob.oid);
-    return content === undefined ? [] : [[blob.path, content] as const];
+    const content = contents.get(blob.oid) ?? measureContent('');
+    return [[blob.path, content] as const];
   }));
 }
 
