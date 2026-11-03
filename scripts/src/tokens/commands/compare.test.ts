@@ -80,7 +80,7 @@ describe('compare command', () => {
 
   it('handles tree listings whose metadata exceeds the Git buffer limit', () => {
     const blob = gitOutput(['hash-object', '-w', '--stdin'], { input: 'content\n' });
-    const entries = Array.from({ length: 35_000 }, (_, index) => {
+    const entries = Array.from({ length: 40_000 }, (_, index) => {
       const suffix = index.toString().padStart(5, '0');
       const extension = index === 0 ? '.md' : '.txt';
       const name = `${'x'.repeat(230 - suffix.length - extension.length)}${suffix}${extension}`;
