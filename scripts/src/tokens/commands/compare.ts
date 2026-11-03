@@ -46,7 +46,7 @@ function getFilesFromRef(ref: string): Map<string, FileTokens> {
       timeout: GIT_OPERATION_TIMEOUT,
       stdio: ['pipe', 'pipe', 'pipe']
     }).trim();
-    const listing = execFileSync('git', ['ls-tree', '-r', '-z', '-l', '--full-tree', tree], {
+    const listing = execFileSync('git', ['ls-tree', '-r', '-z', '-l', tree], {
       encoding: 'utf-8',
       maxBuffer: MAX_GIT_BUFFER_SIZE,
       timeout: GIT_OPERATION_TIMEOUT,

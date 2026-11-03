@@ -58,6 +58,23 @@ describe('compare command', () => {
       expect.objectContaining({ file: 'unchanged.md', status: 'unchanged' }),
       expect.objectContaining({ file: 'docs/space name.md', status: 'unchanged' })
     ]));
+
+    const nestedResult = spawnSync(process.execPath, ['--import', loader, cli, 'compare', 'HEAD', 'WORKING', '--format=json'], {
+      cwd: join(repoDir, 'docs'),
+      encoding: 'utf8'
+    });
+    expect(nestedResult.stderr).toBe('');
+    expect(nestedResult.status).toBe(0);
+    const nestedReport = JSON.parse(nestedResult.stdout);
+
+    expect(nestedReport.summary).toMatchObject({
+      filesAdded: 0,
+      filesRemoved: 0,
+      filesModified: 0
+    });
+    expect(nestedReport.files).toEqual([
+      expect.objectContaining({ file: 'space name.md', status: 'unchanged' })
+    ]);
   });
 
   function git(...args: string[]): void {
