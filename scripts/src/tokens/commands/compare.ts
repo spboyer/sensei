@@ -2,9 +2,10 @@
  * Compare token counts between git refs
  */
 
-import { execSync } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
-import { relative, resolve } from 'node:path';
+import { execFileSync, execSync, spawnSync } from 'node:child_process';
+import { closeSync, mkdtempSync, openSync, readFileSync, readSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, relative } from 'node:path';
 import { findMarkdownFiles } from './utils.js';
 import {
   estimateTokens,
@@ -13,6 +14,7 @@ import {
   MAX_GIT_BUFFER_SIZE,
   GIT_OPERATION_TIMEOUT,
   isMarkdownFile,
+  type FileTokens,
   type FileComparison,
   type ComparisonSummary,
   type ComparisonReport
@@ -28,38 +30,145 @@ const DEFAULT_OPTIONS: CompareOptions = {
   showUnchanged: false
 };
 
-/**
- * Gets file content from a git ref.
- */
-function getFileFromRef(filePath: string, ref: string): string | null {
-  try {
-    const result = execSync(`git show ${ref}:${filePath}`, {
-      encoding: 'utf-8',
-      maxBuffer: MAX_GIT_BUFFER_SIZE,
-      timeout: GIT_OPERATION_TIMEOUT,
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-    return result;
-  } catch {
-    return null;
-  }
+interface GitBlob {
+  readonly oid: string;
+  readonly size: number;
+  readonly path: string;
 }
 
 /**
- * Gets list of markdown files from a git ref.
+ * Gets markdown file contents from a git ref with bounded batch reads.
  */
-function getFilesFromRef(ref: string): string[] {
+function getFilesFromRef(ref: string): Map<string, FileTokens> {
   try {
-    const result = execSync(`git ls-tree -r --name-only ${ref}`, {
+    const tree = execFileSync('git', ['rev-parse', '--verify', '--end-of-options', `${ref}^{tree}`], {
       encoding: 'utf-8',
       maxBuffer: MAX_GIT_BUFFER_SIZE,
       timeout: GIT_OPERATION_TIMEOUT,
       stdio: ['pipe', 'pipe', 'pipe']
-    });
-    return result.split('\n').filter(f => isMarkdownFile(f));
+    }).trim();
+    return readGitBlobs(listGitBlobs(tree));
   } catch {
-    return [];
+    return new Map();
   }
+}
+
+function listGitBlobs(tree: string): GitBlob[] {
+  const tempDir = mkdtempSync(join(tmpdir(), 'sensei-git-tree-'));
+  const listingPath = join(tempDir, 'listing');
+  let listingFd: number | undefined;
+
+  try {
+    listingFd = openSync(listingPath, 'w');
+    const result = spawnSync('git', ['ls-tree', '-r', '-z', '-l', tree], {
+      timeout: GIT_OPERATION_TIMEOUT,
+      stdio: ['ignore', listingFd, 'pipe']
+    });
+    closeSync(listingFd);
+    listingFd = undefined;
+    if (result.status !== 0 || result.error) {
+      throw result.error ?? new Error('Unable to list Git tree');
+    }
+
+    return readGitBlobListing(listingPath);
+  } finally {
+    if (listingFd !== undefined) closeSync(listingFd);
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+function readGitBlobListing(listingPath: string): GitBlob[] {
+  const blobs: GitBlob[] = [];
+  const buffer = Buffer.allocUnsafe(64 * 1024);
+  const fd = openSync(listingPath, 'r');
+  let pending = Buffer.alloc(0);
+
+  try {
+    let bytesRead: number;
+    do {
+      bytesRead = readSync(fd, buffer, 0, buffer.length, null);
+      const data = pending.length === 0
+        ? buffer.subarray(0, bytesRead)
+        : Buffer.concat([pending, buffer.subarray(0, bytesRead)]);
+      let start = 0;
+      let end = data.indexOf(0, start);
+      while (end >= 0) {
+        const blob = parseGitBlob(data.subarray(start, end).toString('utf8'));
+        if (blob !== null && isMarkdownFile(blob.path)) blobs.push(blob);
+        start = end + 1;
+        end = data.indexOf(0, start);
+      }
+      pending = Buffer.from(data.subarray(start));
+    } while (bytesRead > 0);
+  } finally {
+    closeSync(fd);
+  }
+
+  return blobs;
+}
+
+function parseGitBlob(entry: string): GitBlob | null {
+  const match = /^\d+\s+blob\s+([0-9a-f]+)\s+(\d+)\t([\s\S]+)$/.exec(entry);
+  return match ? { oid: match[1], size: Number(match[2]), path: match[3] } : null;
+}
+
+function readGitBlobs(blobs: GitBlob[]): Map<string, FileTokens> {
+  const unique = new Map<string, number>();
+  for (const blob of blobs) {
+    unique.set(blob.oid, blob.size);
+  }
+
+  const groups: Array<Array<[string, number]>> = [];
+  let group: Array<[string, number]> = [];
+  let groupSize = 0;
+  for (const entry of unique) {
+    if (group.length > 0 && groupSize + entry[1] > MAX_GIT_BUFFER_SIZE) {
+      groups.push(group);
+      group = [];
+      groupSize = 0;
+    }
+    group.push(entry);
+    groupSize += entry[1];
+  }
+  if (group.length > 0) groups.push(group);
+
+  const contents = new Map<string, FileTokens>();
+  for (const batch of groups) {
+    const result = spawnSync('git', ['cat-file', '--batch'], {
+      input: `${batch.map(([oid]) => oid).join('\n')}\n`,
+      maxBuffer: MAX_GIT_BUFFER_SIZE + batch.length * 128,
+      timeout: GIT_OPERATION_TIMEOUT,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    if (result.status !== 0 || result.error) continue;
+
+    let offset = 0;
+    for (const [requestedOid] of batch) {
+      const headerEnd = result.stdout.indexOf(10, offset);
+      if (headerEnd < 0) break;
+      const header = result.stdout.subarray(offset, headerEnd).toString('utf8');
+      const [oid, type, rawSize] = header.split(' ');
+      const size = Number(rawSize);
+      if (oid !== requestedOid || type !== 'blob' || !Number.isSafeInteger(size)) break;
+      const contentStart = headerEnd + 1;
+      const contentEnd = contentStart + size;
+      contents.set(oid, measureContent(result.stdout.subarray(contentStart, contentEnd).toString('utf8')));
+      offset = contentEnd + 1;
+    }
+  }
+
+  return new Map(blobs.flatMap(blob => {
+    const content = contents.get(blob.oid) ?? measureContent('');
+    return [[blob.path, content] as const];
+  }));
+}
+
+function measureContent(content: string): FileTokens {
+  return {
+    tokens: estimateTokens(content),
+    characters: content.length,
+    lines: content.split('\n').length
+  };
 }
 
 /**
@@ -98,27 +207,29 @@ function isGitRepo(): boolean {
  * Compares two refs.
  */
 function compareRefs(baseRef: string, headRef: string, rootDir: string): FileComparison[] {
-  const baseFiles = new Set(getFilesFromRef(baseRef));
-  const headFiles = new Set(headRef === 'WORKING' ? findMarkdownFiles(rootDir).map(f => relative(rootDir, f)) : getFilesFromRef(headRef));
-  const allFiles = new Set([...baseFiles, ...headFiles]);
+  const baseFiles = getFilesFromRef(baseRef);
+  const headFiles = headRef === 'WORKING'
+    ? new Map(findMarkdownFiles(rootDir).map(file => [relative(rootDir, file), measureContent(readFileSync(file, 'utf-8'))]))
+    : getFilesFromRef(headRef);
+  const allFiles = new Set([...baseFiles.keys(), ...headFiles.keys()]);
   
   const comparisons: FileComparison[] = [];
   
   for (const file of allFiles) {
-    const baseContent = baseFiles.has(file) ? getFileFromRef(file, baseRef) : null;
-    const headContent = headFiles.has(file) 
-      ? (headRef === 'WORKING' ? readFileSync(resolve(rootDir, file), 'utf-8') : getFileFromRef(file, headRef))
-      : null;
+    const baseSnapshot = baseFiles.get(file);
+    const headSnapshot = headFiles.get(file);
+    const before = baseSnapshot && baseSnapshot.characters > 0 ? baseSnapshot : null;
+    const after = headSnapshot && headSnapshot.characters > 0 ? headSnapshot : null;
     
-    const beforeTokens = baseContent ? estimateTokens(baseContent) : 0;
-    const afterTokens = headContent ? estimateTokens(headContent) : 0;
+    const beforeTokens = before?.tokens ?? 0;
+    const afterTokens = after?.tokens ?? 0;
     const diff = afterTokens - beforeTokens;
     const percentChange = beforeTokens > 0 ? ((diff / beforeTokens) * 100) : (afterTokens > 0 ? 100 : 0);
     
     let status: FileComparison['status'];
-    if (!baseContent && headContent) {
+    if (!before && after) {
       status = 'added';
-    } else if (baseContent && !headContent) {
+    } else if (before && !after) {
       status = 'removed';
     } else if (diff !== 0) {
       status = 'modified';
@@ -128,16 +239,8 @@ function compareRefs(baseRef: string, headRef: string, rootDir: string): FileCom
     
     comparisons.push({
       file: normalizePath(file),
-      before: baseContent ? {
-        tokens: beforeTokens,
-        characters: baseContent.length,
-        lines: baseContent.split('\n').length
-      } : null,
-      after: headContent ? {
-        tokens: afterTokens,
-        characters: headContent.length,
-        lines: headContent.split('\n').length
-      } : null,
+      before,
+      after,
       diff,
       percentChange,
       status
