@@ -8,9 +8,9 @@ import type { TokenLimitsConfig } from './types.js';
 import {
   DEFAULT_LIMITS,
   EXCLUDED_DIRS,
+  globToRegex,
   isMarkdownFile,
   normalizePath,
-  matchesPattern,
   getErrorMessage
 } from './types.js';
 
@@ -110,26 +110,51 @@ function getPatternSpecificity(pattern: string): number {
  * Determines the token limit and matching pattern for a given file.
  */
 export function getLimitForFile(filePath: string, config: TokenLimitsConfig, rootDir: string): { limit: number; pattern: string } {
-  const normalizedPath = normalizePath(filePath);
-  
-  // Check overrides first (exact matches)
-  for (const [overridePath, limit] of Object.entries(config.overrides)) {
-    if (normalizedPath === overridePath || normalizedPath.endsWith('/' + overridePath)) {
-      return { limit, pattern: overridePath };
+  return createLimitResolver(config)(filePath);
+}
+
+interface CompiledDefault {
+  readonly pattern: string;
+  readonly limit: number;
+  matcher?: (filePath: string) => boolean;
+}
+
+export function createLimitResolver(config: TokenLimitsConfig): (filePath: string) => { limit: number; pattern: string } {
+  const overrides = Object.entries(config.overrides);
+  const defaults: CompiledDefault[] = Object.entries(config.defaults)
+    .sort(([a], [b]) => getPatternSpecificity(b) - getPatternSpecificity(a))
+    .map(([pattern, limit]) => ({ pattern, limit }));
+  const fallback = config.defaults['*.md'] ?? 2000;
+
+  return (filePath: string) => {
+    const normalizedPath = normalizePath(filePath);
+
+    // Check overrides first (exact matches)
+    for (const [overridePath, limit] of overrides) {
+      if (normalizedPath === overridePath || normalizedPath.endsWith('/' + overridePath)) {
+        return { limit, pattern: overridePath };
+      }
     }
-  }
-  
-  // Check defaults (sorted by specificity)
-  const sortedDefaults = Object.entries(config.defaults)
-    .sort(([a], [b]) => getPatternSpecificity(b) - getPatternSpecificity(a));
-  
-  for (const [pattern, limit] of sortedDefaults) {
-    if (matchesPattern(normalizedPath, pattern)) {
-      return { limit, pattern };
+
+    // Check defaults (sorted by specificity and compiled on first use)
+    for (const entry of defaults) {
+      entry.matcher ??= createPatternMatcher(entry.pattern);
+      if (entry.matcher(normalizedPath)) {
+        return { limit: entry.limit, pattern: entry.pattern };
+      }
     }
+
+    return { limit: fallback, pattern: '*.md' };
+  };
+}
+
+function createPatternMatcher(pattern: string): (filePath: string) => boolean {
+  if (!pattern.includes('/') && !pattern.includes('*')) {
+    return filePath => filePath.endsWith('/' + pattern) || filePath === pattern;
   }
-  
-  return { limit: config.defaults['*.md'] ?? 2000, pattern: '*.md' };
+
+  const regex = globToRegex(pattern);
+  return filePath => regex.test(filePath);
 }
 
 /**
