@@ -127,8 +127,7 @@ export function check(paths: string[], options: CheckOptions = {}): void {
       const fullPath = resolvePathFromRoot(rootDir, p);
       
       if (!existsSync(fullPath)) {
-        console.error(`⚠️  Path not found: ${p}`);
-        continue;
+        throw new Error(`Path not found: ${p}`);
       }
       
       const stats = statSync(fullPath);
