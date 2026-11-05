@@ -120,4 +120,21 @@ Analyze external skills.
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('outside the configured root');
   });
+
+  it.each(['count', 'check', 'suggest'])('rejects missing explicit paths for %s', command => {
+    const result = spawnCli([command, '--root', tempDir, 'missing.md'], process.cwd());
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Error: Path not found: missing.md');
+    expect(result.stdout).toBe('');
+  });
+
+  it.each(['count', 'check', 'suggest'])('allows valid empty directories for %s', command => {
+    mkdirSync(join(tempDir, 'empty'));
+
+    const result = spawnCli([command, '--root', tempDir, 'empty'], process.cwd());
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+  });
 });

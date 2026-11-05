@@ -147,8 +147,7 @@ export function count(paths: string[], options: CountOptions = {}): void {
       const fullPath = resolvePathFromRoot(rootDir, p);
       
       if (!existsSync(fullPath)) {
-        console.error(`⚠️  Path not found: ${p}`);
-        continue;
+        throw new Error(`Path not found: ${p}`);
       }
       
       const stats = statSync(fullPath);
