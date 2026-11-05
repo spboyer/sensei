@@ -118,12 +118,47 @@ describe('compare command', () => {
     ]);
   });
 
-  function runCompare(baseRef: string, headRef: string): ComparisonReport {
+  it('retains markdown paths when partial-clone blobs are unavailable', () => {
+    writeFileSync(join(repoDir, 'doc.md'), 'content\n');
+    writeFileSync(join(repoDir, 'unrelated.bin'), 'binary\n');
+    git('add', '.');
+    git('commit', '-qm', 'base');
+
+    const originDir = `${repoDir}-origin.git`;
+    const partialDir = `${repoDir}-partial`;
+    try {
+      execFileSync('git', ['clone', '-q', '--bare', repoDir, originDir], { stdio: 'pipe' });
+      execFileSync('git', ['--git-dir', originDir, 'config', 'uploadpack.allowFilter', 'true'], { stdio: 'pipe' });
+      execFileSync('git', ['clone', '-q', '--filter=blob:none', '--no-checkout', `file://${originDir}`, partialDir], {
+        stdio: 'pipe'
+      });
+      execFileSync('git', ['remote', 'set-url', 'origin', 'file:///unavailable/sensei-origin.git'], {
+        cwd: partialDir,
+        stdio: 'pipe'
+      });
+
+      const report = runCompare('HEAD', 'HEAD', partialDir);
+
+      expect(report.files).toEqual([
+        expect.objectContaining({
+          file: 'doc.md',
+          before: null,
+          after: null,
+          status: 'unchanged'
+        })
+      ]);
+    } finally {
+      rmSync(originDir, { recursive: true, force: true });
+      rmSync(partialDir, { recursive: true, force: true });
+    }
+  });
+
+  function runCompare(baseRef: string, headRef: string, cwd = repoDir): ComparisonReport {
     const commandsDir = dirname(fileURLToPath(import.meta.url));
     const cli = join(commandsDir, '..', 'cli.ts');
     const loader = join(commandsDir, '..', '..', '..', 'node_modules', 'tsx', 'dist', 'loader.mjs');
     const result = spawnSync(process.execPath, ['--import', loader, cli, 'compare', baseRef, headRef, '--format=json'], {
-      cwd: repoDir,
+      cwd,
       encoding: 'utf8'
     });
     expect(result.stderr).toBe('');

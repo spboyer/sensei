@@ -32,7 +32,6 @@ const DEFAULT_OPTIONS: CompareOptions = {
 
 interface GitBlob {
   readonly oid: string;
-  readonly size: number;
   readonly path: string;
 }
 
@@ -60,7 +59,7 @@ function listGitBlobs(tree: string): GitBlob[] {
 
   try {
     listingFd = openSync(listingPath, 'w');
-    const result = spawnSync('git', ['ls-tree', '-r', '-z', '-l', tree], {
+    const result = spawnSync('git', ['ls-tree', '-r', '-z', tree], {
       timeout: GIT_OPERATION_TIMEOUT,
       stdio: ['ignore', listingFd, 'pipe']
     });
@@ -108,20 +107,18 @@ function readGitBlobListing(listingPath: string): GitBlob[] {
 }
 
 function parseGitBlob(entry: string): GitBlob | null {
-  const match = /^\d+\s+blob\s+([0-9a-f]+)\s+(\d+)\t([\s\S]+)$/.exec(entry);
-  return match ? { oid: match[1], size: Number(match[2]), path: match[3] } : null;
+  const match = /^\d+\s+blob\s+([0-9a-f]+)\t([\s\S]+)$/.exec(entry);
+  return match ? { oid: match[1], path: match[2] } : null;
 }
 
 function readGitBlobs(blobs: GitBlob[]): Map<string, FileTokens> {
-  const unique = new Map<string, number>();
-  for (const blob of blobs) {
-    unique.set(blob.oid, blob.size);
-  }
+  const uniqueOids = [...new Set(blobs.map(blob => blob.oid))];
+  const sizes = readGitBlobSizes(uniqueOids);
 
   const groups: Array<Array<[string, number]>> = [];
   let group: Array<[string, number]> = [];
   let groupSize = 0;
-  for (const entry of unique) {
+  for (const entry of sizes) {
     if (group.length > 0 && groupSize + entry[1] > MAX_GIT_BUFFER_SIZE) {
       groups.push(group);
       group = [];
@@ -161,6 +158,25 @@ function readGitBlobs(blobs: GitBlob[]): Map<string, FileTokens> {
     const content = contents.get(blob.oid) ?? measureContent('');
     return [[blob.path, content] as const];
   }));
+}
+
+function readGitBlobSizes(oids: string[]): Map<string, number> {
+  if (oids.length === 0) return new Map();
+
+  const result = spawnSync('git', ['cat-file', '--batch-check'], {
+    input: `${oids.join('\n')}\n`,
+    maxBuffer: MAX_GIT_BUFFER_SIZE,
+    timeout: GIT_OPERATION_TIMEOUT,
+    encoding: 'utf8',
+    stdio: ['pipe', 'pipe', 'pipe']
+  });
+
+  const sizes = new Map<string, number>();
+  for (const line of result.stdout.split('\n')) {
+    const match = /^([0-9a-f]+)\s+blob\s+(\d+)$/.exec(line);
+    if (match) sizes.set(match[1], Number(match[2]));
+  }
+  return sizes;
 }
 
 function measureContent(content: string): FileTokens {
