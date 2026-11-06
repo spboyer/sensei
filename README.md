@@ -139,7 +139,7 @@ using typed convenience fields.
 ### Optional Behavioral Evaluation
 
 ```bash
-npm run tokens -- eval manifest.json --root=/path/to/project --format=json
+npm run --silent tokens -- eval manifest.json --root=/path/to/project --format=json
 ```
 
 Run from a current Sensei checkout with script dependencies installed.

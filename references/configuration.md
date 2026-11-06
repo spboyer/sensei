@@ -157,7 +157,7 @@ behavior. See [release status](../README.md#distribution-and-release-status).
 From a current checkout with script dependencies installed:
 
 ```bash
-npm run tokens -- eval manifest.json --root=/path/to/project --format=json
+npm run --silent tokens -- eval manifest.json --root=/path/to/project --format=json
 ```
 
 Supply a trusted host adapter, repeated positive/near-miss cases, literal output
