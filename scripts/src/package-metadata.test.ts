@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 interface PackageJson {
   readonly bin?: Record<string, string>;
+  readonly dependencies?: Record<string, string>;
   readonly devDependencies?: Record<string, string>;
   readonly exports?: Record<string, unknown>;
   readonly files?: string[];
@@ -25,6 +26,7 @@ function versionAtLeast(range: string, minimum: string): boolean {
 describe('package integration metadata', () => {
   const pkg = JSON.parse(readFileSync('../package.json', 'utf-8')) as PackageJson;
   const scriptsPkg = JSON.parse(readFileSync('package.json', 'utf-8')) as PackageJson;
+  const docsPkg = JSON.parse(readFileSync('../docs/package.json', 'utf-8')) as PackageJson;
 
   it('publishes an npx-compatible CLI binary', () => {
     expect(pkg.bin).toEqual({
@@ -47,5 +49,13 @@ describe('package integration metadata', () => {
     const tsxRange = scriptsPkg.devDependencies?.tsx;
     expect(tsxRange).toBeDefined();
     expect(versionAtLeast(tsxRange ?? '', '4.21.1')).toBe(true);
+  });
+
+  it('uses Tailwind releases compatible with Node 26 loader hooks', () => {
+    for (const name of ['tailwindcss', '@tailwindcss/vite']) {
+      const range = docsPkg.dependencies?.[name];
+      expect(range).toBeDefined();
+      expect(versionAtLeast(range ?? '', '4.3.5')).toBe(true);
+    }
   });
 });
