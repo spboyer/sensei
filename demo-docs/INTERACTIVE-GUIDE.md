@@ -28,7 +28,7 @@ Ask which tasks belong to this skill and which competing workflows are nearby.
 ## 2. Separate specification and advice
 
 ```bash
-npm run tokens -- score demo-docs/sample-skill --format=json
+npm run --silent tokens -- score demo-docs/sample-skill --format=json
 npm run tokens -- count demo-docs/sample-skill/SKILL.md
 ```
 

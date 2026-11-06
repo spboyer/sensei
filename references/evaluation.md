@@ -8,7 +8,7 @@ activation**. Neither proves behavioral quality.
 This feature is on current `main`, not yet in the published npm release; see
 [release status](../README.md#distribution-and-release-status). From a checkout,
 restore script dependencies with `npm ci --prefix scripts` and run
-`npm run tokens -- eval manifest.json --format=json`, or build and use
+`npm run --silent tokens -- eval manifest.json --format=json`, or build and use
 `node scripts/dist/tokens/cli.js eval manifest.json --format=json`.
 The composite GitHub Action does not support `eval`.
 

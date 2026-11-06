@@ -26,7 +26,7 @@ Medium-High is an authoring target, not a computed CLI grade.
 ## 1:10-3:30 - Live demo
 
 ```bash
-npm run tokens -- score demo-docs/sample-skill --format=json
+npm run --silent tokens -- score demo-docs/sample-skill --format=json
 npm run tokens -- count demo-docs/sample-skill/SKILL.md
 ```
 

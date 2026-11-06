@@ -26,7 +26,7 @@ Configured token limits are separate from optimization advice.
 Show actual CLI output:
 
 ```bash
-npm run tokens -- score demo-docs/sample-skill --format=json
+npm run --silent tokens -- score demo-docs/sample-skill --format=json
 npm run tokens -- count demo-docs/sample-skill/SKILL.md
 ```
 
