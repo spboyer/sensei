@@ -3,12 +3,28 @@ import { readFileSync } from 'node:fs';
 
 interface PackageJson {
   readonly bin?: Record<string, string>;
+  readonly devDependencies?: Record<string, string>;
   readonly exports?: Record<string, unknown>;
   readonly files?: string[];
 }
 
+function versionAtLeast(range: string, minimum: string): boolean {
+  const version = range.match(/\d+\.\d+\.\d+/)?.[0];
+  if (!version) return false;
+
+  const actualParts = version.split('.').map(Number);
+  const minimumParts = minimum.split('.').map(Number);
+  for (let index = 0; index < minimumParts.length; index += 1) {
+    if (actualParts[index] !== minimumParts[index]) {
+      return actualParts[index] > minimumParts[index];
+    }
+  }
+  return true;
+}
+
 describe('package integration metadata', () => {
   const pkg = JSON.parse(readFileSync('../package.json', 'utf-8')) as PackageJson;
+  const scriptsPkg = JSON.parse(readFileSync('package.json', 'utf-8')) as PackageJson;
 
   it('publishes an npx-compatible CLI binary', () => {
     expect(pkg.bin).toEqual({
@@ -25,5 +41,11 @@ describe('package integration metadata', () => {
   it('includes compiled dist and action metadata in the npm package', () => {
     expect(pkg.files).toContain('scripts/dist/**');
     expect(pkg.files).toContain('action.yml');
+  });
+
+  it('uses a tsx release compatible with Node 26 loader hooks', () => {
+    const tsxRange = scriptsPkg.devDependencies?.tsx;
+    expect(tsxRange).toBeDefined();
+    expect(versionAtLeast(tsxRange ?? '', '4.21.1')).toBe(true);
   });
 });
