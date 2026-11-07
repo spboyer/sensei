@@ -5,6 +5,7 @@ interface PackageJson {
   readonly bin?: Record<string, string>;
   readonly dependencies?: Record<string, string>;
   readonly devDependencies?: Record<string, string>;
+  readonly engines?: Record<string, string>;
   readonly exports?: Record<string, unknown>;
   readonly files?: string[];
 }
@@ -57,5 +58,12 @@ describe('package integration metadata', () => {
       expect(range).toBeDefined();
       expect(versionAtLeast(range ?? '', '4.3.5')).toBe(true);
     }
+  });
+
+  it('uses an Astro release without the known docs dependency advisories', () => {
+    expect(docsPkg.engines?.node).toBe('>=22.23.4');
+    const astroRange = docsPkg.dependencies?.astro;
+    expect(astroRange).toBeDefined();
+    expect(versionAtLeast(astroRange ?? '', '7.4.7')).toBe(true);
   });
 });
