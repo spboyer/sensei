@@ -2,8 +2,9 @@
 
 Marketing and documentation site for [Sensei](https://spboyer.github.io/sensei/).
 
-Built with Astro 5.x and Tailwind CSS v4. Single-page static output with small
-client-side clipboard handlers; no client framework.
+Built with Astro 7.x and Tailwind CSS v4 on Node.js 22.23.4 or newer.
+Single-page static output with small client-side clipboard handlers; no client
+framework.
 
 ## Project Structure
 
