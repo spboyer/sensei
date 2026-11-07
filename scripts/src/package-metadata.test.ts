@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 interface PackageJson {
   readonly bin?: Record<string, string>;
@@ -65,5 +65,17 @@ describe('package integration metadata', () => {
     const astroRange = docsPkg.dependencies?.astro;
     expect(astroRange).toBeDefined();
     expect(versionAtLeast(astroRange ?? '', '7.4.7')).toBe(true);
+  });
+
+  it('uses GitHub Actions releases with supported Node runtimes', () => {
+    const workflows = readdirSync('../.github/workflows')
+      .filter((file) => file.endsWith('.yml'))
+      .map((file) => readFileSync(`../.github/workflows/${file}`, 'utf-8'))
+      .join('\n');
+
+    expect(workflows).not.toMatch(/actions\/checkout@v[1-6]\b/);
+    expect(workflows).not.toMatch(/actions\/setup-node@v[1-6]\b/);
+    expect(workflows).not.toMatch(/actions\/upload-pages-artifact@v[1-4]\b/);
+    expect(workflows).not.toMatch(/actions\/deploy-pages@v[1-4]\b/);
   });
 });
