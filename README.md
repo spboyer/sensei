@@ -190,7 +190,7 @@ Checksums/provenance are not signed attestations.
 
 ### Required
 
-1. **Node.js 22.12+, 24, or 26+** - For running the current source CLI and contributor toolchain
+1. **Node.js 22.x (22.12.0+), 24.x, or 26.0.0+** - For running the current source CLI and contributor toolchain
    ```bash
    node --version
    ```
