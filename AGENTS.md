@@ -217,7 +217,7 @@ Examples:
 
 ## Dependencies
 
-- Node.js 22.12+ (for the current source CLI and contributor toolchain)
+- Node.js 22.x (22.12.0+), 24.x, or 26.0.0+ (for the current source CLI and contributor toolchain)
 - npm (for running scripts)
 - Python 3.10+ (for GEPA auto-evaluator, optional)
 - gepa package (optional proxy optimization; use `uv run --with-requirements scripts/src/gepa/requirements.txt`)
