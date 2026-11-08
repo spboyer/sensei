@@ -190,7 +190,7 @@ Checksums/provenance are not signed attestations.
 
 ### Required
 
-1. **Node.js 18+** - For running token management scripts
+1. **Node.js 22.12+** - For running the current source CLI and contributor toolchain
    ```bash
    node --version
    ```

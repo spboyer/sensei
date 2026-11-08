@@ -52,6 +52,15 @@ describe('package integration metadata', () => {
     expect(versionAtLeast(tsxRange ?? '', '4.21.1')).toBe(true);
   });
 
+  it('uses the remediated Vitest toolchain on its supported Node floor', () => {
+    expect(scriptsPkg.engines?.node).toBe('>=22.12.0');
+    for (const name of ['vitest', '@vitest/coverage-v8']) {
+      const range = scriptsPkg.devDependencies?.[name];
+      expect(range).toBeDefined();
+      expect(versionAtLeast(range ?? '', '5.1.0')).toBe(true);
+    }
+  });
+
   it('uses Tailwind releases compatible with Node 26 loader hooks', () => {
     for (const name of ['tailwindcss', '@tailwindcss/vite']) {
       const range = docsPkg.dependencies?.[name];
