@@ -53,7 +53,7 @@ describe('package integration metadata', () => {
   });
 
   it('uses the remediated Vitest toolchain on its supported Node floor', () => {
-    expect(scriptsPkg.engines?.node).toBe('>=22.12.0');
+    expect(scriptsPkg.engines?.node).toBe('^22.12.0 || ^24.0.0 || >=26.0.0');
     for (const name of ['vitest', '@vitest/coverage-v8']) {
       const range = scriptsPkg.devDependencies?.[name];
       expect(range).toBeDefined();
