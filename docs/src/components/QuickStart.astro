@@ -6,15 +6,15 @@ const examples = [
     description: 'Improve one skill from Copilot CLI',
   },
   {
-    command: 'npx @spboyer/sensei score .',
-    description: 'Check portable compliance and authoring guidance',
+    command: 'sensei score .',
+    description: 'Run the CLI installed from the GitHub Release tarball',
   },
   {
-    command: 'npx @spboyer/sensei analyze skills/my-skill --root .',
+    command: 'sensei analyze skills/my-skill --root .',
     description: 'Analyze resources, scripts, trust, and lifecycle evidence',
   },
   {
-    command: 'npx @spboyer/sensei check --root . --strict',
+    command: 'sensei check --root . --strict',
     description: 'Run token validation in any project',
   },
   {
@@ -34,12 +34,12 @@ const examples = [
       Quick Start
     </h2>
     <p class="mt-4 text-mid-gray text-lg max-w-2xl">
-      Install it as a skill, run it with npx, wire it into CI, or import the parts you need.
+      Install it as a skill, install the CLI from GitHub Releases, or pin the GitHub Action.
     </p>
     <p class="mt-4 text-mid-gray max-w-2xl">
-      Version 1.6.0 includes evidence profiles, host profiles, repository
-      analysis, and stronger behavioral evaluation. Confirm the GitHub release
-      and npm package are visible; use a current checkout while publication is pending.
+      Version 1.6.1 includes evidence profiles, host profiles, repository
+      analysis, and stronger behavioral evaluation. GitHub is the authoritative
+      release channel; npm remains optional.
       <code>--root</code> selects your project; <code>--profile</code> selects
       portable or Copilot frontmatter.
     </p>
@@ -88,7 +88,7 @@ const examples = [
       <div class="bg-dark-gray p-6">
         <h3 class="text-lg font-semibold text-light-gray">GitHub Action</h3>
         <p class="mt-2 text-sm text-mid-gray leading-relaxed">
-          After publication, add <code class="text-light-gray">spboyer/sensei@v1.6.0</code> to CI and run <code class="text-light-gray">check</code> on pull requests.
+          Add <code class="text-light-gray">spboyer/sensei@v1.6.1</code> to CI. The pinned Action ref runs its checked-out source, not npm.
         </p>
       </div>
       <div class="bg-dark-gray p-6">

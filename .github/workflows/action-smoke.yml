@@ -1,0 +1,31 @@
+name: Composite Action Smoke Test
+
+on:
+  pull_request:
+    paths:
+      - action.yml
+      - scripts/**
+      - package.json
+      - .github/workflows/action-smoke.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run checked-out Sensei Action
+        uses: ./
+        with:
+          command: score
+          root: .
+          path: .
+          profile: portable
+          format: json

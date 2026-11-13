@@ -55,8 +55,13 @@ describe('package integration metadata', () => {
   it('exposes repository analysis and host profiles through the composite Action', () => {
     expect(action).toContain('check|count|suggest|score|analyze');
     expect(action).toContain('--profile=$SENSEI_PROFILE');
+    expect(action).toContain('npm ci --prefix "$GITHUB_ACTION_PATH/scripts" --include=dev');
+    expect(action).toContain('$GITHUB_ACTION_PATH/scripts/node_modules/tsx/dist/cli.mjs');
+    expect(action).toContain('$GITHUB_ACTION_PATH/scripts/src/tokens/cli.ts');
+    expect(action).toContain('npx --yes "@spboyer/sensei@$SENSEI_PACKAGE_VERSION"');
     expect(actionMetadata.inputs['node-version']?.default).toBe('22');
     expect(actionMetadata.inputs.profile?.default).toBe('portable');
+    expect(actionMetadata.inputs['package-version']?.default).toBe('');
   });
 
   it('uses a tsx release compatible with Node 26 loader hooks', () => {
@@ -107,5 +112,13 @@ describe('package integration metadata', () => {
     expect(workflow).toContain('npm install --global npm@latest');
     expect(workflow).not.toContain('NPM_TOKEN');
     expect(workflow).not.toContain('NODE_AUTH_TOKEN');
+  });
+
+  it('attaches compiled and source artifacts to GitHub releases', () => {
+    const workflow = readFileSync('../.github/workflows/squad-release.yml', 'utf-8');
+    expect(workflow).toContain('npm pack --pack-destination');
+    expect(workflow).toContain('node scripts/package-skill.mjs');
+    expect(workflow).toContain('RELEASE-SHA256SUMS');
+    expect(workflow).toContain('"$RUNNER_TEMP/release-assets/"*');
   });
 });

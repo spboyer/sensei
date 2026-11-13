@@ -105,29 +105,31 @@ Score-only mode runs without LLM calls.
 
 ### External Integration Modes
 
-Published packages and Action tags may lag `main`; see [release status](#distribution-and-release-status)
-before using newly merged features.
+GitHub is the primary distribution channel. Pin release and Action tags; npm is
+an optional channel and may lag.
 
-#### CLI / npx
+#### CLI from a GitHub Release
 
-```bash
-npx @spboyer/sensei score .
-npx @spboyer/sensei score . --profile=copilot
-npx @spboyer/sensei analyze skills/my-skill --root .
-npx @spboyer/sensei check --root . --config .token-limits.json --strict
+```powershell
+$package = 'https://github.com/spboyer/sensei/releases/download/v1.6.1/spboyer-sensei-1.6.1.tgz'
+npm install --global $package
+sensei score .
+sensei score . --profile=copilot
+sensei analyze skills/my-skill --root .
+sensei check --root . --config .token-limits.json --strict
 ```
 
 `--root` resolves paths; `--profile` selects portable or Copilot frontmatter;
 `--config` selects limits; `--emit-proof` writes `sensei-audit.md`;
-`.sensei.json` enables repo policy. Install globally via `npm i -g @spboyer/sensei`.
+`.sensei.json` enables repo policy. The release page also includes the committed
+source bundle, provenance JSON, and checksum manifests.
 
 #### GitHub Action
 
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  # Use v1.6.0 after the GitHub release is published.
-  - uses: spboyer/sensei@v1.6.0
+  - uses: spboyer/sensei@v1.6.1
     with:
       command: check
       root: .
@@ -196,7 +198,7 @@ The legacy `specChecks` and `checks` arrays remain available.
 ## Repository Analysis
 
 ```bash
-npx @spboyer/sensei analyze skills/my-skill --root . --format=json
+sensei analyze skills/my-skill --root . --format=json
 ```
 
 `analyze` builds a contained manifest for `SKILL.md`, references, assets,
@@ -232,18 +234,17 @@ keyword/proxy fitness; it does not observe whether a host loaded a skill.
 
 ## Distribution and Release Status
 
-Version **1.6.0** contains the evidence profiles, host profiles, repository
+Version **1.6.1** contains the evidence profiles, host profiles, repository
 analyzer, stronger behavioral evaluation, and Aspire pilot described here.
-GitHub Releases trigger OIDC-based npm trusted publishing with automatic
-provenance. Verify that both the GitHub tag and npm package are visible before
-consuming a new version; use a current source checkout while publication is
-still pending.
+GitHub is the authoritative release channel. Each release includes a compiled
+CLI tarball, source archive, provenance JSON, and checksums. npm is optional and
+may remain behind until its trusted-publisher binding is configured.
 
-[Commit-pinned source bundles](references/distribution.md) contain
-`sensei.tar.gz`, `source.json`, and `SHA256SUMS`, retained for 30 days.
-They exclude installed dependencies and compiled output, require authenticated
-artifact downloads, and do not update downstream dotfiles automatically.
-Checksums/provenance are not signed attestations.
+[GitHub Release assets](references/distribution.md) include
+`spboyer-sensei-<version>.tgz`, `sensei.tar.gz`, `source.json`, `SHA256SUMS`,
+and `RELEASE-SHA256SUMS`. Release assets do not expire. Workflow artifacts
+retain the source bundle for 30 days. Neither path updates downstream dotfiles
+automatically.
 
 ## Prerequisites
 
@@ -291,21 +292,20 @@ git clone https://github.com/spboyer/sensei.git .github/skills/sensei
 cd .github/skills/sensei/scripts && npm install
 ```
 
-#### Option 3: Install the CLI from npm
+#### Option 3: Install the CLI from a GitHub Release
 
-For CLI/library use:
+For CLI use without npm registry publication:
 
 ```bash
-npm install --global @spboyer/sensei
+npm install --global https://github.com/spboyer/sensei/releases/download/v1.6.1/spboyer-sensei-1.6.1.tgz
 sensei check .
-npx @spboyer/sensei check .
 ```
 
 #### Verify Installation
 
 ```bash
 cd ~/.copilot/skills/sensei && npm run tokens -- check
-npx @spboyer/sensei check .
+sensei check .
 ```
 
 ---

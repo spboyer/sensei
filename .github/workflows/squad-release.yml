@@ -41,6 +41,26 @@ jobs:
             echo "🆕 Tag ${{ steps.version.outputs.tag }} does not exist — creating release."
           fi
 
+      - name: Install release dependencies
+        if: steps.check_tag.outputs.exists == 'false'
+        run: npm ci --prefix scripts
+
+      - name: Build and verify package
+        if: steps.check_tag.outputs.exists == 'false'
+        run: npm run build && npm test
+
+      - name: Build GitHub release assets
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          mkdir -p "$RUNNER_TEMP/release-assets"
+          npm pack --pack-destination "$RUNNER_TEMP/release-assets"
+          node scripts/package-skill.mjs "$RUNNER_TEMP/source-bundle"
+          cp "$RUNNER_TEMP/source-bundle/"* "$RUNNER_TEMP/release-assets/"
+          (
+            cd "$RUNNER_TEMP/release-assets"
+            sha256sum spboyer-sensei-*.tgz sensei.tar.gz source.json > RELEASE-SHA256SUMS
+          )
+
       - name: Create git tag
         if: steps.check_tag.outputs.exists == 'false'
         run: |
@@ -57,7 +77,8 @@ jobs:
           gh release create "${{ steps.version.outputs.tag }}" \
             --title "${{ steps.version.outputs.tag }}" \
             --generate-notes \
-            --latest
+            --latest \
+            "$RUNNER_TEMP/release-assets/"*
 
       - name: Verify release
         if: steps.check_tag.outputs.exists == 'false'

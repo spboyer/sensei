@@ -164,9 +164,11 @@ counts, spec checks, and advisory checks. PR review bots and humans can link it
 from PR bodies. Override the path with `--emit-proof=path/to/file.md`. In the
 GitHub Action, set the `emit-proof` input to a path.
 
-The composite Action runs npm (`package-version: latest` by default), not its
-checkout's CLI. Pin both the Action ref and package version for reproducible
-behavior. See [release status](../README.md#distribution-and-release-status).
+The composite Action installs locked dependencies and runs the CLI source from
+its own pinned Action checkout. Pin the Action ref for reproducible behavior.
+The legacy `package-version` input is deprecated. When explicitly supplied, it
+still runs that npm version for compatibility; omit it to run the pinned Action
+checkout. See [release status](../README.md#distribution-and-release-status).
 
 ## Optional behavioral evaluation
 
@@ -208,11 +210,11 @@ Run Sensei in CI to validate skill compliance:
 # .github/workflows/skill-lint.yml
 - name: Check skill compliance
   run: |
-    npx @spboyer/sensei check --root . --config .token-limits.json --strict
+    sensei check --root . --config .token-limits.json --strict
 ```
 
 This enforces configured token limits, not an advisory score threshold.
-Use `npx @spboyer/sensei score skills/my-skill --format=json` for separate
+Use `sensei score skills/my-skill --format=json` for separate
 portable-spec diagnostics and optional recommendations.
-Use `npx @spboyer/sensei analyze skills/my-skill --root . --format=json` for
+Use `sensei analyze skills/my-skill --root . --format=json` for
 contained repository evidence.

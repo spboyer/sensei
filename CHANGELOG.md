@@ -4,6 +4,19 @@
 
 No unreleased changes.
 
+## 1.6.1 - 2026-11-13
+
+### GitHub-first distribution
+
+- The composite Action now runs the source from its pinned GitHub Action ref
+  instead of downloading `@spboyer/sensei` from npm.
+- GitHub Releases attach an installable compiled package tarball, source bundle,
+  source provenance, and SHA-256 checksum manifests.
+- `package-version` remains as a deprecated Action input; the Action ref is now
+  the version selector.
+- npm remains an optional distribution channel until its trusted-publisher
+  binding is configured.
+
 ## 1.6.0 - 2026-11-13
 
 ### Skill quality evidence ladder
@@ -46,8 +59,8 @@ No unreleased changes.
   advisory.
 - Updated the root README, skill workflow, configuration and evaluation
   references, composite Action, and website for the evidence model.
-- Uses npm trusted publishing with GitHub OIDC and automatic provenance instead
-  of a long-lived publish token.
+- Prepared npm trusted publishing with GitHub OIDC; npm remains optional until
+  the package publisher binding is enabled.
 
 ### Portable validation and evidence
 
