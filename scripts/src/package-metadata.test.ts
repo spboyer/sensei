@@ -39,6 +39,7 @@ describe('package integration metadata', () => {
     expect(pkg.exports).toHaveProperty('./score');
     expect(pkg.exports).toHaveProperty('./parse');
     expect(pkg.exports).toHaveProperty('./checks');
+    expect(pkg.exports).toHaveProperty('./analyze');
   });
 
   it('includes compiled dist and action metadata in the npm package', () => {

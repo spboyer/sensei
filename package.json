@@ -36,6 +36,10 @@
       "types": "./scripts/dist/checks.d.ts",
       "import": "./scripts/dist/checks.js"
     },
+    "./analyze": {
+      "types": "./scripts/dist/analyze.d.ts",
+      "import": "./scripts/dist/analyze.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

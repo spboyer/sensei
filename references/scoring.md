@@ -11,6 +11,38 @@ separate sections in readable output and proof artifacts:
 | `specChecks` | Portable frontmatter diagnostics, not a security audit or host certification |
 | `checks` | Optional Sensei authoring suggestions, informed in part by [SkillsBench](skillsbench.md) |
 
+The additive `findings` and `profiles` fields normalize these legacy arrays into
+the evidence ladder described in
+[`docs/plans/2026-11-13-evidence-ladder-design.md`](../docs/plans/2026-11-13-evidence-ladder-design.md).
+Existing consumers can continue reading `specChecks` and `checks`.
+
+Each normalized finding reports a profile, basis, state, severity, and evidence
+level. States are `pass`, `fail`, `warning`, `unknown`, or `not-applicable`.
+Unavailable evidence remains `unknown` and cannot produce a passing profile.
+
+Use `sensei score <skill> --profile=portable` for strict portable fields or
+`--profile=copilot` for documented Copilot extensions such as
+`user-invocable`, `disable-model-invocation`, `argument-hint`, and `context`.
+Selecting a host profile does not make its extensions portable.
+
+## Repository analysis
+
+`sensei analyze <skill> --root <repository>` builds a contained resource graph
+and emits the deterministic information-architecture, script-readiness,
+supply-chain, and lifecycle findings available from the checkout. The analyzer:
+
+- resolves relative Markdown resources and reports broken, escaping, deep, and
+  orphaned paths;
+- verifies real paths before trusting symlinks;
+- applies the MCP Skills interoperability resource limits;
+- reports lexical workflow-completion and sprawl advisories;
+- inventories tests, help, repeatability, destructive patterns, network or
+  credential use, and dependency locks for scripts;
+- reports repository ownership, changelog, and skill-eval evidence.
+
+Script and prose findings state their limitations. They do not prove runtime
+behavior or safety.
+
 `license` and `metadata.version` are optional. Missing values appear only as
 `license-recommendation` and `version-recommendation` in `checks`; version is not
 a standardized metadata key. An omitted optional field is not a spec failure.

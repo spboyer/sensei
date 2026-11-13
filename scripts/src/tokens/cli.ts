@@ -19,6 +19,8 @@ import { resolvePathFromRoot, resolveRootDir } from './commands/utils.js';
 import { detectRepoPolicy } from '../repo-policy.js';
 import { writeProof, defaultProofPath } from '../proof.js';
 import { reportEvalError, runEval } from '../evals/evaluate.js';
+import { isHostProfile } from '../host-profiles.js';
+import { analyzeSkillRepository } from '../repository-analysis.js';
 
 function printHelp(): void {
   console.log(`
@@ -34,6 +36,7 @@ Commands:
   suggest [paths...]   Get optimization suggestions
   compare [refs...]    Compare tokens between git refs
   score [path]         Check portable frontmatter and suggest authoring improvements
+  analyze [path]       Analyze the complete skill resource graph and repository evidence
   eval <manifest>      Run opt-in behavioral evaluation via an external adapter
 
 Options:
@@ -50,6 +53,7 @@ Options:
   --show-unchanged     Include unchanged files in comparison
   --emit-proof[=path]  (score) Write sensei-audit.md proof artifact (default: <skill>/sensei-audit.md)
   --no-repo-policy     (score) Ignore .sensei.json / AGENTS.md repo-local policy
+  --profile=<name>     (score) Frontmatter profile: portable | copilot
                        eval supports --format=json|table and --root only
   --help, -h           Show this help message
 
@@ -105,6 +109,8 @@ export function parseArgs(args: string[]): { command: string; paths: string[]; o
       options.noRepoPolicy = true;
     } else if (arg.startsWith('--format=')) {
       options.format = arg.slice(9);
+    } else if (arg.startsWith('--profile=')) {
+      options.profile = arg.slice(10);
     } else if (arg.startsWith('--sort=')) {
       options.sort = arg.slice(7);
     } else if (arg.startsWith('--min-tokens=')) {
@@ -189,7 +195,12 @@ export function main(args = process.argv.slice(2)): void {
         console.error(`Error: No SKILL.md file found in: ${skillDir}`);
         process.exit(1);
       }
-      const result = scoreSkill(skillDir);
+      const requestedProfile = typeof options.profile === 'string' ? options.profile : 'portable';
+      if (!isHostProfile(requestedProfile)) {
+        console.error(`Error: Unknown host profile "${requestedProfile}". Expected portable or copilot.`);
+        process.exit(1);
+      }
+      const result = scoreSkill(skillDir, { profile: requestedProfile });
       const policy = options.noRepoPolicy
         ? { shortDescriptionsPreferred: false, source: null, evidence: null }
         : detectRepoPolicy(rootDir);
@@ -210,6 +221,7 @@ export function main(args = process.argv.slice(2)): void {
       } else {
         console.log(`\n📊 Skill Score: ${result.skillPath}`);
         console.log(`   Complexity: ${result.complexity} | Tokens: ${result.tokenCount} | Modules: ${result.moduleCount}`);
+        console.log(`   Host profile: ${result.hostProfile}`);
         console.log('   Static checks only; recommendations do not establish host activation or security.');
         if (policy.shortDescriptionsPreferred) {
           console.log(`   📐 Repo-local policy: short descriptions preferred (from ${policy.source})`);
@@ -218,6 +230,14 @@ export function main(args = process.argv.slice(2)): void {
           console.log(`   📝 Proof artifact: ${proofPath}`);
         }
         console.log('');
+
+        if (result.profiles) {
+          console.log('  ── Evidence Profiles ──');
+          for (const profile of result.profiles) {
+            console.log(`  ${profile.profile}: ${profile.state}`);
+          }
+          console.log('');
+        }
 
         if (result.specChecks.length > 0) {
           console.log('  ── Spec Compliance (agentskills.io portable frontmatter) ──');
@@ -238,6 +258,27 @@ export function main(args = process.argv.slice(2)): void {
           if (check.evidence) {
             console.log(`     📎 ${check.evidence}`);
           }
+        }
+        console.log('');
+      }
+      break;
+    }
+
+    case 'analyze': {
+      const rootDir = resolveRootDir(typeof options.root === 'string' ? options.root : undefined);
+      const skillDir = paths[0] ? resolvePathFromRoot(rootDir, paths[0]) : rootDir;
+      const report = analyzeSkillRepository(skillDir, { repositoryRoot: rootDir });
+      if (options.format === 'json') {
+        console.log(JSON.stringify(report, null, 2));
+      } else {
+        console.log(`\nSkill analysis: ${report.graph.entrypoint}`);
+        console.log(`Resources: ${report.graph.resources.length}`);
+        for (const profile of report.profiles) {
+          console.log(`  ${profile.profile}: ${profile.state}`);
+        }
+        console.log('');
+        for (const finding of report.findings.filter(item => item.state !== 'pass' && item.state !== 'not-applicable')) {
+          console.log(`  [${finding.state}] ${finding.id}: ${finding.message}`);
         }
         console.log('');
       }
