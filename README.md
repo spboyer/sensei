@@ -2,13 +2,21 @@
 
 > "A true master teaches not by telling, but by refining." - The Skill Sensei
 
-Sensei validates portable [Agent Skills](https://agentskills.io/specification.md) frontmatter and suggests authoring improvements using the [Ralph loop pattern](references/loop.md). Medium-High is a Sensei advisory target, not a specification compliance level.
+Sensei is an evidence engine for [Agent Skills](https://agentskills.io/specification.md).
+It validates portable frontmatter, checks host compatibility, analyzes the full
+skill resource graph, suggests authoring improvements with the
+[Ralph loop pattern](references/loop.md), and optionally measures observed host
+behavior against a baseline.
 
 **Specification versus advice:** `score` keeps portable diagnostics in `specChecks`
 and optional Sensei recommendations in `checks`, including license/version suggestions.
+Additive `findings` and `profiles` distinguish portable specification, host
+compatibility, information architecture, behavioral evidence, safety/supply
+chain, and lifecycle health.
 The standard requires only `name` and `description`; 150 characters, 60 words,
 `WHEN:`, type prefixes, and the 500-token target are heuristics, not normative rules.
 Static scores and proof artifacts are neither observed activation nor security audits.
+Unavailable evidence stays `unknown`; it never becomes a success-shaped default.
 See [scoring](references/scoring.md) and [host portability](references/portability.md)
 for constraints, runtime limitations, and the separately owned Copilot extension work in [#5](https://github.com/spboyer/sensei/pull/5).
 
@@ -19,6 +27,8 @@ for constraints, runtime limitations, and the separately owned Copilot extension
 - [Distribution and Release Status](#distribution-and-release-status)
 - [Prerequisites](#prerequisites)
 - [How It Works](#how-it-works)
+- [Evidence Profiles](#evidence-profiles)
+- [Repository Analysis](#repository-analysis)
 - [Configuration](#configuration)
 - [Scoring Criteria](#scoring-criteria)
 - [Examples](#examples)
@@ -31,24 +41,28 @@ for constraints, runtime limitations, and the separately owned Copilot extension
 
 ### The Problem
 
-Skills without proper frontmatter lead to **skill collision** - agents invoking the wrong skill for a given prompt. Common issues include:
+Skills can have valid frontmatter and still fail in practice. Common issues include:
 
 - **No triggers** - Agent doesn't know when to activate the skill
 - **Ambiguous scope** - Similar skills compete for the same request
 - **Vague descriptions** - Length alone does not establish useful context
 - **Token bloat** - Oversized skills waste context window
+- **Broken resources** - Missing, escaping, deep, or orphaned references undermine progressive disclosure
+- **Unproven behavior** - Static prose looks good without improving routing or task quality
+- **Hidden risk** - Scripts, permissions, dependencies, and release state are not captured by a frontmatter score
 
 ### The Solution
 
 Sensei implements the "Ralph Wiggum" technique:
 1. **Read** - Load the skill's current state and token count
-2. **Score** - Evaluate frontmatter compliance
+2. **Score** - Evaluate portable compliance and the selected host profile
 3. **Improve** - Clarify positive scope and test close near-misses
 4. **Verify** - Run tests to ensure changes work
 5. **Check Tokens** - Analyze token usage, gather suggestions
-6. **Summary** - Display before/after with suggestions
-7. **Prompt** - Ask user: Commit, Create Issue, or Skip?
-8. **Repeat** - Until target score reached
+6. **Analyze** - Check the resource graph, scripts, trust boundaries, and lifecycle evidence
+7. **Summary** - Display before/after findings and evidence limits
+8. **Prompt** - Ask user: Commit, Create Issue, or Skip?
+9. **Repeat** - Until the intended gates and tests pass
 
 ---
 
@@ -98,17 +112,22 @@ before using newly merged features.
 
 ```bash
 npx @spboyer/sensei score .
+npx @spboyer/sensei score . --profile=copilot
+npx @spboyer/sensei analyze skills/my-skill --root .
 npx @spboyer/sensei check --root . --config .token-limits.json --strict
 ```
 
-`--root` resolves paths; `--config` selects limits; `--emit-proof` writes `sensei-audit.md`; `.sensei.json` enables repo policy. Install globally via `npm i -g @spboyer/sensei`.
+`--root` resolves paths; `--profile` selects portable or Copilot frontmatter;
+`--config` selects limits; `--emit-proof` writes `sensei-audit.md`;
+`.sensei.json` enables repo policy. Install globally via `npm i -g @spboyer/sensei`.
 
 #### GitHub Action
 
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  - uses: spboyer/sensei@v1.5.0
+  # Use v1.6.0 after the GitHub release is published.
+  - uses: spboyer/sensei@v1.6.0
     with:
       command: check
       root: .
@@ -123,8 +142,14 @@ steps:
 import { scoreSkillContent } from '@spboyer/sensei/score';
 import { parseFrontmatter } from '@spboyer/sensei/parse';
 import { checkNameCompliance } from '@spboyer/sensei/checks';
+import { analyzeSkillRepository } from '@spboyer/sensei/analyze';
 
-const result = scoreSkillContent(renderedSkillMarkdown, { path: 'skills/my-skill', moduleCount: 2 });
+const result = scoreSkillContent(renderedSkillMarkdown, {
+  path: 'skills/my-skill',
+  moduleCount: 2,
+  profile: 'copilot'
+});
+const repositoryReport = analyzeSkillRepository('skills/my-skill', { repositoryRoot: '.' });
 const frontmatter = parseFrontmatter(renderedSkillMarkdown);
 checkNameCompliance(frontmatter?.name ?? '');
 ```
@@ -143,10 +168,43 @@ npm run --silent tokens -- eval manifest.json --root=/path/to/project --format=j
 ```
 
 Run from a current Sensei checkout with script dependencies installed.
-Compare repeated host observations and output assertions against a baseline.
+Compare repeated positive, near-miss, sibling-collision, and held-out host
+observations against a without-skill or prior-version baseline. Assertions can
+inspect output, JSON shape, artifacts, tool trajectories, or trusted executable
+checks. Improvement claims require an explicit positive lift threshold.
 Unavailable evidence cannot pass; GEPA keyword fitness is not observed activation.
 No provider or Python dependency is added. See the
 [trusted adapter contract, exit codes, and protocol smoke test](references/evaluation.md).
+
+## Evidence Profiles
+
+Sensei does not collapse unlike evidence into one grade.
+
+| Profile | What it establishes |
+|---|---|
+| Portable specification | Agent Skills frontmatter compliance against commit-pinned upstream fixtures |
+| Host compatibility | Portable or Copilot host fields without mislabeling extensions as portable |
+| Information architecture | Resource pointers, progressive disclosure, workflow criteria, and advisory sprawl signals |
+| Behavioral evidence | Observed activation, routing metrics, task assertions, trajectories, variance, and baseline lift |
+| Safety and supply chain | Path containment, script capability surface, dependency locks, permissions, and resource limits |
+| Lifecycle health | Ownership, changelog, eval coverage, mirrors, versions, and release evidence |
+
+Every normalized finding reports `pass`, `fail`, `warning`, `unknown`, or
+`not-applicable`, plus its basis, evidence level, remediation, and limitations.
+The legacy `specChecks` and `checks` arrays remain available.
+
+## Repository Analysis
+
+```bash
+npx @spboyer/sensei analyze skills/my-skill --root . --format=json
+```
+
+`analyze` builds a contained manifest for `SKILL.md`, references, assets,
+scripts, and linked repository resources. It checks Markdown and Copilot
+`#file:` references, reference depth, symlinks, aggregate MCP resource limits,
+script readiness and capability signals, dependency locks, ownership,
+changelog, and skill-specific eval evidence. Static findings preserve explicit
+limitations and do not certify runtime safety.
 
 ### GEPA Commands
 
@@ -174,11 +232,11 @@ keyword/proxy fitness; it does not observe whether a host loaded a skill.
 
 ## Distribution and Release Status
 
-As of 2026-10-30, npm `latest` is **1.5.0** and the newest GitHub release is
-**v1.5.1**. The YAML/spec refresh, proof/policy updates, source bundles, and
-behavioral evaluator are on `main`; do not assume those releases contain them.
-For current behavior, clone this repository and run `npm ci --prefix scripts`,
-then `npm run tokens -- <command>`. Use `npm run build` for the compiled CLI/library.
+Version **1.6.0** contains the evidence profiles, host profiles, repository
+analyzer, stronger behavioral evaluation, and Aspire pilot described here.
+GitHub Releases trigger token-authenticated npm publishing with provenance.
+Verify that both the GitHub tag and npm package are visible before consuming a
+new version; use a current source checkout while publication is still pending.
 
 [Commit-pinned source bundles](references/distribution.md) contain
 `sensei.tar.gz`, `source.json`, and `SHA256SUMS`, retained for 30 days.
@@ -503,6 +561,8 @@ Open an issue with skill name, starting state, and `git log --oneline -10`.
 - [Ralph Loop Pattern](references/loop.md) - Sensei's iterative improvement workflow
 - [Distribution](references/distribution.md) - Commit-pinned source bundles
 - [Behavioral Evaluation](references/evaluation.md) - Trusted adapters and observed evidence
+- [Adapter Mappings](references/adapters.md) - Copilot/Vally and Promptfoo mappings
+- [Aspire Pilot](docs/pilots/aspire-skills-2026-11-13.md) - Corpus results and false-positive controls
 - [Host Portability](references/portability.md) - Installation and runtime differences
 - [Anthropic Skills Documentation](https://support.anthropic.com/en/articles/12512198-how-to-create-custom-skills) - Writing guidance
 - [MCP Integration Patterns](references/mcp-integration.md) - MCP integration best practices

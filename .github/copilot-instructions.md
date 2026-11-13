@@ -4,7 +4,12 @@ Follow `AGENTS.md` as the canonical contributor guidance for this repository. Th
 
 ## Project Context
 
-This repository is **Sensei**, an Agent Skill that improves `SKILL.md` frontmatter compliance. The root `SKILL.md` is the runtime skill; `README.md` is human-facing documentation; `references/` contains progressive-disclosure docs; `scripts/` contains the TypeScript token/scoring CLI and optional GEPA evaluator.
+This repository is **Sensei**, an evidence engine for Agent Skills. It validates
+portable frontmatter, host profiles, resource graphs, and optional observed
+behavior. The root `SKILL.md` is the runtime skill; `README.md` is human-facing
+documentation; `references/` contains progressive-disclosure docs; `scripts/`
+contains the TypeScript CLI, repository analyzer, behavioral evaluator, and
+optional GEPA optimizer.
 
 ## Skill Authoring Rules
 
@@ -29,8 +34,9 @@ These routing labels, type prefixes, inline description style, 150-character/60-
 targets, and 500-token target are Sensei conventions, not portable-spec requirements.
 Do not pad useful short descriptions. The standard requires `name` and `description`;
 missing license/version is advisory only. Keep `specChecks` separate from optional
-`checks`, and distinguish static scoring/GEPA keyword fitness from observed host
-activation. See `references/portability.md` for host-specific limitations.
+`checks`, preserve normalized `findings` and `profiles`, and distinguish static
+scoring/repository analysis/GEPA keyword fitness from observed host activation.
+See `references/portability.md` for host-specific limitations.
 
 ## Token and Scoring Expectations
 
@@ -47,6 +53,7 @@ Run the narrowest relevant checks after changes:
 ```bash
 npm run tokens -- check [paths...]
 npm run tokens -- score .
+npm run tokens -- analyze . --root .
 npm test
 ```
 

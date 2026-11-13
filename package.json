@@ -1,7 +1,7 @@
 {
   "name": "@spboyer/sensei",
-  "version": "1.5.1",
-  "description": "AI-powered frontmatter compliance skill for GitHub Copilot",
+  "version": "1.6.0",
+  "description": "Evidence-driven quality analysis for Agent Skills",
   "type": "module",
   "repository": {
     "type": "git",

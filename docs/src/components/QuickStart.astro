@@ -7,7 +7,11 @@ const examples = [
   },
   {
     command: 'npx @spboyer/sensei score .',
-    description: 'Score a skill directory without cloning Sensei',
+    description: 'Check portable compliance and authoring guidance',
+  },
+  {
+    command: 'npx @spboyer/sensei analyze skills/my-skill --root .',
+    description: 'Analyze resources, scripts, trust, and lifecycle evidence',
   },
   {
     command: 'npx @spboyer/sensei check --root . --strict',
@@ -33,12 +37,11 @@ const examples = [
       Install it as a skill, run it with npx, wire it into CI, or import the parts you need.
     </p>
     <p class="mt-4 text-mid-gray max-w-2xl">
-      For newly merged YAML validation, proof/policy, and evaluation features,
-      clone the current source and run <code>npm ci --prefix scripts</code>.
-      Source commands below run from that checkout; <code>--root</code> selects your project.
-      Published npm and Action tags may lag
-      <a class="text-orange-accent" href="https://github.com/spboyer/sensei/blob/main/README.md#distribution-and-release-status">release status</a>.
-      The Action runs npm, not the CLI from its own checkout.
+      Version 1.6.0 includes evidence profiles, host profiles, repository
+      analysis, and stronger behavioral evaluation. Confirm the GitHub release
+      and npm package are visible; use a current checkout while publication is pending.
+      <code>--root</code> selects your project; <code>--profile</code> selects
+      portable or Copilot frontmatter.
     </p>
     <p class="mt-4 text-mid-gray max-w-2xl">
       A shared SKILL.md does not guarantee shared installation, invocation controls,
@@ -85,7 +88,7 @@ const examples = [
       <div class="bg-dark-gray p-6">
         <h3 class="text-lg font-semibold text-light-gray">GitHub Action</h3>
         <p class="mt-2 text-sm text-mid-gray leading-relaxed">
-          Add <code class="text-light-gray">spboyer/sensei@v1.5.0</code> to CI and run <code class="text-light-gray">check</code> on pull requests.
+          After publication, add <code class="text-light-gray">spboyer/sensei@v1.6.0</code> to CI and run <code class="text-light-gray">check</code> on pull requests.
         </p>
       </div>
       <div class="bg-dark-gray p-6">
@@ -97,7 +100,7 @@ const examples = [
       <div class="bg-dark-gray p-6">
         <h3 class="text-lg font-semibold text-light-gray">Library exports</h3>
         <p class="mt-2 text-sm text-mid-gray leading-relaxed">
-          Import <code class="text-light-gray">/score</code>, <code class="text-light-gray">/parse</code>, or <code class="text-light-gray">/checks</code> without pulling in the CLI.
+          Import <code class="text-light-gray">/score</code>, <code class="text-light-gray">/analyze</code>, <code class="text-light-gray">/parse</code>, or <code class="text-light-gray">/checks</code>.
         </p>
       </div>
     </div>

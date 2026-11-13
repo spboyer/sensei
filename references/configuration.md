@@ -21,6 +21,19 @@ editing with optional proxy-based optimization; it does not observe activation.
 For help, explain modes and show the token CLI commands below. Process batches
 sequentially and ask before commits or discarding changes.
 
+## CLI evidence commands
+
+```bash
+sensei score skills/my-skill --root . --profile=portable
+sensei score skills/my-skill --root . --profile=copilot --emit-proof
+sensei analyze skills/my-skill --root . --format=json
+```
+
+`score` preserves the legacy `specChecks` and `checks` arrays while adding
+normalized `findings` and per-profile summaries. `analyze` builds a contained
+resource graph and reports information-architecture, script, safety, and
+lifecycle evidence. The available score profiles are `portable` and `copilot`.
+
 ## Directory Structure
 
 Sensei expects skills in a standard structure:
@@ -145,11 +158,14 @@ Disable policy detection with `--no-repo-policy`.
 
 ## Proof Artifact
 
-`sensei score --emit-proof` writes `sensei-audit.md` next to the skill, summarizing the frontmatter, token/module counts, spec checks, and advisory checks. PR review bots and humans can link it from PR bodies. Override the path with `--emit-proof=path/to/file.md`. In the GitHub Action, set the `emit-proof` input to a path.
+`sensei score --emit-proof` writes `sensei-audit.md` next to the skill,
+summarizing profile states, normalized findings, frontmatter, token/module
+counts, spec checks, and advisory checks. PR review bots and humans can link it
+from PR bodies. Override the path with `--emit-proof=path/to/file.md`. In the
+GitHub Action, set the `emit-proof` input to a path.
 
-Newly merged flags may not be in published packages. The composite Action runs
-npm (`package-version: latest` by default), not its checkout's CLI. Check both the
-Action ref and package version; use current checkout commands for unreleased
+The composite Action runs npm (`package-version: latest` by default), not its
+checkout's CLI. Pin both the Action ref and package version for reproducible
 behavior. See [release status](../README.md#distribution-and-release-status).
 
 ## Optional behavioral evaluation
@@ -160,11 +176,13 @@ From a current checkout with script dependencies installed:
 npm run --silent tokens -- eval manifest.json --root=/path/to/project --format=json
 ```
 
-Supply a trusted host adapter, repeated positive/near-miss cases, literal output
-assertions, and a without-skill or prior-version baseline. Missing activation
-evidence cannot pass. Adapters run local code with inherited credentials and
-own trace authenticity and session isolation. See the
-[manifest, protocol, and smoke test](evaluation.md). GEPA fitness is separate.
+Supply a trusted host adapter, repeated positive, near-miss, sibling-collision,
+and optional held-out cases, rich assertions, and a without-skill or
+prior-version baseline. Missing activation evidence cannot pass. Improvement
+claims require a positive lift threshold. Adapters run local code with inherited
+credentials and own trace authenticity and session isolation. See the
+[manifest, protocol, and smoke test](evaluation.md) and
+[adapter mappings](adapters.md). GEPA fitness is separate.
 
 ## Optional GEPA optimization
 
@@ -196,3 +214,5 @@ Run Sensei in CI to validate skill compliance:
 This enforces configured token limits, not an advisory score threshold.
 Use `npx @spboyer/sensei score skills/my-skill --format=json` for separate
 portable-spec diagnostics and optional recommendations.
+Use `npx @spboyer/sensei analyze skills/my-skill --root . --format=json` for
+contained repository evidence.

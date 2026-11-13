@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
+import { parse as parseYaml } from 'yaml';
 
 interface PackageJson {
   readonly bin?: Record<string, string>;
@@ -28,6 +29,10 @@ describe('package integration metadata', () => {
   const pkg = JSON.parse(readFileSync('../package.json', 'utf-8')) as PackageJson;
   const scriptsPkg = JSON.parse(readFileSync('package.json', 'utf-8')) as PackageJson;
   const docsPkg = JSON.parse(readFileSync('../docs/package.json', 'utf-8')) as PackageJson;
+  const action = readFileSync('../action.yml', 'utf-8');
+  const actionMetadata = parseYaml(action) as {
+    inputs: Record<string, { default?: string }>;
+  };
 
   it('publishes an npx-compatible CLI binary', () => {
     expect(pkg.bin).toEqual({
@@ -45,6 +50,13 @@ describe('package integration metadata', () => {
   it('includes compiled dist and action metadata in the npm package', () => {
     expect(pkg.files).toContain('scripts/dist/**');
     expect(pkg.files).toContain('action.yml');
+  });
+
+  it('exposes repository analysis and host profiles through the composite Action', () => {
+    expect(action).toContain('check|count|suggest|score|analyze');
+    expect(action).toContain('--profile=$SENSEI_PROFILE');
+    expect(actionMetadata.inputs['node-version']?.default).toBe('22');
+    expect(actionMetadata.inputs.profile?.default).toBe('portable');
   });
 
   it('uses a tsx release compatible with Node 26 loader hooks', () => {

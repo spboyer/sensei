@@ -1,0 +1,40 @@
+---
+const profiles = [
+  ['Portable spec', 'Frontmatter compliance against pinned upstream fixtures'],
+  ['Host compatibility', 'Portable and Copilot extensions kept separate'],
+  ['Information architecture', 'Resource graph, pointers, disclosure, and workflow criteria'],
+  ['Behavioral evidence', 'Observed routing, task assertions, trajectories, and lift'],
+  ['Safety & supply chain', 'Containment, scripts, locks, permissions, and limits'],
+  ['Lifecycle health', 'Ownership, eval coverage, mirrors, versions, and releases'],
+];
+---
+
+<section class="py-24 md:py-32 px-6">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-light-gray">
+      Six profiles. No misleading composite grade.
+    </h2>
+    <p class="mt-4 text-mid-gray text-lg max-w-3xl">
+      Every finding states its basis and evidence level. Missing observations
+      stay unknown instead of becoming a pass.
+    </p>
+    <div class="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-mid-gray/10">
+      {profiles.map(([name, description], index) => (
+        <div class="bg-dark-gray p-6">
+          <span class="text-xs font-mono text-orange-accent">
+            {String(index + 1).padStart(2, '0')}
+          </span>
+          <h3 class="mt-3 text-lg font-semibold text-light-gray">{name}</h3>
+          <p class="mt-2 text-sm text-mid-gray leading-relaxed">{description}</p>
+        </div>
+      ))}
+    </div>
+    <div class="mt-10 bg-dark-gray border-l-2 border-orange-accent p-6">
+      <code class="text-light-gray">pass · fail · warning · unknown · not-applicable</code>
+      <p class="mt-2 text-sm text-mid-gray">
+        Evidence advances from declared to statically verified, executed,
+        baseline compared, and independently reproduced.
+      </p>
+    </div>
+  </div>
+</section>

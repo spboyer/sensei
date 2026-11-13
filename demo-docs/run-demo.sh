@@ -65,7 +65,7 @@ fi
 # DEMO START
 # ============================================================
 
-print_header "SENSEI DEMO - Skill Frontmatter Compliance"
+print_header "SENSEI DEMO - Skill Quality Evidence"
 
 echo "This demo shows how Sensei improves skill frontmatter"
 echo "using fixed before/after fixtures, not a live host evaluation."
