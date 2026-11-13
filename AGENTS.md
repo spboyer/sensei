@@ -4,7 +4,10 @@ Instructions for AI coding agents working with this repository.
 
 ## Overview
 
-This is **Sensei**, a skill for improving SKILL.md frontmatter compliance. It follows the [Agent Skills specification](https://agentskills.io/specification) (maintained by [Anthropic](https://github.com/agentskills/agentskills)).
+This is **Sensei**, an evidence engine for Agent Skills. It validates portable
+frontmatter, checks host profiles, analyzes skill resource graphs, and optionally
+compares observed behavior against a baseline. It follows the
+[Agent Skills specification](https://agentskills.io/specification).
 
 ## Repository Structure
 
@@ -42,6 +45,11 @@ sensei/
         │       ├── suggest.ts # Optimization suggestions
         │       ├── compare.ts # Git-based comparison
         │       └── score.ts  # Advisory scoring
+        ├── evidence.ts       # Normalized profiles, states, and evidence levels
+        ├── host-profiles.ts  # Portable and host-specific validation
+        ├── repository-analysis.ts # Contained resource and repository analysis
+        ├── analyze.ts        # Public repository-analysis export
+        ├── evals/            # Provider-neutral behavioral adapter protocol
         └── gepa/
             ├── auto_evaluator.py  # GEPA auto-evaluator CLI
             └── requirements.txt   # Python dependencies (gepa)
@@ -117,6 +125,7 @@ See `references/mcp-integration.md` for patterns.
 - Run `npm run tokens -- check` after changes to verify limits
 - Maintain the frontmatter format with WHEN: / USE FOR: (prefer positive routing)
 - Run `npm run tokens -- score .` to check advisory compliance
+- Run `npm run tokens -- analyze . --root .` to inspect repository evidence
 - Add routing clarity (INVOKES/FOR SINGLE OPERATIONS) for High score
 - Use skill type prefixes when appropriate
 
@@ -148,6 +157,7 @@ npm run tokens -- compare HEAD~1
 
 # Score skill against advisory checks
 npm run tokens -- score .
+npm run tokens -- analyze . --root .
 
 # Run unit tests
 cd scripts && npm test
@@ -167,6 +177,7 @@ npm run tokens -- check [paths...]     # Check files against token limits
 npm run tokens -- suggest [paths...]   # Get optimization suggestions
 npm run tokens -- compare [refs...]    # Compare tokens between git refs
 npm run tokens -- score [skillDir]    # Advisory checks
+npm run tokens -- analyze [skillDir]  # Resource, script, trust, and lifecycle evidence
 
 # Options
 --format=json       # Output as JSON instead of table

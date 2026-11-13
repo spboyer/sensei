@@ -2,8 +2,50 @@
 
 ## Unreleased
 
-Changes merged after the published releases. `main` is not an npm dist-tag;
-see [release status](README.md#distribution-and-release-status) for current-source usage.
+No unreleased changes.
+
+## 1.6.0 - 2026-11-13
+
+### Skill quality evidence ladder
+
+- Added six independent profiles for portable specification, host
+  compatibility, information architecture, behavioral evidence, safety/supply
+  chain, and lifecycle health.
+- Added normalized findings with explicit basis, state, severity, evidence
+  level, remediation, limitations, and per-profile summaries while preserving
+  the legacy `specChecks` and `checks` arrays.
+- Added portable and Copilot frontmatter profiles plus a commit-pinned Agent
+  Skills validator corpus.
+
+### Repository analysis
+
+- Added `sensei analyze` and the `@spboyer/sensei/analyze` export.
+- Added contained Markdown, reference-style, and Copilot `#file:` resource
+  analysis with realpath and symlink protection.
+- Added aggregate MCP resource limits, script readiness and capability signals,
+  dependency-lock checks, and lifecycle evidence.
+- Added adversarial coverage for code samples, dangling and escaping symlinks,
+  linked scripts, oversized manifests, and false-positive test detection.
+
+### Behavioral evaluation
+
+- Added positive, near-miss, sibling-collision, and held-out case metadata.
+- Added precision, recall, false-positive rate, routing variance, and holdout
+  summaries.
+- Added negative-text, regular expression, bounded JSON shape, artifact,
+  trajectory, and trusted command assertions.
+- Added shared execution deadlines and explicit positive baseline-lift gates for
+  improvement claims.
+- Documented Copilot/Vally and Promptfoo adapter mappings without adding either
+  framework as a core dependency.
+
+### Aspire pilot and documentation
+
+- Validated the analyzer against all eight `microsoft/aspire-skills` skills,
+  recorded false-positive corrections, and kept unproven prose heuristics
+  advisory.
+- Updated the root README, skill workflow, configuration and evaluation
+  references, composite Action, and website for the evidence model.
 
 ### Portable validation and evidence
 

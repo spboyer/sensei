@@ -13,8 +13,16 @@ const problems = [
     description: 'Length alone does not establish useful scope.',
   },
   {
-    title: 'Token bloat',
-    description: 'Oversized skills waste context window.',
+    title: 'Broken resources',
+    description: 'Missing, escaping, or deeply chained references break progressive disclosure.',
+  },
+  {
+    title: 'Unproven behavior',
+    description: 'Clean prose does not establish activation, task quality, or improvement.',
+  },
+  {
+    title: 'Hidden risk',
+    description: 'Scripts, permissions, dependencies, and release state need separate evidence.',
   },
 ];
 ---
@@ -22,10 +30,11 @@ const problems = [
 <section class="py-24 md:py-32 px-6">
   <div class="max-w-5xl mx-auto">
     <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-light-gray">
-      Skills Without Frontmatter Break Things
+      Valid Frontmatter Is Only the Beginning
     </h2>
     <p class="mt-4 text-mid-gray text-lg max-w-2xl">
-      Ambiguous frontmatter can contribute to skill collision — agents invoking the wrong skill for a given prompt.
+      Skill quality spans routing, resources, runtime behavior, trust boundaries,
+      and maintenance. One static score cannot prove all of them.
     </p>
     <div class="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6">
       {problems.map((p) => (

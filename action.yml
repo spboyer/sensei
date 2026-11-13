@@ -1,9 +1,9 @@
 name: Sensei
-description: Validate and score Agent Skills with Sensei.
+description: Validate, score, and analyze Agent Skills with Sensei.
 
 inputs:
   command:
-    description: Sensei command to run: check, count, suggest, or score.
+    description: "Sensei command to run: check, count, suggest, score, or analyze."
     required: false
     default: check
   path:
@@ -26,10 +26,14 @@ inputs:
     description: Output format, usually table or json.
     required: false
     default: table
+  profile:
+    description: "Frontmatter profile for score: portable or copilot."
+    required: false
+    default: portable
   node-version:
     description: Node.js version to use.
     required: false
-    default: '20'
+    default: '22'
   package-version:
     description: npm package version or dist-tag to run.
     required: false
@@ -42,7 +46,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v7
       with:
         node-version: ${{ inputs.node-version }}
 
@@ -55,13 +59,14 @@ runs:
         SENSEI_CONFIG: ${{ inputs.config }}
         SENSEI_STRICT: ${{ inputs.strict }}
         SENSEI_FORMAT: ${{ inputs.format }}
+        SENSEI_PROFILE: ${{ inputs.profile }}
         SENSEI_PACKAGE_VERSION: ${{ inputs.package-version }}
         SENSEI_EMIT_PROOF: ${{ inputs.emit-proof }}
       run: |
         set -euo pipefail
 
         case "$SENSEI_COMMAND" in
-          check|count|suggest|score) ;;
+          check|count|suggest|score|analyze) ;;
           *)
             echo "Unsupported Sensei command: $SENSEI_COMMAND" >&2
             exit 1
@@ -88,6 +93,10 @@ runs:
 
         if [[ "$SENSEI_COMMAND" == "score" && -n "$SENSEI_EMIT_PROOF" ]]; then
           args+=("--emit-proof=$SENSEI_EMIT_PROOF")
+        fi
+
+        if [[ "$SENSEI_COMMAND" == "score" && -n "$SENSEI_PROFILE" ]]; then
+          args+=("--profile=$SENSEI_PROFILE")
         fi
 
         if [[ -n "$SENSEI_PATH" ]]; then

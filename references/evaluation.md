@@ -5,12 +5,13 @@ No provider, paid API, Python, or GEPA dependency is added. Static `score` check
 frontmatter; GEPA's keyword fitness estimates matching, **not observed host
 activation**. Neither proves behavioral quality.
 
-This feature is on current `main`, not yet in the published npm release; see
-[release status](../README.md#distribution-and-release-status). From a checkout,
-restore script dependencies with `npm ci --prefix scripts` and run
+This feature is included in version 1.6.0. Confirm the npm package is visible
+before use; while publication is pending, use a source checkout, restore script
+dependencies with `npm ci --prefix scripts`, and run
 `npm run --silent tokens -- eval manifest.json --format=json`, or build and use
 `node scripts/dist/tokens/cli.js eval manifest.json --format=json`.
-The composite GitHub Action does not support `eval`.
+The composite GitHub Action does not execute trusted behavioral adapters; run
+`eval` directly in a controlled job.
 See [behavioral adapter mappings](adapters.md) for Copilot/Vally and Promptfoo
 integration without adding either framework as a core dependency.
 

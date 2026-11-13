@@ -20,6 +20,7 @@ docs/
 │   │   ├── HowItWorks.astro   # Six-step Ralph loop
 │   │   ├── BeforeAfter.astro  # Vague-to-specific YAML transformation
 │   │   ├── ScoringLevels.astro # Advisory rubric, distinct from spec checks
+│   │   ├── EvidenceProfiles.astro # Six independent evidence profiles
 │   │   ├── Evaluation.astro   # Optional trusted-adapter evaluation
 │   │   ├── QuickStart.astro   # Install + run commands, copy-to-clipboard
 │   │   └── Footer.astro       # Links, copyright
@@ -86,9 +87,10 @@ Each component is self-contained — own data, markup, inline scripts. No shared
 | :--------------- | :----------------------------------------------- |
 | `Hero`           | Headline, subline, install command with clipboard |
 | `Problem`        | Names the pain — skill collision, vague triggers  |
-| `HowItWorks`     | Read → score → improve → verify → check → summary |
+| `HowItWorks`     | Read → score → improve → verify → analyze → compare |
 | `BeforeAfter`    | Side-by-side YAML: clearer positive scope         |
 | `ScoringLevels`  | Authoring rubric; not a computed CLI level        |
+| `EvidenceProfiles` | Profiles, states, and evidence ladder          |
 | `Evaluation`    | Observations, baselines, assertions, adapter trust |
 | `QuickStart`     | Skill/npm/source usage, bundles, policy, API links |
 | `Footer`         | Navigation links, license, copyright              |
@@ -98,8 +100,9 @@ Each component is self-contained — own data, markup, inline scripts. No shared
 - Keep the page aligned with the [root README](../README.md) and
   [changelog](../CHANGELOG.md). Merged features may not yet be in npm or release
   tags; current-source commands must say so.
-- Portable `specChecks`, optional `checks`, GEPA proxy fitness, and observed
-  behavioral results are different evidence. Do not promise routing or security.
+- Portable `specChecks`, optional `checks`, normalized `findings`/`profiles`,
+  GEPA proxy fitness, repository analysis, and observed behavioral results are
+  different evidence. Do not promise routing or security.
 - Source bundles are described in [distribution](../references/distribution.md);
   host installation limits in [portability](../references/portability.md);
   adapter prerequisites in [evaluation](../references/evaluation.md).
