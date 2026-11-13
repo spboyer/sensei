@@ -429,7 +429,7 @@ const ACTION_VERBS = [
   'manage', 'integrate', 'authenticate', 'troubleshoot',
   'orchestrate', 'scaffold', 'generate', 'publish',
   'wire', 'observe', 'author', 'migrate', 'route', 'diagnose',
-  'monitor', 'initialize', 'assess'
+  'monitor', 'initialize', 'assess', 'detect', 'select', 'enforce'
 ] as const;
 
 const IRREGULAR_ACTION_FORMS = new Map<string, readonly string[]>([

@@ -251,6 +251,7 @@ describe('checkProceduralContent', () => {
   it('detects inflected actions without workflow keywords', () => {
     expect(checkProceduralContent('Safely migrates eligible Aspire resources.').status).toBe('ok');
     expect(checkProceduralContent('Running diagnostics for the selected AppHost.').status).toBe('ok');
+    expect(checkProceduralContent('Detects AppHosts and selects the right sub-skill.').status).toBe('ok');
   });
 
   it('detects procedure keywords like "workflow"', () => {
