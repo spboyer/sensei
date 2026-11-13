@@ -11,6 +11,8 @@ restore script dependencies with `npm ci --prefix scripts` and run
 `npm run --silent tokens -- eval manifest.json --format=json`, or build and use
 `node scripts/dist/tokens/cli.js eval manifest.json --format=json`.
 The composite GitHub Action does not support `eval`.
+See [behavioral adapter mappings](adapters.md) for Copilot/Vally and Promptfoo
+integration without adding either framework as a core dependency.
 
 ## Manifest v1
 
@@ -51,6 +53,33 @@ IDs must be unique; every case requires a prompt, boolean expectation, and at
 least one nonempty assertion. `repetitions` is required (1–100).
 `timeoutMs` defaults to 30000 (1–120000). Maximum: 200 total adapter calls and a
 10-minute overall execution budget. Manifest size is limited to 1 MiB.
+
+Cases may declare `category` as `positive`, `near-miss`, or
+`sibling-collision`, and `dataset` as `train` or `holdout`. Existing manifests
+omit both and retain their v1 behavior. Reports include precision, recall,
+false-positive rate, routing standard deviation, and a separate holdout
+candidate summary.
+
+Assertions remain backward compatible with `{ "contains": "..." }`. A single
+assertion may instead use:
+
+- `matches`: a regular expression over output;
+- `notContains`: text that must be absent from output;
+- `jsonSchema`: deterministic `type`, `required`, and nested `properties`
+  checks over JSON output;
+- `artifact`: an adapter-returned artifact path and optional contained text;
+- `trajectory`: a tool name and optional argument subset;
+- `command`: a trusted argv checker that receives output, artifacts, and
+  trajectory JSON on stdin.
+
+Adapters may return `artifacts` as a string map and `trajectory` as ordered
+`{ "tool", "arguments" }` events. Executable assertions and adapters are
+trusted local code with inherited credentials and the existing process bounds.
+
+Set `minimumLift.routingAccuracy` or `minimumLift.assertionPassRate` to gate on
+candidate-minus-baseline improvement. A manifest that sets
+`claimImprovement: true` must define an explicit `minimumLift`; otherwise Sensei
+rejects it before execution.
 
 For comparison against a previous version, use
 `"baseline": { "kind": "prior-version", "skill": "baseline/SKILL.md" }`.

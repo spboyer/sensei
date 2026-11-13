@@ -29,9 +29,16 @@ const response = {
     reason: 'Fixture host cannot expose activation'
   },
   output: mode === 'quality-failure' || (mode === 'baseline-failure' && request.variant === 'baseline')
-    ? 'incorrect result' : 'Fixture task completed',
+    ? 'incorrect result'
+    : mode === 'rich' ? '{"status":"ok"}'
+    : mode === 'regex-output' ? `${'a'.repeat(50_000)}!`
+    : 'Fixture task completed',
   tokens: 0
 };
+if (mode === 'rich') {
+  response.artifacts = { 'report.json': '{"status":"ok"}' };
+  response.trajectory = [{ tool: 'Read', arguments: { path: 'SKILL.md' } }];
+}
 if (mode === 'missing-evidence') delete response.activation.evidence;
 if (mode === 'missing-negative-evidence' && !invoked) delete response.activation.evidence;
 if (mode === 'empty-evidence') response.activation.evidence.excerpt = ' ';

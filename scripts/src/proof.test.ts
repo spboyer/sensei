@@ -16,7 +16,22 @@ const sampleResult = (path: string): ScoringResult => ({
   checks: [
     { name: 'description-density', status: 'ok', message: 'within limits' },
     { name: 'routing-clarity', status: 'warning', message: 'add INVOKES section' }
-  ]
+  ],
+  findings: [{
+    id: 'spec-frontmatter',
+    profile: 'portable-spec',
+    basis: 'spec',
+    state: 'pass',
+    severity: 'info',
+    evidenceLevel: 'statically-verified',
+    message: 'valid'
+  }],
+  profiles: [{
+    profile: 'portable-spec',
+    state: 'pass',
+    counts: { pass: 1, fail: 0, warning: 0, unknown: 0, 'not-applicable': 0 }
+  }],
+  hostProfile: 'portable'
 });
 
 describe('writeProof', () => {
@@ -39,6 +54,8 @@ describe('writeProof', () => {
     expect(md).toContain('## Score Summary');
     expect(md).toContain('Complexity:** compact');
     expect(md).toContain('## Advisory Checks');
+    expect(md).toContain('## Evidence Profiles');
+    expect(md).toContain('spec-frontmatter');
     expect(md).toContain('routing-clarity');
   });
 

@@ -8,7 +8,7 @@ import { evaluate } from './evaluate.js';
 
 const adapter = fileURLToPath(new URL('./fixtures/adapter.mjs', import.meta.url));
 const cli = fileURLToPath(new URL('../tokens/cli.ts', import.meta.url));
-const loader = fileURLToPath(new URL('../../node_modules/tsx/dist/loader.mjs', import.meta.url));
+const loader = new URL('../../node_modules/tsx/dist/loader.mjs', import.meta.url).href;
 const dirs: string[] = [];
 
 function setup(mode = '') {
@@ -49,6 +49,7 @@ describe('behavioral adapter evaluation', () => {
       'candidate', 'baseline', 'candidate', 'baseline', 'baseline', 'candidate', 'baseline', 'candidate'
     ]);
     expect(report.candidate).toMatchObject({ activationRate: 0.5, routingAccuracy: 1, assertionPassRate: 1 });
+    expect(report.candidate).toMatchObject({ precision: 1, recall: 1, falsePositiveRate: 0, routingStdDev: 0 });
     expect(report.baseline).toMatchObject({ activationRate: 0, routingAccuracy: 1 });
     expect(report.deltas.activationRate).toBe(0.5);
     expect(report.runs[0]).toMatchObject({
@@ -68,6 +69,114 @@ describe('behavioral adapter evaluation', () => {
     expect(report.baseline.activationRate).toBe(0.5);
     expect(report.deltas.assertionPassRate).toBe(1);
     expect(report.runs.find((r) => r.variant === 'baseline')?.skill).toBe(join(root, 'prior.md'));
+  });
+
+  it('supports held-out and sibling-collision routing metadata', () => {
+    const { path, root, manifest, save } = setup();
+    save({
+      ...manifest,
+      cases: [
+        { ...manifest.cases[0], category: 'positive', dataset: 'holdout' },
+        { ...manifest.cases[1], category: 'sibling-collision', dataset: 'holdout' }
+      ]
+    });
+    const report = evaluate(path, root);
+    expect(report.status).toBe('passed');
+    expect(report.holdoutCandidate).toMatchObject({ observed: 4, precision: 1, recall: 1, falsePositiveRate: 0 });
+    expect(report.runs.every(run => run.dataset === 'holdout')).toBe(true);
+    expect(report.runs[2].caseCategory).toBe('sibling-collision');
+  });
+
+  it('evaluates schema, artifact, trajectory, regex, and command assertions', () => {
+    const { path, root, manifest, save } = setup('rich');
+    const command = [
+      process.execPath,
+      '-e',
+      "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>process.exit(JSON.parse(d).trajectory[0].tool==='Read'?0:1))"
+    ];
+    const assertions = [
+      { id: 'regex', matches: '"status":"ok"' },
+      { id: 'negative', notContains: 'incorrect' },
+      { id: 'schema', jsonSchema: { type: 'object', required: ['status'], properties: { status: { type: 'string' } } } },
+      { id: 'artifact', artifact: { path: 'report.json', contains: '"ok"' } },
+      { id: 'trajectory', trajectory: { tool: 'Read', arguments: { path: 'SKILL.md' } } },
+      { id: 'command', command }
+    ];
+    save({
+      ...manifest,
+      cases: manifest.cases.map(item => ({ ...item, assertions }))
+    });
+    const report = evaluate(path, root);
+    expect(report.status).toBe('passed');
+    expect(report.runs[0].assertions.every(assertion => assertion.passed)).toBe(true);
+    expect(report.runs[0].artifacts).toHaveProperty('report.json');
+    expect(report.runs[0].trajectory?.[0].tool).toBe('Read');
+  });
+
+  it('enforces explicit baseline lift when improvement is claimed', () => {
+    const { path, root, manifest, save } = setup('baseline-failure');
+    save({
+      ...manifest,
+      baseline: { kind: 'prior-version', skill: 'prior.md' },
+      claimImprovement: true,
+      minimumLift: { assertionPassRate: 0.5 }
+    });
+
+    const passing = evaluate(path, root);
+    expect(passing.status).toBe('passed');
+    expect(passing.liftGate).toMatchObject({ configured: true, claimImprovement: true, passed: true });
+
+    save({
+      ...manifest,
+      claimImprovement: true,
+      minimumLift: { routingAccuracy: 0.1 }
+    });
+    const failing = evaluate(path, root);
+    expect(failing.status).toBe('failed');
+    expect(failing.liftGate.failures[0]).toContain('routingAccuracy');
+  });
+
+  it('shares one run deadline across executable assertions', () => {
+    const { path, root, manifest, save } = setup('rich');
+    const sleeper = [
+      process.execPath,
+      '-e',
+      'setTimeout(() => process.exit(0), 1000)'
+    ];
+    save({
+      ...manifest,
+      timeoutMs: 50,
+      cases: manifest.cases.map(item => ({
+        ...item,
+        assertions: [
+          { id: 'slow-one', command: sleeper },
+          { id: 'slow-two', command: sleeper }
+        ]
+      }))
+    });
+
+    const started = Date.now();
+    const report = evaluate(path, root);
+    expect(report.status).toBe('unavailable');
+    expect(report.runs[0].error).toMatch(/timed out|time budget|ETIMEDOUT/i);
+    expect(Date.now() - started).toBeLessThan(500);
+  });
+
+  it('bounds catastrophic regular-expression assertions in a subprocess', () => {
+    const { path, root, manifest, save } = setup('regex-output');
+    save({
+      ...manifest,
+      timeoutMs: 100,
+      cases: manifest.cases.map(item => ({
+        ...item,
+        assertions: [{ id: 'catastrophic', matches: '(a+)+$' }]
+      }))
+    });
+    const started = Date.now();
+    const report = evaluate(path, root);
+    expect(report.status).toBe('unavailable');
+    expect(report.runs[0].error).toMatch(/Regex assertion execution failed|timed out|ETIMEDOUT/i);
+    expect(Date.now() - started).toBeLessThan(750);
   });
 
   it.each(['symlink', 'hardlink'])('rejects a %s alias of the candidate before execution', (kind) => {
@@ -133,7 +242,10 @@ describe('behavioral adapter evaluation', () => {
     { baseline: { kind: 'prior-version', skill: 'SKILL.md' } },
     { baseline: { kind: 'prior-version', skill: 'missing.md' } },
     { baseline: { kind: 'without-skill', skill: 'prior.md' } },
-    { typo: true }
+    { typo: true }, { claimImprovement: true }, { minimumLift: {} },
+    { minimumLift: { routingAccuracy: 2 } },
+    { claimImprovement: true, minimumLift: { routingAccuracy: 0 } },
+    { claimImprovement: true, minimumLift: { routingAccuracy: -0.1 } }
   ])('rejects invalid manifest before execution: %j', (patch) => {
     const { root, path, manifest, save } = setup();
     save({ ...manifest, ...patch });
@@ -148,6 +260,35 @@ describe('behavioral adapter evaluation', () => {
     expect(() => evaluate(path, root)).toThrow(/unique/);
     save({ ...manifest, cases: [{ ...manifest.cases[0], assertions: [] }, manifest.cases[1]] });
     expect(() => evaluate(path, root)).toThrow(/assertions/);
+  });
+
+  it('rejects inconsistent case metadata and malformed rich assertions', () => {
+    const { root, path, manifest, save } = setup();
+    save({ ...manifest, cases: [{ ...manifest.cases[0], category: 'near-miss' }, manifest.cases[1]] });
+    expect(() => evaluate(path, root)).toThrow(/must not activate/);
+    save({ ...manifest, cases: [{ ...manifest.cases[0], dataset: 'test' }, manifest.cases[1]] });
+    expect(() => evaluate(path, root)).toThrow(/dataset/);
+    save({
+      ...manifest,
+      cases: [{ ...manifest.cases[0], assertions: [{ id: 'both', contains: 'x', matches: 'x' }] }, manifest.cases[1]]
+    });
+    expect(() => evaluate(path, root)).toThrow(/exactly one/);
+    save({
+      ...manifest,
+      cases: [{
+        ...manifest.cases[0],
+        assertions: [{ id: 'schema', jsonSchema: { type: 'object', additionalProperties: false } }]
+      }, manifest.cases[1]]
+    });
+    expect(() => evaluate(path, root)).toThrow(/unsupported JSON Schema keywords/);
+    save({
+      ...manifest,
+      cases: [{
+        ...manifest.cases[0],
+        assertions: [{ id: 'own-property', jsonSchema: { type: 'object', required: ['toString'] } }]
+      }, manifest.cases[1]]
+    });
+    expect(evaluate(path, root).status).toBe('failed');
   });
 
   it('rejects missing/malformed files and outside-root skill paths', () => {

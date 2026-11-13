@@ -1,0 +1,33 @@
+{
+  "source": "https://github.com/agentskills/agentskills",
+  "commit": "83021e2be457a9b6679148719c1f6074f0ad975e",
+  "validator": "skills-ref/src/skills_ref/validator.py",
+  "capturedAt": "2026-11-13",
+  "cases": [
+    {
+      "id": "minimal-portable",
+      "fields": {
+        "name": "sample-skill",
+        "description": "A sample skill."
+      },
+      "valid": true
+    },
+    {
+      "id": "unknown-top-level-field",
+      "fields": {
+        "name": "sample-skill",
+        "description": "A sample skill.",
+        "model": "host-specific"
+      },
+      "valid": false
+    },
+    {
+      "id": "consecutive-hyphens",
+      "fields": {
+        "name": "sample--skill",
+        "description": "A sample skill."
+      },
+      "valid": false
+    }
+  ]
+}

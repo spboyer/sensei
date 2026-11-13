@@ -9,6 +9,10 @@ import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { estimateTokens } from './types.js';
 import { isAlias, isMap, isScalar, parseDocument } from 'yaml';
+import type { EvidenceFinding, ProfileSummary } from '../../evidence.js';
+import { summarizeProfiles } from '../../evidence.js';
+import type { HostProfile } from '../../host-profiles.js';
+import { validateHostProfile } from '../../host-profiles.js';
 
 /** Max skill name length per agentskills.io spec */
 const MAX_SKILL_NAME_LENGTH = 64;
@@ -378,6 +382,11 @@ export interface ScoringResult {
   readonly complexity: 'compact' | 'detailed' | 'comprehensive';
   readonly moduleCount: number;
   readonly tokenCount: number;
+  /** Normalized evidence model. Additive for compatibility with checks/specChecks consumers. */
+  readonly findings?: EvidenceFinding[];
+  /** Per-profile rollup. Unknown evidence never produces a passing summary. */
+  readonly profiles?: ProfileSummary[];
+  readonly hostProfile?: HostProfile;
 }
 
 /** Public scorer result type for library consumers. */
@@ -389,6 +398,27 @@ export interface ScoreSkillContentOptions {
   readonly path?: string;
   /** Optional caller-provided count of markdown files in references/. Defaults to 0. */
   readonly moduleCount?: number;
+  /** Frontmatter compatibility profile. Defaults to the portable specification. */
+  readonly profile?: HostProfile;
+}
+
+function normalizeLegacyCheck(
+  check: AdvisoryCheck,
+  profile: EvidenceFinding['profile'],
+  basis: EvidenceFinding['basis'],
+  strict: boolean
+): EvidenceFinding {
+  const state = check.status === 'warning' ? (strict ? 'fail' : 'warning') : 'pass';
+  return {
+    id: check.name,
+    profile,
+    basis,
+    state,
+    severity: state === 'fail' ? 'error' : state === 'warning' ? 'warning' : 'info',
+    evidenceLevel: 'statically-verified',
+    message: check.message,
+    evidence: check.evidence
+  };
 }
 
 /** Action verbs indicating procedural content */
@@ -836,20 +866,43 @@ export function scoreSkillContent(content: string, opts: ScoreSkillContentOption
     checks.push(checkVersionRecommendation(fm.fields));
   }
 
+  const hostProfile = opts.profile ?? 'portable';
+  const findings = [
+    ...specChecks.map(check => normalizeLegacyCheck(check, 'portable-spec', 'spec', true)),
+    ...checks.map(check => normalizeLegacyCheck(check, 'information-architecture', 'empirical', false)),
+    ...(fm && !fm.errors?.length ? validateHostProfile(fm.fields, hostProfile) : [{
+      id: `host-profile-${hostProfile}-fields`,
+      profile: 'host-compatibility' as const,
+      basis: 'host' as const,
+      state: 'unknown' as const,
+      severity: 'warning' as const,
+      evidenceLevel: 'declared' as const,
+      message: 'Host compatibility is unknown because frontmatter could not be parsed',
+      host: hostProfile,
+      limitations: ['A valid YAML mapping is required before host fields can be checked.']
+    }])
+  ];
+
   return {
     skillPath,
     checks,
     specChecks,
     complexity,
     moduleCount,
-    tokenCount
+    tokenCount,
+    findings,
+    profiles: summarizeProfiles(findings),
+    hostProfile
   };
 }
 
 /**
  * Run all advisory checks on a skill directory.
  */
-export function scoreSkill(skillDir: string): ScoringResult {
+export function scoreSkill(
+  skillDir: string,
+  opts: Pick<ScoreSkillContentOptions, 'profile'> = {}
+): ScoringResult {
   // Guard: validate skillDir exists and is a directory
   if (!existsSync(skillDir) || !statSync(skillDir).isDirectory()) {
     return {
@@ -887,6 +940,7 @@ export function scoreSkill(skillDir: string): ScoringResult {
   const content = readFileSync(skillMdPath, 'utf-8');
   return scoreSkillContent(content, {
     path: skillDir,
-    moduleCount: countReferenceModules(skillDir)
+    moduleCount: countReferenceModules(skillDir),
+    profile: opts.profile
   });
 }

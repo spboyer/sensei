@@ -90,6 +90,24 @@ export function writeProof(opts: ProofOptions): string {
   }
   lines.push('');
 
+  if (result.profiles && result.findings) {
+    lines.push('## Evidence Profiles');
+    lines.push('');
+    for (const profile of result.profiles) {
+      lines.push(`- **${profile.profile}:** ${profile.state}`);
+    }
+    lines.push('');
+    lines.push('## Normalized Findings');
+    lines.push('');
+    for (const item of result.findings) {
+      lines.push(`- **${item.id}** [${item.state}; ${item.basis}; ${item.evidenceLevel}] — ${item.message}`);
+      if (item.limitations?.length) {
+        lines.push(`  - Limitations: ${item.limitations.join('; ')}`);
+      }
+    }
+    lines.push('');
+  }
+
   const body = lines.join('\n');
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, body, 'utf-8');
