@@ -106,14 +106,18 @@ not measure contamination or model internals. Negative boundaries can help some
 deployments. Test actual activation with realistic positives, paraphrases, and
 near-miss prompts instead of requiring `DO NOT USE FOR:` syntax.
 
-The `cross-model-*` identifiers are retained for API compatibility; their results
-are static hints, not cross-host reliability measurements.
+The `cross-model-*` identifiers are retained for API compatibility. Description
+length and explicit negative boundaries are observations, not default warnings;
+test their effect on the target host.
 
 ### SkillsBench-informed checks
 
 `module-count`, `complexity`, `negative-delta-risk`, `procedural-content`, and
-`over-specificity` are pattern-based suggestions. Dataset-level observations do
-not establish that an individual skill will improve or hurt performance.
+`over-specificity` are pattern-based observations. Module count, constraint
+count, and the 500-token editing target do not warn by themselves. Concrete
+conflicting procedures, unmasked absolute paths, and private IP literals retain
+warnings with exact evidence. Dataset-level observations do not establish that
+an individual skill will improve or hurt performance.
 Domain-specific instructions, constraints, or additional references may be
 necessary. Preserve useful content and evaluate outcomes, rather than optimizing
 only the static score.

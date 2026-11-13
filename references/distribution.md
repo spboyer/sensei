@@ -54,7 +54,7 @@ Install the CLI without npm registry publication:
 
 ```bash
 npm install --global \
-  https://github.com/spboyer/sensei/releases/download/v1.6.1/spboyer-sensei-1.6.1.tgz
+  https://github.com/spboyer/sensei/releases/download/v1.6.2/spboyer-sensei-1.6.2.tgz
 ```
 
 By default, the composite Action does not download the npm package. The pinned

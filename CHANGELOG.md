@@ -4,6 +4,21 @@
 
 No unreleased changes.
 
+## 1.6.2 - 2026-11-13
+
+### Calibrated authoring evidence
+
+- Recognizes explicit validate, verify, report, idempotence, and failure
+  contracts as workflow completion evidence.
+- Treats description length, negative boundaries, reference-module count,
+  constraint count, and sub-5000-token complexity as observations rather than
+  universal warnings.
+- Restricts over-specificity warnings to unmasked absolute paths and private IP
+  literals, with exact evidence in the finding.
+- Recognizes common domain action verbs, simple inflections, leading adverbs,
+  and first-run workflow language.
+- Adds regression coverage from the released `microsoft/aspire-skills` audit.
+
 ## 1.6.1 - 2026-11-13
 
 ### GitHub-first distribution
