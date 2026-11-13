@@ -47,7 +47,7 @@ Run the narrowest relevant checks after changes:
 ```bash
 npm run tokens -- check [paths...]
 npm run tokens -- score .
-npm test
+npm run validate
 ```
 
 Use `npm run tokens -- count [paths...]`, `npm run tokens -- suggest [paths...]`, or `npm run tokens -- compare [refs...]` when working on token budgets or optimization.
