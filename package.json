@@ -11,6 +11,7 @@
     "build": "npm --prefix scripts run build",
     "tokens": "node --import ./scripts/node_modules/tsx/dist/loader.mjs scripts/src/tokens/cli.ts",
     "test": "cd scripts && npm test",
+    "validate": "npm run build && npm test && node --test scripts/validation.test.mjs scripts/package-skill.test.mjs .github/scripts/squad-main-guard.test.mjs",
     "prepack": "npm run build",
     "prepublishOnly": "npm run build && npm test"
   },
