@@ -35,9 +35,9 @@ inputs:
     required: false
     default: '22'
   package-version:
-    description: npm package version or dist-tag to run.
+    description: "Deprecated: the Action ref now selects the Sensei version."
     required: false
-    default: latest
+    default: ''
   emit-proof:
     description: Path to write sensei-audit.md proof artifact (score command only). Empty disables.
     required: false
@@ -103,4 +103,14 @@ runs:
           args+=("$SENSEI_PATH")
         fi
 
-        npx --yes "@spboyer/sensei@$SENSEI_PACKAGE_VERSION" "${args[@]}"
+        if [[ -n "$SENSEI_PACKAGE_VERSION" ]]; then
+          echo "::warning::package-version is deprecated; pin the Action ref instead."
+          npx --yes "@spboyer/sensei@$SENSEI_PACKAGE_VERSION" "${args[@]}"
+          exit 0
+        fi
+
+        npm ci --prefix "$GITHUB_ACTION_PATH/scripts" --include=dev
+        node \
+          "$GITHUB_ACTION_PATH/scripts/node_modules/tsx/dist/cli.mjs" \
+          "$GITHUB_ACTION_PATH/scripts/src/tokens/cli.ts" \
+          "${args[@]}"

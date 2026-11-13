@@ -106,6 +106,9 @@ Each component is self-contained — own data, markup, inline scripts. No shared
 - Source bundles are described in [distribution](../references/distribution.md);
   host installation limits in [portability](../references/portability.md);
   adapter prerequisites in [evaluation](../references/evaluation.md).
+- GitHub Releases are the primary distribution channel. The Action executes its
+  pinned checkout; compiled CLI and source archives are attached to releases.
+  npm is optional and may lag.
 - Tailwind v4 uses `@tailwindcss/vite` — not `@astrojs/tailwind`. Theme lives in CSS, not a JS config file.
 - External links opened in a new tab use `rel="noopener noreferrer"`.
 - Copy-to-clipboard uses `navigator.clipboard` with unique element IDs (avoids collisions between Hero and QuickStart).

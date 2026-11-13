@@ -2,10 +2,11 @@
 
 The [Package Sensei skill workflow](../.github/workflows/package-skill.yml) checks
 the distribution contract on pull requests and publishes an Actions artifact
-after payload changes reach `main`. It can also be run manually on `main`. It uses
+after payload changes reach `main`. The release workflow also attaches compiled
+and source artifacts to each GitHub Release. It uses
 only `contents: read`; it does not push to another repository, create PRs, or
-require a custom secret. This is separate from the npm package and the compliance
-Action. In an installed bundle, repository workflow files are intentionally absent;
+require a custom secret. GitHub is the primary distribution channel; npm is
+optional. In an installed bundle, repository workflow files are intentionally absent;
 see the [source workflow](https://github.com/spboyer/sensei/blob/main/.github/workflows/package-skill.yml).
 
 ## Bundle Contract
@@ -36,6 +37,30 @@ CLI. Optional GEPA dependencies and LLM credentials must be provisioned separate
 Packaging checks the payload and checksum, not CLI behavior or frontmatter quality.
 The checksum and provenance are not a signed attestation; obtain them from a
 trusted source run and check the commit before installing.
+
+## GitHub Release Assets
+
+Each release includes:
+
+| File | Purpose |
+|---|---|
+| `spboyer-sensei-<version>.tgz` | Compiled npm-format CLI/library package; install directly from its release URL |
+| `sensei.tar.gz` | Commit-pinned skill source bundle |
+| `source.json` | Source repository, commit, payload, and source archive digest |
+| `SHA256SUMS` | Source archive checksum |
+| `RELEASE-SHA256SUMS` | Checksums for the compiled package and release metadata |
+
+Install the CLI without npm registry publication:
+
+```bash
+npm install --global \
+  https://github.com/spboyer/sensei/releases/download/v1.6.1/spboyer-sensei-1.6.1.tgz
+```
+
+By default, the composite Action does not download the npm package. The pinned
+Action ref selects the code; the Action restores `scripts/package-lock.json`
+and runs the checked-out CLI source. An explicitly supplied deprecated
+`package-version` continues to use npm for compatibility.
 
 ## Pull-based Dotfiles Integration
 
