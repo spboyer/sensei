@@ -470,6 +470,12 @@ git reset --soft HEAD~1  # Undo last commit
 
 ## Contributing
 
+### Running Validation
+
+From the repository root, restore the locked tooling dependencies with
+`npm ci --prefix scripts`, then run `npm run validate` for the TypeScript build,
+Vitest suite, and explicit Node contract tests.
+
 ### Improving the Sensei Skill
 
 1. Edit `SKILL.md` for instruction changes

@@ -19,8 +19,11 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install validation dependencies
+        run: npm ci --prefix scripts
+
       - name: Run tests
-        run: node --test test/*.test.js
+        run: npm run validate
 
       - name: Read version from package.json
         id: version

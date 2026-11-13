@@ -131,8 +131,11 @@ See `references/mcp-integration.md` for patterns.
 ## Testing Changes
 
 ```bash
-# Install dependencies (first time only)
-cd scripts && npm install && cd ..
+# Restore locked validation dependencies (first time or after lockfile changes)
+npm ci --prefix scripts
+
+# Run the full build and test gate
+npm run validate
 
 # Check all files against token limits
 npm run tokens -- check
@@ -149,7 +152,7 @@ npm run tokens -- compare HEAD~1
 # Score skill against advisory checks
 npm run tokens -- score .
 
-# Run unit tests
+# Run only the Vitest unit tests
 cd scripts && npm test
 
 # GEPA: Score a skill (no LLM calls)
