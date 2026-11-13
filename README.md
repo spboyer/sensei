@@ -234,9 +234,10 @@ keyword/proxy fitness; it does not observe whether a host loaded a skill.
 
 Version **1.6.0** contains the evidence profiles, host profiles, repository
 analyzer, stronger behavioral evaluation, and Aspire pilot described here.
-GitHub Releases trigger token-authenticated npm publishing with provenance.
-Verify that both the GitHub tag and npm package are visible before consuming a
-new version; use a current source checkout while publication is still pending.
+GitHub Releases trigger OIDC-based npm trusted publishing with automatic
+provenance. Verify that both the GitHub tag and npm package are visible before
+consuming a new version; use a current source checkout while publication is
+still pending.
 
 [Commit-pinned source bundles](references/distribution.md) contain
 `sensei.tar.gz`, `source.json`, and `SHA256SUMS`, retained for 30 days.
