@@ -46,6 +46,8 @@ No unreleased changes.
   advisory.
 - Updated the root README, skill workflow, configuration and evaluation
   references, composite Action, and website for the evidence model.
+- Uses npm trusted publishing with GitHub OIDC and automatic provenance instead
+  of a long-lived publish token.
 
 ### Portable validation and evidence
 

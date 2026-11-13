@@ -100,4 +100,12 @@ describe('package integration metadata', () => {
     expect(workflows).not.toMatch(/actions\/upload-pages-artifact@v[1-4]\b/);
     expect(workflows).not.toMatch(/actions\/deploy-pages@v[1-4]\b/);
   });
+
+  it('publishes through GitHub OIDC instead of a long-lived npm token', () => {
+    const workflow = readFileSync('../.github/workflows/publish.yml', 'utf-8');
+    expect(workflow).toContain('id-token: write');
+    expect(workflow).toContain('npm install --global npm@latest');
+    expect(workflow).not.toContain('NPM_TOKEN');
+    expect(workflow).not.toContain('NODE_AUTH_TOKEN');
+  });
 });

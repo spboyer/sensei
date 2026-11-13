@@ -36,6 +36,9 @@ jobs:
           cache: npm
           cache-dependency-path: scripts/package-lock.json
 
+      - name: Use npm with trusted publishing support
+        run: npm install --global npm@latest
+
       - name: Install dependencies
         run: npm ci --prefix scripts
 
@@ -72,6 +75,4 @@ jobs:
 
       - name: Publish package
         if: steps.npm.outputs.published == 'false'
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
