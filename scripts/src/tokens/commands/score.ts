@@ -427,8 +427,59 @@ const ACTION_VERBS = [
   'create', 'build', 'run', 'execute', 'validate',
   'check', 'test', 'install', 'set up', 'implement',
   'manage', 'integrate', 'authenticate', 'troubleshoot',
-  'orchestrate', 'scaffold', 'generate', 'publish'
+  'orchestrate', 'scaffold', 'generate', 'publish',
+  'wire', 'observe', 'author', 'migrate', 'route', 'diagnose',
+  'monitor', 'initialize', 'assess'
 ] as const;
+
+const IRREGULAR_ACTION_FORMS = new Map<string, readonly string[]>([
+  ['run', ['runs', 'running']],
+  ['set', ['sets', 'setting']]
+]);
+
+function actionForms(base: string): Set<string> {
+  const forms = new Set([base]);
+  const irregular = IRREGULAR_ACTION_FORMS.get(base);
+  if (irregular) for (const form of irregular) forms.add(form);
+  if (base.endsWith('y') && !/[aeiou]y$/.test(base)) {
+    forms.add(`${base.slice(0, -1)}ies`);
+  } else if (/(?:s|sh|ch|x|z|o)$/.test(base)) {
+    forms.add(`${base}es`);
+  } else {
+    forms.add(`${base}s`);
+  }
+  if (base.endsWith('ie')) {
+    forms.add(`${base.slice(0, -2)}ying`);
+  } else if (base.endsWith('e') && !base.endsWith('ee')) {
+    forms.add(`${base.slice(0, -1)}ing`);
+  } else if (!irregular) {
+    forms.add(`${base}ing`);
+  }
+  return forms;
+}
+
+const ACTION_FORMS = new Set(
+  ACTION_VERBS.flatMap(verb => [...actionForms(verb.split(/\s+/)[0])])
+);
+
+function isActionWord(word: string): boolean {
+  const normalized = word.toLowerCase().replace(/[^a-z-]/g, '');
+  return ACTION_FORMS.has(normalized);
+}
+
+function descriptionHasActionLead(text: string): boolean {
+  const words = text.trim().split(/\s+/)
+    .map(word => word.toLowerCase().replace(/[^a-z-]/g, ''))
+    .filter(Boolean);
+  if (words.length === 0) return false;
+  if (words[0] === 'first-run' || isActionWord(words[0])) return true;
+  return /^[a-z]+ly$/.test(words[0]) && words.length > 1 && isActionWord(words[1]);
+}
+
+function descriptionHasAction(text: string): boolean {
+  if (/\bset\s+up\b/i.test(text)) return true;
+  return text.split(/\s+/).some(isActionWord);
+}
 
 /** Keywords indicating procedural structure */
 const PROCEDURE_KEYWORDS = [
@@ -457,28 +508,11 @@ function countReferenceModules(skillDir: string): number {
 }
 
 function createModuleCountCheck(mdCount: number): AdvisoryCheck {
-  if (mdCount >= 4) {
-    return {
-      name: 'module-count',
-      status: 'warning',
-      message: `Found ${mdCount} reference modules (4+ shows diminishing returns; consider consolidating)`,
-      evidence: 'SkillsBench Finding 5 — 4+ modules: +5.9pp vs 2-3 modules: +18.6pp'
-    };
-  }
-
-  if (mdCount >= 2) {
-    return {
-      name: 'module-count',
-      status: 'optimal',
-      message: `Found ${mdCount} reference modules (2-3 is optimal)`,
-      evidence: 'SkillsBench Finding 5 — 2-3 modules: +18.6pp improvement'
-    };
-  }
-
   return {
     name: 'module-count',
     status: 'ok',
-    message: `Found ${mdCount} reference module(s) (compact skill)`
+    message: `Found ${mdCount} reference module(s); module count is contextual, so evaluate reachability and task outcomes before consolidating`,
+    evidence: 'SkillsBench dataset observation, not an individual-skill optimum'
   };
 }
 
@@ -490,12 +524,21 @@ function createModuleCountCheck(mdCount: number): AdvisoryCheck {
  * Comprehensive (>500 tokens OR 4+ refs): warning
  */
 export function classifyComplexity(tokenCount: number, moduleCount: number): AdvisoryCheck {
+  if (tokenCount > 5000) {
+    return {
+      name: 'complexity',
+      status: 'ok',
+      message: `SKILL.md exceeds the portable 5000-token recommendation (${tokenCount} estimated tokens, ${moduleCount} modules); use configured token checks and behavioral evidence to set severity`,
+      evidence: 'Character-based estimate and portable authoring recommendation; check --strict enforces repository policy'
+    };
+  }
+
   if (tokenCount > 500 || moduleCount >= 4) {
     return {
       name: 'complexity',
-      status: 'warning',
-      message: `Comprehensive complexity (${tokenCount} tokens, ${moduleCount} modules) — excessive documentation may hurt performance`,
-      evidence: 'SkillsBench Finding 6 — Comprehensive: -2.9pp'
+      status: 'ok',
+      message: `Comprehensive complexity (${tokenCount} tokens, ${moduleCount} modules); evaluate progressive disclosure and behavioral outcomes`,
+      evidence: 'Sensei observation; size or module count alone does not establish harm'
     };
   }
 
@@ -543,11 +586,8 @@ export function checkNegativeDeltaRisk(content: string): AdvisoryCheck {
     risks.push(`${stepOneMatches.length} separate "Step 1:" blocks`);
   }
 
-  // Excessive constraints
+  // Constraint counts are context, not a conflict by themselves.
   const mustNotPatterns = content.match(/\b(must not|never|always|forbidden|prohibited)\b/gi);
-  if (mustNotPatterns && mustNotPatterns.length > 5) {
-    risks.push(`${mustNotPatterns.length} constraint keywords (may reduce agent flexibility)`);
-  }
 
   if (risks.length > 0) {
     return {
@@ -561,7 +601,12 @@ export function checkNegativeDeltaRisk(content: string): AdvisoryCheck {
   return {
     name: 'negative-delta-risk',
     status: 'ok',
-    message: 'No negative delta risk patterns detected'
+    message: mustNotPatterns && mustNotPatterns.length > 5
+      ? `No conflicting procedure patterns detected; found ${mustNotPatterns.length} constraint keywords that require behavioral review`
+      : 'No negative delta risk patterns detected',
+    evidence: mustNotPatterns && mustNotPatterns.length > 5
+      ? 'Constraint count is contextual and does not establish a negative delta'
+      : undefined
   };
 }
 
@@ -581,10 +626,7 @@ export function checkProceduralContent(description: string): AdvisoryCheck {
 
   const lowerDesc = description.toLowerCase();
 
-  const hasActionVerb = ACTION_VERBS.some(verb => {
-    const regex = new RegExp(`\\b${verb.replace(/\s+/g, '\\s+')}\\b`, 'i');
-    return regex.test(lowerDesc);
-  });
+  const hasActionVerb = descriptionHasAction(lowerDesc);
 
   const hasProcedureKeyword = PROCEDURE_KEYWORDS.some(kw => {
     const regex = new RegExp(`\\b${kw}\\b`, 'i');
@@ -612,41 +654,54 @@ export function checkProceduralContent(description: string): AdvisoryCheck {
  * Detects hardcoded paths, specific hostnames, magic numbers, etc.
  */
 export function checkOverSpecificity(content: string): AdvisoryCheck {
+  const lines = content.split(/\r?\n/);
+  let fence: { character: string; length: number } | null = null;
+  const prose = lines.map(line => {
+    const marker = line.match(/^\s{0,3}(`{3,}|~{3,})/);
+    if (marker) {
+      if (fence === null) {
+        fence = { character: marker[1][0], length: marker[1].length };
+      } else if (marker[1][0] === fence.character &&
+                 marker[1].length >= fence.length &&
+                 /^\s{0,3}(?:`{3,}|~{3,})\s*$/.test(line)) {
+        fence = null;
+      }
+      return '';
+    }
+    if (fence !== null || /^(?: {4}|\t)/.test(line)) return '';
+    return line.replace(/(`+).*?\1/g, '');
+  }).join('\n');
   const issues: string[] = [];
+  const evidence: string[] = [];
 
   // Absolute paths (Unix)
-  if (/\/usr\/|\/etc\/|\/home\/|\/var\/|\/opt\//g.test(content)) {
+  const unixPath = prose.match(/\/(?:usr|etc|home|var|opt)\/[^\s"'`)]+/);
+  if (unixPath) {
     issues.push('absolute Unix paths');
+    evidence.push(unixPath[0]);
   }
 
   // Absolute paths (Windows)
-  if (/[A-Z]:\\/g.test(content)) {
+  const windowsPath = prose.match(/\b[a-z]:\\[^\r\n"'`]*?(?=(?:[.;,](?:\s|$)|\r?$|["')\]]))/im);
+  if (windowsPath) {
     issues.push('absolute Windows paths');
+    evidence.push(windowsPath[0].trim());
   }
 
   // IP addresses
-  if (/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(content)) {
+  const ipAddress = prose.match(/(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])/g)
+    ?.find(candidate => {
+      const octets = candidate.split('.').map(Number);
+      if (octets.some(octet => octet < 0 || octet > 255)) return false;
+      return octets[0] === 10
+        || octets[0] === 127
+        || (octets[0] === 169 && octets[1] === 254)
+        || (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31)
+        || (octets[0] === 192 && octets[1] === 168);
+    });
+  if (ipAddress) {
     issues.push('IP addresses');
-  }
-
-  // Hardcoded URLs with paths (not just domain references)
-  if (/https?:\/\/[^\s"']+\/[^\s"')]+/g.test(content)) {
-    // Exclude common documentation/reference URLs
-    const urls = content.match(/https?:\/\/[^\s"']+\/[^\s"')]+/g) ?? [];
-    const nonDocUrls = urls.filter(url =>
-      !url.includes('github.com') &&
-      !url.includes('arxiv.org') &&
-      !url.includes('docs.') &&
-      !url.includes('learn.microsoft.com')
-    );
-    if (nonDocUrls.length > 0) {
-      issues.push('hardcoded URLs with paths');
-    }
-  }
-
-  // Specific port patterns (e.g., :3000, :8080)
-  if (/:\d{4,5}\b/.test(content)) {
-    issues.push('specific port numbers');
+    evidence.push(ipAddress);
   }
 
   if (issues.length > 0) {
@@ -654,7 +709,7 @@ export function checkOverSpecificity(content: string): AdvisoryCheck {
       name: 'over-specificity',
       status: 'warning',
       message: `Over-specific content detected: ${issues.join(', ')}`,
-      evidence: 'SkillsBench — instance-specific content prevents generalization'
+      evidence: `Literal evidence: ${evidence.map(value => JSON.stringify(value)).join(', ')}`
     };
   }
 
@@ -696,9 +751,9 @@ export function checkCrossModelDensity(description: string): AdvisoryCheck[] {
   if (wordCount > MAX_DESCRIPTION_WORDS) {
     checks.push({
       name: 'cross-model-word-count',
-      status: 'warning',
-      message: `Description is ${wordCount} words (Sensei target: ${MAX_DESCRIPTION_WORDS}). Consider trimming while preserving intent and scope`,
-      evidence: 'Sensei heuristic, not a specification limit; evaluate routing on the target host'
+      status: 'ok',
+      message: `Description is ${wordCount} words (Sensei editing target: ${MAX_DESCRIPTION_WORDS}); evaluate routing and context cost before trimming`,
+      evidence: 'Sensei observation, not a specification limit or default failure'
     });
   } else {
     checks.push({
@@ -718,9 +773,9 @@ export function checkCrossModelDensity(description: string): AdvisoryCheck[] {
   if (hasAntiTrigger) {
     checks.push({
       name: 'cross-model-anti-trigger',
-      status: 'warning',
-      message: 'Negative routing clause found. Prefer concise positive scope by default; test exclusions as near-miss prompts',
-      evidence: 'Sensei heuristic; negative boundaries may help in some deployments and require host evaluation'
+      status: 'ok',
+      message: 'Negative routing clause found; validate it with near-miss and sibling-routing cases',
+      evidence: 'Negative boundaries are contextual and are not a default failure'
     });
   } else {
     checks.push({
@@ -733,10 +788,7 @@ export function checkCrossModelDensity(description: string): AdvisoryCheck[] {
   // Lead sentence action verb check
   const firstSentence = description.split(/[.!?\n]/)[0]?.trim() ?? '';
   const firstWord = firstSentence.split(/\s+/)[0]?.toLowerCase().replace(/[^a-z]/g, '') ?? '';
-  const startsWithActionVerb = ACTION_VERBS.some(verb => {
-    const verbFirst = verb.split(/\s+/)[0];
-    return firstWord === verbFirst;
-  });
+  const startsWithActionVerb = descriptionHasActionLead(firstSentence);
   if (!startsWithActionVerb && firstSentence.length > 0) {
     // Skip check if starts with skill type prefix
     const startsWithPrefix = /^\*\*(?:WORKFLOW|UTILITY|ANALYSIS) SKILL\*\*/.test(firstSentence);
@@ -751,10 +803,7 @@ export function checkCrossModelDensity(description: string): AdvisoryCheck[] {
       // Check the word after the prefix dash
       const afterPrefix = firstSentence.replace(/^\*\*(?:WORKFLOW|UTILITY|ANALYSIS) SKILL\*\*\s*[-—–]\s*/, '');
       const prefixFirstWord = afterPrefix.split(/\s+/)[0]?.toLowerCase().replace(/[^a-z]/g, '') ?? '';
-      const prefixHasActionVerb = ACTION_VERBS.some(verb => {
-        const verbFirst = verb.split(/\s+/)[0];
-        return prefixFirstWord === verbFirst;
-      });
+      const prefixHasActionVerb = descriptionHasActionLead(afterPrefix);
       if (!prefixHasActionVerb) {
         checks.push({
           name: 'cross-model-lead-verb',
@@ -814,9 +863,9 @@ export function scoreSkillContent(content: string, opts: ScoreSkillContentOption
   const moduleCountCheck = createModuleCountCheck(moduleCount);
 
   const complexityCheck = classifyComplexity(tokenCount, moduleCount);
-  const complexity = complexityCheck.status === 'warning'
+  const complexity = tokenCount > 500 || moduleCount >= 4
     ? 'comprehensive'
-    : complexityCheck.status === 'optimal'
+    : tokenCount >= 200 && moduleCount >= 1
       ? 'detailed'
       : 'compact';
 

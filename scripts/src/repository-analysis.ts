@@ -117,10 +117,10 @@ function listSkillResources(skillDir: string): string[] {
   return files;
 }
 
-function markdownTargets(content: string): string[] {
+function markdownProse(content: string): string {
   const lines = content.split(/\r?\n/);
   let fence: { character: string; length: number } | null = null;
-  const prose = lines.map(line => {
+  return lines.map(line => {
     const marker = line.match(/^\s{0,3}(`{3,}|~{3,})/);
     if (marker) {
       const character = marker[1][0];
@@ -136,7 +136,10 @@ function markdownTargets(content: string): string[] {
     if (fence !== null || /^(?: {4}|\t)/.test(line)) return '';
     return line.replace(/(`+).*?\1/g, '');
   }).join('\n');
+}
 
+function markdownTargets(content: string): string[] {
+  const prose = markdownProse(content);
   const targets: string[] = [];
   const addTarget = (rawTarget: string): void => {
     let target = rawTarget;
@@ -180,8 +183,11 @@ function hasAnyFile(root: string, names: readonly string[]): boolean {
 
 function inspectInstructionArchitecture(content: string, lineCount: number): EvidenceFinding[] {
   const findings: EvidenceFinding[] = [];
-  const hasWorkflow = /^#{1,3}\s+(?:steps|workflow|process|procedure)\b/im.test(content);
-  const hasCompletion = /\b(done when|completion criteria|acceptance criteria|success criteria|stop conditions?|outputs?)\b/i.test(content);
+  const prose = markdownProse(content);
+  const hasWorkflow = /^#{1,3}\s+(?:steps|workflow|process|procedure)\b/im.test(prose);
+  const hasCompletionHeading = /^#{1,4}\s+(?:\d+\.\s+)?(?:validate and report|validation and reporting|verification|validation contract|reporting contract|outputs?|completion criteria|acceptance criteria|success criteria|stop conditions?)\s*$/im.test(prose);
+  const hasCompletionContract = /\b(?:done when|report (?:the |all |actual )?(?:result|results|outcome|outcomes|validation|follow-up)|prove idempotence|do not claim (?:unexecuted|skipped|unavailable)|preserve .{0,40} if validation fails)\b/i.test(prose);
+  const hasCompletion = hasCompletionHeading || hasCompletionContract;
   findings.push(finding(
     'instruction-completion-criteria',
     'information-architecture',
@@ -192,7 +198,7 @@ function inspectInstructionArchitecture(content: string, lineCount: number): Evi
       : 'Workflow instructions do not identify observable completion, output, or stop criteria',
     {
       remediation: 'Add an observable output, done-when, or stop condition appropriate to the workflow.',
-      limitations: ['This is a lexical advisory; behavioral evaluation is required before treating it as a gate.']
+      limitations: ['This lexical check recognizes explicit headings and outcome contracts; behavioral evaluation is still required before treating it as a gate.']
     }
   ));
   findings.push(finding(

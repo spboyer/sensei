@@ -41,6 +41,62 @@ A verified result.
     expect(report.findings.find(finding => finding.id === 'resource-orphans')?.state).toBe('pass');
   });
 
+  it('recognizes validate-and-report completion contracts', () => {
+    writeFileSync(join(skill, 'SKILL.md'), `---
+name: sample
+description: Sample workflow.
+---
+
+# Sample
+
+## Workflow
+
+1. Apply the approved change.
+
+### 6. Validate and report
+
+1. Run the relevant checks.
+2. Prove idempotence with a second assessment.
+
+Report migrated, retained, blocked, validated, and manual follow-up work.
+Do not claim unavailable checks passed. Preserve user edits if validation fails.
+`);
+    const report = analyzeSkillRepository(skill, { repositoryRoot: root });
+    expect(report.findings.find(finding => finding.id === 'instruction-completion-criteria')?.state).toBe('pass');
+  });
+
+  it('recognizes a numbered completion heading without relying on body keywords', () => {
+    writeFileSync(join(skill, 'SKILL.md'), '# Workflow\n\n## Steps\n\n1. Apply the change.\n\n### 6. Validate and report\n');
+    const report = analyzeSkillRepository(skill, { repositoryRoot: root });
+    expect(report.findings.find(finding => finding.id === 'instruction-completion-criteria')?.state).toBe('pass');
+  });
+
+  it('does not treat an ambiguous report mention as a completion contract', () => {
+    writeFileSync(join(skill, 'SKILL.md'), '# Workflow\n\n## Steps\n\n1. Read the report for context.\n');
+    const report = analyzeSkillRepository(skill, { repositoryRoot: root });
+    expect(report.findings.find(finding => finding.id === 'instruction-completion-criteria')?.state).toBe('warning');
+  });
+
+  it('does not treat prerequisite headings or fenced examples as completion contracts', () => {
+    writeFileSync(join(skill, 'SKILL.md'), [
+      '# Workflow',
+      '',
+      '## Steps',
+      '',
+      '1. Prepare the input.',
+      '',
+      '## Validate prerequisites',
+      '',
+      'Check the tool version before work.',
+      '',
+      '```markdown',
+      '## Verification',
+      '```'
+    ].join('\n'));
+    const report = analyzeSkillRepository(skill, { repositoryRoot: root });
+    expect(report.findings.find(finding => finding.id === 'instruction-completion-criteria')?.state).toBe('warning');
+  });
+
   it('fails broken and escaping links without hiding other findings', () => {
     writeFileSync(join(skill, 'SKILL.md'), `---
 name: sample

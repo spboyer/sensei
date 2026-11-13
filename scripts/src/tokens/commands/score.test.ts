@@ -23,7 +23,8 @@ import {
   checkDescriptionCompliance,
   checkCompatibilityCompliance,
   checkLicenseRecommendation,
-  checkVersionRecommendation
+  checkVersionRecommendation,
+  checkCrossModelDensity
 } from './score.js';
 
 describe('checkModuleCount', () => {
@@ -54,18 +55,18 @@ describe('checkModuleCount', () => {
     expect(result.message).toMatch(/1/);
   });
 
-  it('returns optimal with 2 refs', () => {
+  it('reports 2 refs as contextual', () => {
     const refsDir = join(tempDir, 'references');
     mkdirSync(refsDir);
     writeFileSync(join(refsDir, 'one.md'), '# One');
     writeFileSync(join(refsDir, 'two.md'), '# Two');
 
     const result = checkModuleCount(tempDir);
-    expect(result.status).toBe('optimal');
+    expect(result.status).toBe('ok');
     expect(result.message).toMatch(/2/);
   });
 
-  it('returns optimal with 3 refs', () => {
+  it('reports 3 refs as contextual', () => {
     const refsDir = join(tempDir, 'references');
     mkdirSync(refsDir);
     writeFileSync(join(refsDir, 'one.md'), '# One');
@@ -73,11 +74,11 @@ describe('checkModuleCount', () => {
     writeFileSync(join(refsDir, 'three.md'), '# Three');
 
     const result = checkModuleCount(tempDir);
-    expect(result.status).toBe('optimal');
+    expect(result.status).toBe('ok');
     expect(result.message).toMatch(/3/);
   });
 
-  it('returns warning with 5 refs', () => {
+  it('reports 5 refs as contextual rather than a universal warning', () => {
     const refsDir = join(tempDir, 'references');
     mkdirSync(refsDir);
     for (let i = 1; i <= 5; i++) {
@@ -85,8 +86,9 @@ describe('checkModuleCount', () => {
     }
 
     const result = checkModuleCount(tempDir);
-    expect(result.status).toBe('warning');
+    expect(result.status).toBe('ok');
     expect(result.message).toMatch(/5/);
+    expect(result.message).toContain('contextual');
     expect(result.evidence).toBeDefined();
   });
 
@@ -117,15 +119,15 @@ describe('classifyComplexity', () => {
     expect(result.message).toContain('Detailed');
   });
 
-  it('classifies comprehensive by tokens: 600 tokens, 2 modules', () => {
+  it('observes comprehensive complexity below the portable limit', () => {
     const result = classifyComplexity(600, 2);
-    expect(result.status).toBe('warning');
+    expect(result.status).toBe('ok');
     expect(result.message).toContain('Comprehensive');
   });
 
-  it('classifies comprehensive by modules: 300 tokens, 5 modules', () => {
+  it('observes comprehensive module counts without asserting harm', () => {
     const result = classifyComplexity(300, 5);
-    expect(result.status).toBe('warning');
+    expect(result.status).toBe('ok');
     expect(result.message).toContain('Comprehensive');
   });
 
@@ -141,9 +143,16 @@ describe('classifyComplexity', () => {
     expect(result.message).toContain('Detailed');
   });
 
-  it('edge: 501 tokens → comprehensive', () => {
+  it('edge: 501 tokens is an observation, not a warning', () => {
     const result = classifyComplexity(501, 1);
-    expect(result.status).toBe('warning');
+    expect(result.status).toBe('ok');
+  });
+
+  it('observes the portable 5000-token recommendation without duplicating policy gates', () => {
+    const result = classifyComplexity(5001, 1);
+    expect(result.status).toBe('ok');
+    expect(result.message).toContain('5000-token');
+    expect(result.message).toContain('configured token checks');
   });
 
   it('compact: 100 tokens, 0 modules', () => {
@@ -192,11 +201,12 @@ describe('checkNegativeDeltaRisk', () => {
     expect(result.status).toBe('ok');
   });
 
-  it('warns on excessive constraints', () => {
+  it('reports constraint counts without inferring a negative delta', () => {
     const content = 'You must not do X. Never do Y. Always use Z. Must not skip Q. Never touch W. Forbidden to change R.\n';
     const result = checkNegativeDeltaRisk(content);
-    expect(result.status).toBe('warning');
+    expect(result.status).toBe('ok');
     expect(result.message).toContain('constraint');
+    expect(result.message).toContain('behavioral review');
   });
 });
 
@@ -238,6 +248,11 @@ describe('checkProceduralContent', () => {
     expect(result.status).toBe('ok');
   });
 
+  it('detects inflected actions without workflow keywords', () => {
+    expect(checkProceduralContent('Safely migrates eligible Aspire resources.').status).toBe('ok');
+    expect(checkProceduralContent('Running diagnostics for the selected AppHost.').status).toBe('ok');
+  });
+
   it('detects procedure keywords like "workflow"', () => {
     const desc = 'The workflow involves several stages of data handling.';
     const result = checkProceduralContent(desc);
@@ -274,11 +289,10 @@ describe('checkOverSpecificity', () => {
     expect(result.message).toContain('IP addresses');
   });
 
-  it('warns on hardcoded URLs with paths', () => {
+  it('does not treat operational URLs as accidental hardcoding by default', () => {
     const content = 'Download from https://myserver.example.com/builds/latest/app.zip.';
     const result = checkOverSpecificity(content);
-    expect(result.status).toBe('warning');
-    expect(result.message).toContain('hardcoded URLs');
+    expect(result.status).toBe('ok');
   });
 
   it('allows github.com and docs URLs', () => {
@@ -293,11 +307,10 @@ describe('checkOverSpecificity', () => {
     expect(result.status).toBe('ok');
   });
 
-  it('warns on specific port numbers', () => {
+  it('does not treat ports as accidental hardcoding by default', () => {
     const content = 'The server runs on localhost:3000 and the API is on :8080.';
     const result = checkOverSpecificity(content);
-    expect(result.status).toBe('warning');
-    expect(result.message).toContain('port');
+    expect(result.status).toBe('ok');
   });
 
   it('detects multiple over-specificity issues', () => {
@@ -306,6 +319,91 @@ describe('checkOverSpecificity', () => {
     expect(result.status).toBe('warning');
     expect(result.message).toContain('absolute Unix paths');
     expect(result.message).toContain('IP addresses');
+    expect(result.evidence).toContain('/usr/bin/tool');
+    expect(result.evidence).toContain('10.0.0.1');
+  });
+
+  it('ignores paths, URLs, and ports inside code examples', () => {
+    const content = 'Use this example: `C:\\\\Program Files\\\\Tool http://localhost:18888`.\n```bash\n/usr/bin/tool --port 8080\n```';
+    expect(checkOverSpecificity(content).status).toBe('ok');
+  });
+
+  it('ignores indented code paths', () => {
+    expect(checkOverSpecificity('Example:\n    /usr/bin/tool --flag\nContinue normally.').status).toBe('ok');
+  });
+
+  it('detects lowercase Windows paths without consuming following prose', () => {
+    const result = checkOverSpecificity('Open c:\\Users\\alice\\config.json. Then continue.');
+    expect(result.status).toBe('warning');
+    expect(result.evidence).toContain('c:\\\\Users\\\\alice\\\\config.json');
+    expect(result.evidence).not.toContain('Then continue');
+  });
+
+  it('detects Windows paths at line boundaries', () => {
+    const result = checkOverSpecificity('Open C:\\Users\\alice\\file.txt\nThen continue.');
+    expect(result.status).toBe('warning');
+    expect(result.evidence).toContain('C:\\\\Users\\\\alice\\\\file.txt');
+    expect(result.evidence).not.toContain('Then continue');
+  });
+
+  it('keeps nested shorter fences inside a longer outer fence', () => {
+    const content = [
+      '````markdown',
+      '```bash',
+      'C:\\Users\\alice\\file.txt',
+      '```',
+      '192.168.1.25',
+      '````'
+    ].join('\n');
+    expect(checkOverSpecificity(content).status).toBe('ok');
+  });
+
+  it.each([
+    'Connect to 10.1.2.',
+    'Connect to 10.999.999.999.',
+    'Connect to 192.168.1.1.2.'
+  ])('does not accept malformed private IP literals: %s', content => {
+    expect(checkOverSpecificity(content).status).toBe('ok');
+  });
+});
+
+describe('checkCrossModelDensity', () => {
+  it.each([
+    '**WORKFLOW SKILL** - Wire services into an AppHost.',
+    '**WORKFLOW SKILL** - Observe Aspire resources and telemetry.',
+    '**WORKFLOW SKILL** - Author terminals for Aspire resources.',
+    '**WORKFLOW SKILL** - Safely migrates eligible Aspire resources.',
+    '**WORKFLOW SKILL** - Route deployment requests.',
+    '**WORKFLOW SKILL** - Diagnoses runtime failures.',
+    '**WORKFLOW SKILL** - First-run Aspire setup and guidance.',
+    '**WORKFLOW SKILL** - Quickly deploy services.',
+    '**WORKFLOW SKILL** - Running diagnostics.'
+  ])('recognizes Aspire action leads: %s', description => {
+    const lead = checkCrossModelDensity(description)
+      .find(check => check.name === 'cross-model-lead-verb');
+    expect(lead?.status).toBe('ok');
+  });
+
+  it('keeps noun-led ambiguous descriptions advisory', () => {
+    const lead = checkCrossModelDensity('**WORKFLOW SKILL** - Aspire project guidance and references.')
+      .find(check => check.name === 'cross-model-lead-verb');
+    expect(lead?.status).toBe('warning');
+  });
+
+  it.each([
+    '**WORKFLOW SKILL** - Runing diagnostics.',
+    '**WORKFLOW SKILL** - Createes resources.'
+  ])('rejects malformed inflections: %s', description => {
+    const lead = checkCrossModelDensity(description)
+      .find(check => check.name === 'cross-model-lead-verb');
+    expect(lead?.status).toBe('warning');
+  });
+
+  it('treats long descriptions and negative boundaries as observations', () => {
+    const description = `**WORKFLOW SKILL** - Wire applications safely. USE FOR: ${'detailed routing phrase '.repeat(30)} DO NOT USE FOR: unrelated tasks.`;
+    const checks = checkCrossModelDensity(description);
+    expect(checks.find(check => check.name === 'cross-model-word-count')?.status).toBe('ok');
+    expect(checks.find(check => check.name === 'cross-model-anti-trigger')?.status).toBe('ok');
   });
 });
 
@@ -586,7 +684,7 @@ describe('scoreSkillContent', () => {
 
     expect(result.moduleCount).toBe(4);
     expect(result.complexity).toBe('comprehensive');
-    expect(result.checks.find(c => c.name === 'module-count')?.status).toBe('warning');
+    expect(result.checks.find(c => c.name === 'module-count')?.status).toBe('ok');
   });
 
   it('is exported from the public scorer entry point', () => {
