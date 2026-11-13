@@ -390,6 +390,22 @@ describe('checkCrossModelDensity', () => {
     expect(lead?.status).toBe('warning');
   });
 
+  it('accepts a short domain role label followed by an action sentence', () => {
+    const description = '**WORKFLOW SKILL** - Aspire router. Detects AppHosts, enforces guardrails, and selects the right sub-skill.';
+    const lead = checkCrossModelDensity(description)
+      .find(check => check.name === 'cross-model-lead-verb');
+    expect(lead?.status).toBe('ok');
+  });
+
+  it.each([
+    '**WORKFLOW SKILL** - Aspire router and distributed application orchestration guidance for complex multi-service repositories with extensive operational constraints. Detects AppHosts.',
+    '**WORKFLOW SKILL** - Aspire router. Project guidance and reference material.'
+  ])('does not allow long or non-action role preambles: %s', description => {
+    const lead = checkCrossModelDensity(description)
+      .find(check => check.name === 'cross-model-lead-verb');
+    expect(lead?.status).toBe('warning');
+  });
+
   it.each([
     '**WORKFLOW SKILL** - Runing diagnostics.',
     '**WORKFLOW SKILL** - Createes resources.'

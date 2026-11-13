@@ -185,8 +185,11 @@ function inspectInstructionArchitecture(content: string, lineCount: number): Evi
   const findings: EvidenceFinding[] = [];
   const prose = markdownProse(content);
   const hasWorkflow = /^#{1,3}\s+(?:steps|workflow|process|procedure)\b/im.test(prose);
-  const hasCompletionHeading = /^#{1,4}\s+(?:\d+\.\s+)?(?:validate and report|validation and reporting|verification|validation contract|reporting contract|outputs?|completion criteria|acceptance criteria|success criteria|stop conditions?)\s*$/im.test(prose);
-  const hasCompletionContract = /\b(?:done when|report (?:the |all |actual )?(?:result|results|outcome|outcomes|validation|follow-up)|prove idempotence|do not claim (?:unexecuted|skipped|unavailable)|preserve .{0,40} if validation fails)\b/i.test(prose);
+  const hasCompletionHeading = /^#{1,4}\s+(?:\d+\.\s+)?(?:validate and report|validation and reporting|verification|validation contract|reporting contract|outputs?|completion criteria|acceptance criteria|success criteria|stop conditions?|handoff rules|self-deactivate)\s*$/im.test(prose);
+  const hasTerminalDone = prose
+    .split(/(?:[.!?]\s+|\r?\n)/)
+    .some(sentence => /^[a-z][a-z0-9-]{1,48} is done$/i.test(sentence.trim()));
+  const hasCompletionContract = hasTerminalDone || /\b(?:done when|report (?:the |all |actual )?(?:result|results|outcome|outcomes|validation|follow-up)|prove idempotence|do not claim (?:unexecuted|skipped|unavailable)|preserve .{0,40} if validation fails|(?:fully|successfully) (?:wired|initialized|completed)|hand(?:ing)? off to [a-z][a-z0-9-]{1,48} for (?:day-to-day |ongoing |subsequent )?[a-z][a-z0-9 /-]{2,64})\b/i.test(prose);
   const hasCompletion = hasCompletionHeading || hasCompletionContract;
   findings.push(finding(
     'instruction-completion-criteria',

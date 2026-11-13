@@ -5,7 +5,7 @@ No provider, paid API, Python, or GEPA dependency is added. Static `score` check
 frontmatter; GEPA's keyword fitness estimates matching, **not observed host
 activation**. Neither proves behavioral quality.
 
-This feature is included in version 1.6.2. Use the GitHub Release package or a
+This feature is included in version 1.6.3. Use the GitHub Release package or a
 source checkout. From source, restore script dependencies with
 `npm ci --prefix scripts` and run
 `npm run --silent tokens -- eval manifest.json --format=json`, or build and use
