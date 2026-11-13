@@ -97,6 +97,34 @@ Do not claim unavailable checks passed. Preserve user edits if validation fails.
     expect(report.findings.find(finding => finding.id === 'instruction-completion-criteria')?.state).toBe('warning');
   });
 
+  it.each([
+    '# Workflow\n\n## Steps\n\n1. Create the skeleton.\n\n## Handoff Rules\n',
+    '# Workflow\n\n## Steps\n\n1. Wire resources.\n\n### 5. Self-Deactivate\n'
+  ])('recognizes explicit handoff-owned completion headings', content => {
+    writeFileSync(join(skill, 'SKILL.md'), content);
+    const report = analyzeSkillRepository(skill, { repositoryRoot: root });
+    expect(report.findings.find(finding => finding.id === 'instruction-completion-criteria')?.state).toBe('pass');
+  });
+
+  it.each([
+    '# Workflow\n\n## Steps\n\n1. Wire resources.\n\nAppHost fully wired and validated. Handing off to aspire-orchestration for day-to-day start/stop/wait. Aspireify is done.',
+    '# Workflow\n\n## Steps\n\n1. Create the skeleton.\n\nHand off to aspireify for subsequent resource wiring.'
+  ])('recognizes bounded terminal handoff contracts', content => {
+    writeFileSync(join(skill, 'SKILL.md'), content);
+    const report = analyzeSkillRepository(skill, { repositoryRoot: root });
+    expect(report.findings.find(finding => finding.id === 'instruction-completion-criteria')?.state).toBe('pass');
+  });
+
+  it.each([
+    '# Workflow\n\n## Steps\n\n1. Read the handoff notes before continuing.',
+    '# Workflow\n\n## Steps\n\n1. Check whether the prior task is done.',
+    '# Workflow\n\n## Steps\n\n1. If setup is done, continue to validation.'
+  ])('does not treat incidental handoff or done mentions as completion', content => {
+    writeFileSync(join(skill, 'SKILL.md'), content);
+    const report = analyzeSkillRepository(skill, { repositoryRoot: root });
+    expect(report.findings.find(finding => finding.id === 'instruction-completion-criteria')?.state).toBe('warning');
+  });
+
   it('fails broken and escaping links without hiding other findings', () => {
     writeFileSync(join(skill, 'SKILL.md'), `---
 name: sample

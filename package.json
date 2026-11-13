@@ -1,6 +1,6 @@
 {
   "name": "@spboyer/sensei",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Evidence-driven quality analysis for Agent Skills",
   "type": "module",
   "repository": {

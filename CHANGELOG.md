@@ -4,6 +4,18 @@
 
 No unreleased changes.
 
+## 1.6.3 - 2026-11-13
+
+### Workflow completion and role leads
+
+- Recognizes explicit `Handoff Rules` and `Self-Deactivate` headings as workflow
+  completion contracts.
+- Recognizes bounded terminal handoffs, fully wired/initialized outcomes, and
+  explicit `<skill> is done` statements without accepting incidental mentions.
+- Accepts a short domain/role label when the immediately following sentence is
+  action-led, while keeping long preambles and noun-only descriptions advisory.
+- Adds isolated regressions from `aspire-init`, `aspireify`, and the Aspire router.
+
 ## 1.6.2 - 2026-11-13
 
 ### Calibrated authoring evidence

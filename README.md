@@ -111,7 +111,7 @@ an optional channel and may lag.
 #### CLI from a GitHub Release
 
 ```powershell
-$package = 'https://github.com/spboyer/sensei/releases/download/v1.6.2/spboyer-sensei-1.6.2.tgz'
+$package = 'https://github.com/spboyer/sensei/releases/download/v1.6.3/spboyer-sensei-1.6.3.tgz'
 npm install --global $package
 sensei score .
 sensei score . --profile=copilot
@@ -129,7 +129,7 @@ source bundle, provenance JSON, and checksum manifests.
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  - uses: spboyer/sensei@v1.6.2
+  - uses: spboyer/sensei@v1.6.3
     with:
       command: check
       root: .
@@ -234,7 +234,7 @@ keyword/proxy fitness; it does not observe whether a host loaded a skill.
 
 ## Distribution and Release Status
 
-Version **1.6.2** contains the evidence profiles, calibrated authoring checks,
+Version **1.6.3** contains the evidence profiles, calibrated authoring checks,
 host profiles, repository
 analyzer, stronger behavioral evaluation, and Aspire pilot described here.
 GitHub is the authoritative release channel. Each release includes a compiled
@@ -298,7 +298,7 @@ cd .github/skills/sensei/scripts && npm install
 For CLI use without npm registry publication:
 
 ```bash
-npm install --global https://github.com/spboyer/sensei/releases/download/v1.6.2/spboyer-sensei-1.6.2.tgz
+npm install --global https://github.com/spboyer/sensei/releases/download/v1.6.3/spboyer-sensei-1.6.3.tgz
 sensei check .
 ```
 

@@ -476,6 +476,17 @@ function descriptionHasActionLead(text: string): boolean {
   return /^[a-z]+ly$/.test(words[0]) && words.length > 1 && isActionWord(words[1]);
 }
 
+function descriptionHasBoundedRoleLead(text: string): boolean {
+  const sentences = text.split(/[.!?]\s+/).map(sentence => sentence.trim()).filter(Boolean);
+  if (sentences.length < 2) return false;
+  const roleLabel = sentences[0];
+  const roleWords = roleLabel.split(/\s+/).filter(Boolean);
+  if (roleLabel.length > 60 || roleWords.length > 6 || descriptionHasActionLead(roleLabel)) {
+    return false;
+  }
+  return descriptionHasActionLead(sentences[1]);
+}
+
 function descriptionHasAction(text: string): boolean {
   if (/\bset\s+up\b/i.test(text)) return true;
   return text.split(/\s+/).some(isActionWord);
@@ -802,8 +813,10 @@ export function checkCrossModelDensity(description: string): AdvisoryCheck[] {
     } else {
       // Check the word after the prefix dash
       const afterPrefix = firstSentence.replace(/^\*\*(?:WORKFLOW|UTILITY|ANALYSIS) SKILL\*\*\s*[-—–]\s*/, '');
+      const fullAfterPrefix = description.replace(/^\*\*(?:WORKFLOW|UTILITY|ANALYSIS) SKILL\*\*\s*[-—–]\s*/, '');
       const prefixFirstWord = afterPrefix.split(/\s+/)[0]?.toLowerCase().replace(/[^a-z]/g, '') ?? '';
-      const prefixHasActionVerb = descriptionHasActionLead(afterPrefix);
+      const prefixHasActionVerb = descriptionHasActionLead(afterPrefix)
+        || descriptionHasBoundedRoleLead(fullAfterPrefix);
       if (!prefixHasActionVerb) {
         checks.push({
           name: 'cross-model-lead-verb',
