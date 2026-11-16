@@ -16,7 +16,7 @@ export const payloadPaths = [
 ];
 
 export function packageSkill(root, outputDirectory) {
-  const git = (...args) => execFileSync('git', args, { cwd: root });
+  const git = (...args) => execFileSync('git', args, { cwd: root, stdio: 'pipe' });
   const commit = git('rev-parse', '--verify', 'HEAD^{commit}').toString().trim();
   const skill = git('show', `${commit}:SKILL.md`).toString();
   const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(skill)?.[1];
