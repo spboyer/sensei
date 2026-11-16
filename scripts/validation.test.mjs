@@ -20,9 +20,11 @@ test('Vitest fails when no tests are discovered', async () => {
       [vitestCli, 'run', '--root', emptyRoot, '--passWithNoTests=false'],
       { cwd: repositoryRoot, encoding: 'utf8' }
     );
+    const output = `${result.stdout}\n${result.stderr}`;
 
     assert.equal(result.error, undefined, result.error?.message);
-    assert.notEqual(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    assert.equal(result.status, 1, output);
+    assert.match(output, /No test files found/i);
   } finally {
     await rm(emptyRoot, { recursive: true, force: true });
   }
