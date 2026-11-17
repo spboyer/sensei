@@ -65,6 +65,26 @@ test('fails when required payload files are absent', t => {
   assert.throws(() => packageSkill(root, output), /LICENSE.txt/);
 });
 
+test('captures expected Git diagnostics without leaking them to stderr', t => {
+  const { root, git, output } = fixture(t);
+  git('rm', '--quiet', 'LICENSE.txt');
+  git('commit', '--quiet', '-m', 'remove license');
+  const child = `
+    import { packageSkill } from ${JSON.stringify(new URL('./package-skill.mjs', import.meta.url).href)};
+    try {
+      packageSkill(process.argv[1], process.argv[2]);
+      process.exitCode = 2;
+    } catch (error) {
+      process.stdout.write(String(error.stderr ?? ''));
+    }
+  `;
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', child, root, output],
+    { cwd: root, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /pathspec 'LICENSE\.txt' did not match/);
+  assert.equal(result.stderr, '');
+});
+
 for (const skill of [
   '---\nname: not-sensei\n---\n',
   '---\nname: other\n---\nname: sensei\n',
