@@ -470,6 +470,10 @@ git reset --soft HEAD~1  # Undo last commit
 
 ## Contributing
 
+Run `npm run validate` for the TypeScript build, Vitest suite, and explicit Node
+test contracts. Validation fails if discovery is empty or any contract has no
+passing, non-skipped tests.
+
 ### Improving the Sensei Skill
 
 1. Edit `SKILL.md` for instruction changes
