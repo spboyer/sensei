@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "tokens": "node --import tsx src/tokens/cli.ts",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests=false",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
